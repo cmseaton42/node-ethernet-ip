@@ -9,7 +9,7 @@ class Controller {
         }
 
         if (!validator.isIP(IP_ADDR)) {
-            throw Error("ERROR: Invalid IP_ADDR <string> passed to Controller <class>");
+            throw new Error("ERROR: Invalid IP_ADDR <string> passed to Controller <class>");
         }
 
         this.enip = {

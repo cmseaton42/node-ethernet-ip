@@ -13,7 +13,7 @@ describe("Controller", () => {
         it("Requires an IP Address", () => {
             const test = () => {
                 return new Controller();
-            }
+            };
 
             expect(test).toThrowError();
         });
