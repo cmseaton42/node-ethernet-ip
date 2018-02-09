@@ -6,7 +6,8 @@
   "scripts": {
       "test": "jest",
       "test-watch": "npm test -- --watch",
-      "test-coverage": "npm test -- --coverage"
+      "test-coverage": "npm test -- --coverage",
+      "lint": "eslint . --ext .js"
   },
   "keywords": [
       "rockwell",
