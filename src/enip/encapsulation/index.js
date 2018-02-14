@@ -21,8 +21,7 @@ const commands = {
  * @returns {string} Human Readable Error Message
  */
 const parseStatus = status => {
-    if (typeof status !== "Number")
-        throw new Error("ERROR: parseStatus accepts type <Number> only!");
+    if (typeof status !== "number") throw new Error("parseStatus accepts type <Number> only!");
 
     switch (status) {
         case 0x00:
@@ -67,7 +66,7 @@ const validateCommand = cmd => {
  */
 header.build = (cmd, session = 0x00, data = []) => {
     // Validate requested command
-    if (!ValidateCommand(cmd)) throw new Error("ERROR: Invalid Encapsulation Command!");
+    if (!validateCommand(cmd)) throw new Error("Invalid Encapsulation Command!");
 
     const buf = Buffer.from(data);
     const send = {
@@ -86,7 +85,7 @@ header.build = (cmd, session = 0x00, data = []) => {
     // Build header from encapsulation data
     header.writeInt16LE(send.cmd, 0);
     header.writeInt16LE(send.length, 2);
-    header.writeInt32LE(send.seesion, 4);
+    header.writeInt32LE(send.session, 4);
     header.writeInt32LE(send.status, 8);
     send.context.copy(header, 12);
     header.writeInt32LE(send.options, 20);
@@ -114,7 +113,7 @@ header.build = (cmd, session = 0x00, data = []) => {
  * @returns {EncapsulationData} - Parsed Encapsulation Data Object
  */
 header.parse = buf => {
-    if (typeof buf !== "Buffer") throw new Error("ERROR: header.parse accepts type <Buffer> only!");
+    if (!Buffer.isBuffer(buf)) throw new Error("header.parse accepts type <Buffer> only!");
 
     const received = {
         command: buf.readInt16LE(0),
@@ -128,7 +127,7 @@ header.parse = buf => {
 
     // Get Returned Encapsulated Data
     let dataBuffer = Buffer.alloc(received.length);
-    buf.copy(dataBuffer, 24);
+    buf.copy(dataBuffer, 0, 24);
 
     received.data = dataBuffer;
     received.status = parseStatus(received.statusCode);
@@ -136,6 +135,4 @@ header.parse = buf => {
     return received;
 };
 
-module.exports.header = header;
-module.exports.commands = commands;
-module.exports.validateCommand = validateCommand;
+module.exports = { header, validateCommand, commands, parseStatus };

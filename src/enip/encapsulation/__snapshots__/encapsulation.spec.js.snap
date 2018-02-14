@@ -1,0 +1,57 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Encapsulation Header Building Utility Builds Correct Encapsulation Buffer 1`] = `
+Object {
+  "data": Array [
+    101,
+    0,
+    4,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Encapsulation Header Parsing Utility Builds Correct Encapsulation Buffer 1`] = `
+Object {
+  "command": 111,
+  "data": Object {
+    "data": Array [
+      1,
+      0,
+      0,
+      0,
+    ],
+    "type": "Buffer",
+  },
+  "length": 4,
+  "options": 0,
+  "session": 98705,
+  "status": "SUCCESS",
+  "statusCode": 0,
+}
+`;
