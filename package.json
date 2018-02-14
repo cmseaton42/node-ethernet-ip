@@ -7,6 +7,7 @@
       "test": "jest",
       "test-watch": "npm test -- --watch",
       "test-coverage": "npm test -- --coverage",
+      "test-detailed": "npm test -- --verbose",
       "lint": "eslint . --ext .js"
   },
   "keywords": [
