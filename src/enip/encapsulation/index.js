@@ -97,7 +97,8 @@ header.build = (cmd, session = 0x00, data = []) => {
 /**
  * @typedef EncapsulationData
  * @type {Object}
- * @property {number} command - Ecapsulation Command
+ * @property {number} commandCode - Ecapsulation Command Code
+ * @property {string} command - Encapsulation Command String Interpretation
  * @property {number} length - Length of Encapsulated Data
  * @property {number} session - Session ID
  * @property {number} statusCode - Status Code
@@ -105,6 +106,7 @@ header.build = (cmd, session = 0x00, data = []) => {
  * @property {number} options - Options (Typically 0x00)
  * @property {Buffer} data - Encapsulated Data Buffer
  */
+/*****************************************************************/
 
 /**
  * Parses an Encapsulated Packet Received from ENIP Target
@@ -116,7 +118,8 @@ header.parse = buf => {
     if (!Buffer.isBuffer(buf)) throw new Error("header.parse accepts type <Buffer> only!");
 
     const received = {
-        command: buf.readInt16LE(0),
+        commandCode: buf.readInt16LE(0),
+        command: null,
         length: buf.readInt16LE(2),
         session: buf.readInt32LE(4),
         statusCode: buf.readInt32LE(8),
@@ -132,7 +135,106 @@ header.parse = buf => {
     received.data = dataBuffer;
     received.status = parseStatus(received.statusCode);
 
+    for (let key of Object.keys(commands)) {
+        if (received.commandCode === commands[key]) {
+            received.command = key;
+            break;
+        }
+    }
+
     return received;
 };
 
-module.exports = { header, validateCommand, commands, parseStatus };
+/**
+ * Sends a Register Session Request
+ *
+ * @param {Socket} client - TCP Client
+ */
+const registerSession = client => {
+    const { registerSession } = commands;
+    const { build } = header;
+    const cmdBuf = Buffer.alloc(4)
+        .writeInt16LE(0x01, 0) // Protocol Version (Required to be 1)
+        .writeInt16LE(0x00, 2); // Opton Flags (Reserved for Future List)
+
+    // Build Register Session Buffer
+    const buf = build(registerSession, 0x00, cmdBuf);
+
+    // Write Request to Socket
+    client.write(buf);
+};
+
+/**
+ * Sends an Unregister Session Request
+ *
+ * @param {Socket} client - TCP Client
+ * @param {number} session - Encapsulation Session ID
+ */
+const unregisterSession = (client, session) => {
+    const { UnregisterSession } = commands;
+    const { build } = header;
+
+    // Build Unregister Session Buffer
+    const buf = build(registerSession, session);
+
+    // Write Request to Socket
+    client.write(buf);
+};
+
+/**
+ * Sends a UCMM Datagram
+ *
+ * @param {Socket} client - TCP Client
+ * @param {number} session - Encapsulation Session ID
+ * @param {Buffer} data - Data to be Sent via UCMM
+ * @param {number} [timeout=10] - Timeout (sec)
+ */
+const sendRRData = (client, session, data, timeout = 10) => {
+    const { SendRRData } = commands;
+    const { build } = header;
+    const cmdBuf = Buffer.alloc(data.length + 6)
+        .writeInt32LE(0x00, 0) // Interface Handle ID (Shall be 0 for CIP)
+        .writeInt16LE(timeout, 4); // Timeout (sec)
+
+    data.copy(cmdBuf, 6);
+
+    // Build SendRRData Buffer
+    const buf = build(SendRRData, session, cmdBuf);
+
+    // Write Request to Socket
+    client.write(buf);
+};
+
+/**
+ * Sends a UCMM Datagram
+ *
+ * @param {Socket} client - TCP Client
+ * @param {number} session - Encapsulation Session ID
+ * @param {Buffer} data - Data to be Sent via Connected Message
+ */
+const sendUnitData = (client, session, data) => {
+    const { SendUnitData } = commands;
+    const { build } = header;
+    const cmdBuf = Buffer.alloc(data.length + 6)
+        .writeInt32LE(0x00, 0) // Interface Handle ID (Shall be 0 for CIP)
+        .writeInt16LE(0x00, 4); // Timeout (sec) (Shall be 0 for Connected Messages)
+
+    data.copy(cmdBuf, 6);
+
+    // Build SendRRData Buffer
+    const buf = build(SendUnitData, session, cmdBuf);
+
+    // Write Request to Socket
+    client.write(buf);
+};
+
+module.exports = {
+    header,
+    validateCommand,
+    commands,
+    parseStatus,
+    registerSession,
+    unregisterSession,
+    sendRRData,
+    sendUnitData
+};

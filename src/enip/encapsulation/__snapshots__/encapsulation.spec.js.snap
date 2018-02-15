@@ -38,7 +38,8 @@ Object {
 
 exports[`Encapsulation Header Parsing Utility Builds Correct Encapsulation Buffer 1`] = `
 Object {
-  "command": 111,
+  "command": "SendRRData",
+  "commandCode": 111,
   "data": Object {
     "data": Array [
       1,

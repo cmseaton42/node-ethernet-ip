@@ -52,6 +52,7 @@ describe("Encapsulation", () => {
         });
     });
 
+
     describe("Header Parsing Utility", () => {
         const { header: { parse, build }, commands: { SendRRData } } = encapsulation;
 
