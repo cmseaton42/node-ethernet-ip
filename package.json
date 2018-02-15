@@ -1,33 +1,30 @@
 {
-  "name": "node-ethernet-ip",
-  "version": "1.0.0",
-  "description": "A simple node interface for Ethernet/IP.",
-  "main": "./src/index.js",
-  "scripts": {
-      "test": "jest",
-      "test-watch": "npm test -- --watch",
-      "test-coverage": "npm test -- --coverage",
-      "test-detailed": "npm test -- --verbose",
-      "lint": "eslint . --ext .js"
-  },
-  "keywords": [
-      "rockwell",
-      "allen",
-      "bradley",
-      "allen-bradley",
-      "ethernet",
-      "ethernet-ip",
-      "ethernet/ip",
-      "CIP",
-      "industrial"
-  ],
-  "dependencies": {
-      "validator": "^9.2.0"
-  },
-  "devDependencies": {
-      "enzyme": "^3.2.0",
-      "jest": "^21.2.1"
-  },
-  "author": "Canaan Seaton",
-  "license": "MIT"
+    "name": "node-ethernet-ip",
+    "version": "1.0.0",
+    "description": "A simple node interface for Ethernet/IP.",
+    "main": "./src/index.js",
+    "scripts": {
+        "test": "jest",
+        "test-watch": "npm test -- --watch",
+        "test-coverage": "npm test -- --coverage",
+        "test-detailed": "npm test -- --verbose",
+        "lint": "eslint . --ext .js"
+    },
+    "keywords": [
+        "rockwell",
+        "allen",
+        "bradley",
+        "allen-bradley",
+        "ethernet",
+        "ethernet-ip",
+        "ethernet/ip",
+        "CIP",
+        "industrial"
+    ],
+    "dependencies": {},
+    "devDependencies": {
+        "jest": "^21.2.1"
+    },
+    "author": "Canaan Seaton",
+    "license": "MIT"
 }

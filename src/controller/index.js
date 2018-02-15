@@ -1,6 +1,6 @@
-const { Socket } = require("net");
+const net = require("net");
+const { Socket } = net;
 const { EIP_PORT } = require("../config");
-const validator = require("validator");
 
 class Controller {
     constructor(IP_ADDR) {
@@ -8,7 +8,7 @@ class Controller {
             throw new Error("ERROR: Controller <class> requires IP_ADDR <string>!!!");
         }
 
-        if (!validator.isIP(IP_ADDR)) {
+        if (net.isIPv4(IP_ADDR)) {
             throw new Error("ERROR: Invalid IP_ADDR <string> passed to Controller <class>");
         }
 
