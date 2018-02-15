@@ -182,7 +182,7 @@ const unregisterSession = (client, session) => {
 };
 
 /**
- * Sends a UCMM Datagram
+ * Sends a UCMM Encapsulated Packet
  *
  * @param {Socket} client - TCP Client
  * @param {number} session - Encapsulation Session ID
@@ -206,7 +206,7 @@ const sendRRData = (client, session, data, timeout = 10) => {
 };
 
 /**
- * Sends a UCMM Datagram
+ * Sends a Connected Message Datagram (Transport Class 3)
  *
  * @param {Socket} client - TCP Client
  * @param {number} session - Encapsulation Session ID
