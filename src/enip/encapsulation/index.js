@@ -23,8 +23,8 @@ const commands = {
 const parseStatus = status => {
     if (typeof status !== "number") throw new Error("parseStatus accepts type <Number> only!");
 
+    /* eslint-disable indent */
     switch (status) {
-        /* eslint-disable indent */
         case 0x00:
             return "SUCCESS";
         case 0x01:
@@ -41,8 +41,8 @@ const parseStatus = status => {
             return "FAIL: Unsupported encapsulation protocol revision.";
         default:
             return `FAIL: General failure <${status}> occured.`;
-        /* eslint-enable indent */
     }
+    /* eslint-enable indent */
 };
 
 /**
