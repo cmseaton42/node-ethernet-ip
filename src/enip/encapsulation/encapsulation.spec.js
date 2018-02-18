@@ -1,4 +1,5 @@
 const encapsulation = require("./index");
+const net = require("net");
 
 describe("Encapsulation", () => {
     describe("Command Validator", () => {
@@ -52,7 +53,6 @@ describe("Encapsulation", () => {
         });
     });
 
-
     describe("Header Parsing Utility", () => {
         const { header: { parse, build }, commands: { SendRRData } } = encapsulation;
 
@@ -63,6 +63,18 @@ describe("Encapsulation", () => {
             expect(snap).toMatchSnapshot();
         });
     });
+
+    // describe("Test Encapsulation Generator Functions", () => {
+    //     const { header: { build, parse }, registerSession } = encapsulation;
+    //     jest.mock("net");
+
+    //     it("Register Session writes to TCP Channel with correct Data", () => {
+    //         jest.mock("net");
+    //         const client = new net.Socket();
+            
+    //         registerSession(client);
+
+    //         expect(client.write).toBeCalled();
+    //     })
+    // });
 });
-
-

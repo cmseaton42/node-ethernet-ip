@@ -153,14 +153,14 @@ header.parse = buf => {
  * @param {Socket} client - TCP Client
  */
 const registerSession = client => {
-    const { registerSession } = commands;
+    const { RegisterSession } = commands;
     const { build } = header;
-    const cmdBuf = Buffer.alloc(4)
-        .writeInt16LE(0x01, 0) // Protocol Version (Required to be 1)
-        .writeInt16LE(0x00, 2); // Opton Flags (Reserved for Future List)
+    const cmdBuf = Buffer.alloc(4);
+    cmdBuf.writeInt16LE(0x01, 0); // Protocol Version (Required to be 1)
+    cmdBuf.writeInt16LE(0x00, 2); // Opton Flags (Reserved for Future List)
 
     // Build Register Session Buffer
-    const buf = build(registerSession, 0x00, cmdBuf);
+    const buf = build(RegisterSession, 0x00, cmdBuf);
 
     // Write Request to Socket
     client.write(buf);
@@ -194,9 +194,9 @@ const unregisterSession = (client, session) => {
 const sendRRData = (client, session, data, timeout = 10) => {
     const { SendRRData } = commands;
     const { build } = header;
-    const cmdBuf = Buffer.alloc(data.length + 6)
-        .writeInt32LE(0x00, 0) // Interface Handle ID (Shall be 0 for CIP)
-        .writeInt16LE(timeout, 4); // Timeout (sec)
+    const cmdBuf = Buffer.alloc(data.length + 6);
+    cmdBuf.writeInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
+    cmdBuf.writeInt16LE(timeout, 4); // Timeout (sec)
 
     data.copy(cmdBuf, 6);
 
@@ -217,9 +217,9 @@ const sendRRData = (client, session, data, timeout = 10) => {
 const sendUnitData = (client, session, data) => {
     const { SendUnitData } = commands;
     const { build } = header;
-    const cmdBuf = Buffer.alloc(data.length + 6)
-        .writeInt32LE(0x00, 0) // Interface Handle ID (Shall be 0 for CIP)
-        .writeInt16LE(0x00, 4); // Timeout (sec) (Shall be 0 for Connected Messages)
+    const cmdBuf = Buffer.alloc(data.length + 6);
+    cmdBuf.writeInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
+    cmdBuf.writeInt16LE(0x00, 4); // Timeout (sec) (Shall be 0 for Connected Messages)
 
     data.copy(cmdBuf, 6);
 
