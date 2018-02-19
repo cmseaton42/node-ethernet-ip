@@ -148,50 +148,44 @@ header.parse = buf => {
 };
 
 /**
- * Sends a Register Session Request
+ * Returns a Register Session Request String
  *
- * @param {Socket} client - TCP Client
+ * @returns {string} register session string
  */
-const registerSession = client => {
+const registerSession = () => {
     const { RegisterSession } = commands;
     const { build } = header;
     const cmdBuf = Buffer.alloc(4);
     cmdBuf.writeInt16LE(0x01, 0); // Protocol Version (Required to be 1)
     cmdBuf.writeInt16LE(0x00, 2); // Opton Flags (Reserved for Future List)
 
-    // Build Register Session Buffer
-    const buf = build(RegisterSession, 0x00, cmdBuf);
-
-    // Write Request to Socket
-    client.write(buf);
+    // Build Register Session Buffer and return it
+    return build(RegisterSession, 0x00, cmdBuf);
 };
 
 /**
- * Sends an Unregister Session Request
+ * Returns an Unregister Session Request String
  *
- * @param {Socket} client - TCP Client
  * @param {number} session - Encapsulation Session ID
+ * @returns {string} unregister seeion strings
  */
 const unregisterSession = (client, session) => {
     const { UnregisterSession } = commands;
     const { build } = header;
 
     // Build Unregister Session Buffer
-    const buf = build(registerSession, session);
-
-    // Write Request to Socket
-    client.write(buf);
+    return build(registerSession, session);
 };
 
 /**
- * Sends a UCMM Encapsulated Packet
+ * Returns a UCMM Encapsulated Packet String
  *
- * @param {Socket} client - TCP Client
  * @param {number} session - Encapsulation Session ID
  * @param {Buffer} data - Data to be Sent via UCMM
  * @param {number} [timeout=10] - Timeout (sec)
+ * @returns {string} UCMM Encapsulated Message String
  */
-const sendRRData = (client, session, data, timeout = 10) => {
+const sendRRData = (session, data, timeout = 10) => {
     const { SendRRData } = commands;
     const { build } = header;
     const cmdBuf = Buffer.alloc(data.length + 6);
@@ -201,18 +195,15 @@ const sendRRData = (client, session, data, timeout = 10) => {
     data.copy(cmdBuf, 6);
 
     // Build SendRRData Buffer
-    const buf = build(SendRRData, session, cmdBuf);
-
-    // Write Request to Socket
-    client.write(buf);
+    return build(SendRRData, session, cmdBuf);
 };
 
 /**
- * Sends a Connected Message Datagram (Transport Class 3)
+ * Returns a Connected Message Datagram (Transport Class 3) String
  *
- * @param {Socket} client - TCP Client
  * @param {number} session - Encapsulation Session ID
  * @param {Buffer} data - Data to be Sent via Connected Message
+ * @returns {string} Connected Message Datagram String
  */
 const sendUnitData = (client, session, data) => {
     const { SendUnitData } = commands;
@@ -224,10 +215,7 @@ const sendUnitData = (client, session, data) => {
     data.copy(cmdBuf, 6);
 
     // Build SendRRData Buffer
-    const buf = build(SendUnitData, session, cmdBuf);
-
-    // Write Request to Socket
-    client.write(buf);
+    return build(SendUnitData, session, cmdBuf);
 };
 
 module.exports = {
