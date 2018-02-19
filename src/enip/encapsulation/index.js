@@ -1,6 +1,5 @@
 const { Socket } = require("net");
 
-const header = {};
 const commands = {
     NOP: 0x00,
     ListServices: 0x04,
@@ -13,6 +12,8 @@ const commands = {
     IndicateStatus: 0x72,
     Cancel: 0x73
 };
+
+// region Validation Helper Functions
 
 /**
  * Parses Encapulation Status Code to Human Readable Error Message.
@@ -57,6 +58,11 @@ const validateCommand = cmd => {
     }
     return false;
 };
+// endregion
+
+// region Header Assemble Method Definitions
+
+const header = {};
 
 /**
  * Builds an ENIP Encapsolated Packet
@@ -146,6 +152,9 @@ header.parse = buf => {
 
     return received;
 };
+// endregion
+
+// region Common Command Helper Build Funtions
 
 /**
  * Returns a Register Session Request String
@@ -217,6 +226,7 @@ const sendUnitData = (client, session, data) => {
     // Build SendRRData Buffer
     return build(SendUnitData, session, cmdBuf);
 };
+// endregion
 
 module.exports = {
     header,
