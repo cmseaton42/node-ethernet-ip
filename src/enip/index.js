@@ -7,7 +7,7 @@ class ENIP extends Socket {
     constructor() {
         super();
 
-        state = {
+        this.state = {
             session: { id: null, establishing: false, established: false },
             error: { code: null, msg: null }
         };
@@ -90,3 +90,6 @@ class ENIP extends Socket {
     }
     //endregion
 }
+
+
+module.exports = { ENIP };

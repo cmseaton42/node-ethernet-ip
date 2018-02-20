@@ -1,5 +1,3 @@
-const { Socket } = require("net");
-
 const commands = {
     NOP: 0x00,
     ListServices: 0x04,

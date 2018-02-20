@@ -1,5 +1,4 @@
 const encapsulation = require("./index");
-const net = require("net");
 
 describe("Encapsulation", () => {
     describe("Command Validator", () => {
@@ -75,12 +74,12 @@ describe("Encapsulation", () => {
 
         it("Unregister Session Returns Correct Encapsulation String", () => {
             const data = unregisterSession(98705);
-            
+
             expect(data).toMatchSnapshot();
         });
 
         it("SendRRData Returns Correct Encapsulation String", () => {
-            const data = sendRRData(98705, Buffer.from('hello world'));
+            const data = sendRRData(98705, Buffer.from("hello world"));
 
             expect(data).toMatchSnapshot();
         });
