@@ -64,17 +64,30 @@ describe("Encapsulation", () => {
         });
     });
 
-    // describe("Test Encapsulation Generator Functions", () => {
-    //     const { header: { build, parse }, registerSession } = encapsulation;
-    //     jest.mock("net");
+    describe("Test Encapsulation Generator Functions", () => {
+        const { registerSession, unregisterSession, sendRRData, sendUnitData } = encapsulation;
 
-    //     it("Register Session writes to TCP Channel with correct Data", () => {
-    //         jest.mock("net");
-    //         const client = new net.Socket();
-            
-    //         registerSession(client);
+        it("Register Session Returns Correct Encapsulation String", () => {
+            const data = registerSession();
 
-    //         expect(client.write).toBeCalled();
-    //     })
-    // });
+            expect(data).toMatchSnapshot();
+        });
+
+        it("Unregister Session Returns Correct Encapsulation String", () => {
+            const data = unregisterSession(98705);
+            expect(data).toMatchSnapshot();
+        });
+
+        it("SendRRData Returns Correct Encapsulation String", () => {
+            const data = sendRRData(98705, Buffer.from('hello world'));
+
+            expect(data).toMatchSnapshot();
+        });
+
+        it("SendUnitData Returns Correct Encapsulation String", () => {
+            const data = sendUnitData(98705, Buffer.from("hello world"));
+
+            expect(data).toMatchSnapshot();
+        });
+    });
 });

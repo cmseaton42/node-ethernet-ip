@@ -183,7 +183,7 @@ const unregisterSession = (client, session) => {
     const { build } = header;
 
     // Build Unregister Session Buffer
-    return build(registerSession, session);
+    return build(UnregisterSession, session);
 };
 
 /**
@@ -214,7 +214,7 @@ const sendRRData = (session, data, timeout = 10) => {
  * @param {Buffer} data - Data to be Sent via Connected Message
  * @returns {string} Connected Message Datagram String
  */
-const sendUnitData = (client, session, data) => {
+const sendUnitData = (session, data) => {
     const { SendUnitData } = commands;
     const { build } = header;
     const cmdBuf = Buffer.alloc(data.length + 6);
