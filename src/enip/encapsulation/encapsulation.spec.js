@@ -75,6 +75,7 @@ describe("Encapsulation", () => {
 
         it("Unregister Session Returns Correct Encapsulation String", () => {
             const data = unregisterSession(98705);
+            
             expect(data).toMatchSnapshot();
         });
 
