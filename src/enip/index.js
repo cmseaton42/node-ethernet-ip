@@ -14,7 +14,7 @@ class ENIP extends Socket {
         };
 
         // Initialize Event Handlers for Underlying Socket Class
-        this.initializeEventHandlers();
+        this._initializeEventHandlers();
     }
 
     // region Property Accessors
@@ -60,6 +60,8 @@ class ENIP extends Socket {
     }
     // endregion
 
+    // region Public Method Definitions
+
     /**
      * Initializes Session with Desired IP Address
      *
@@ -91,15 +93,29 @@ class ENIP extends Socket {
             });
         });
     }
+
+    /**
+     * Sends Unregister Session Command and Destroys Underlying TCP Socket
+     *
+     * @param {Exception} exception - Gets passed to 'error' event handler
+     * @memberof ENIP
+     */
+    destroy(exception) {
+        const { unregisterSession } = encapsulation;
+        this.write(unregisterSession(this.state.session.id), () => {
+            this.state.session.established = false;
+            super.destroy(exception);
+        });
+    }
     // endregion
 
     // region Private Instance Methods
-    initializeEventHandlers() {
-        //TODO: add some stuff
+    _initializeEventHandlers() {
+        this.on("data", this._handleDataEvent);
     }
     //endregion
 
-    // region Inherited Class Event Handlers
+    // region Event Handlers
 
     /**
      * @typedef EncapsulationData
@@ -115,11 +131,16 @@ class ENIP extends Socket {
      */
     /*****************************************************************/
 
-    handleDataEvent(data) {
-        const { parse } = encapsulation.header;
-        const { commands } = encapsulation;
+    /**
+     * Socket.on('data) Event Handler
+     *
+     * @param {Buffer} - Data Received from Socket.on('data', ...)
+     * @memberof ENIP
+     */
+    _handleDataEvent(data) {
+        const { header, CPF } = encapsulation;
 
-        const encapsulatedData = parse(data);
+        const encapsulatedData = header.parse(data);
         const { statusCode, status, commandCode } = encapsulatedData;
 
         if (statusCode !== 0) {
@@ -128,7 +149,7 @@ class ENIP extends Socket {
             this.state.error.code = statusCode;
             this.state.error.msg = status;
 
-            this.emit("Session Register Failed", this.state.error);
+            this.emit("Session Registration Failed", this.state.error);
         } else {
             /* eslint-disable indent */
             switch (commandCode) {
@@ -137,28 +158,38 @@ class ENIP extends Socket {
                     this.state.session.established = true;
                     this.state.session.id = encapsulatedData.session;
                     this.emit("Session Registered", this.state.session.id);
+                    break;
+
                 case commands.UnregisterSession:
                     this.state.session.established = false;
                     this.emit("Session Unregistered");
+                    break;
+
                 case commands.SendRRData:
-                    // TODO: Convert UCMM Encoded Data Object to be Emitted instead of Raw Data
-                    this.emit(
-                        "SendRRData Received",
-                        encapsulatedData.length,
-                        encapsulatedData.data
-                    );
+                    let buf1 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
+                    encapsulatedData.data.copy(buf1, 0, 6);
+
+                    const srrd = CPF.parse(buf1);
+                    this.emit("SendRRData Received", srrd);
+                    break;
+
                 case commands.SendUnitData:
-                    this.emit(
-                        "SendUnitData Received",
-                        encapsulatedData.length,
-                        encapsulatedData.data
-                    );
+                    let buf1 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
+                    encapsulatedData.data.copy(buf1, 0, 6);
+
+                    const sud = CPF.parse(buf1);
+                    this.emit("SendUnitData Received", sud);
+                    break;
+
                 default:
                     this.emit("Unhandled Encapsulated Command Received", encapsulatedData);
             }
             /* eslint-enable indent */
         }
     }
+
+
+    _handleDataEvent()
     // endregion
 }
 

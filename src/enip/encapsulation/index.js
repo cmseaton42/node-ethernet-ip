@@ -276,7 +276,7 @@ const registerSession = () => {
  * @param {number} session - Encapsulation Session ID
  * @returns {string} unregister seeion strings
  */
-const unregisterSession = (client, session) => {
+const unregisterSession = (session) => {
     const { UnregisterSession } = commands;
     const { build } = header;
 
