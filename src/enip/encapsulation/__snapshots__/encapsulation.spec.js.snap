@@ -57,6 +57,166 @@ Object {
 }
 `;
 
+exports[`Encapsulation Test Common Packet Format Helper Functions Build Helper Function Generates Correct Output 1`] = `
+Object {
+  "data": Array [
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    178,
+    0,
+    11,
+    0,
+    104,
+    101,
+    108,
+    108,
+    111,
+    32,
+    119,
+    111,
+    114,
+    108,
+    100,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Encapsulation Test Common Packet Format Helper Functions Build Helper Function Generates Correct Output 2`] = `
+Object {
+  "data": Array [
+    3,
+    0,
+    0,
+    0,
+    0,
+    0,
+    178,
+    0,
+    11,
+    0,
+    104,
+    101,
+    108,
+    108,
+    111,
+    32,
+    119,
+    111,
+    114,
+    108,
+    100,
+    161,
+    0,
+    14,
+    0,
+    84,
+    104,
+    105,
+    115,
+    32,
+    105,
+    115,
+    32,
+    97,
+    32,
+    116,
+    101,
+    115,
+    116,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Encapsulation Test Common Packet Format Helper Functions Parse Helper Function Generates Correct Output 1`] = `
+Array [
+  Object {
+    "TypeID": 0,
+    "data": Object {
+      "data": Array [],
+      "type": "Buffer",
+    },
+  },
+  Object {
+    "TypeID": 178,
+    "data": Object {
+      "data": Array [
+        104,
+        101,
+        108,
+        108,
+        111,
+        32,
+        119,
+        111,
+        114,
+        108,
+        100,
+      ],
+      "type": "Buffer",
+    },
+  },
+]
+`;
+
+exports[`Encapsulation Test Common Packet Format Helper Functions Parse Helper Function Generates Correct Output 2`] = `
+Array [
+  Object {
+    "TypeID": 0,
+    "data": Object {
+      "data": Array [],
+      "type": "Buffer",
+    },
+  },
+  Object {
+    "TypeID": 178,
+    "data": Object {
+      "data": Array [
+        104,
+        101,
+        108,
+        108,
+        111,
+        32,
+        119,
+        111,
+        114,
+        108,
+        100,
+      ],
+      "type": "Buffer",
+    },
+  },
+  Object {
+    "TypeID": 161,
+    "data": Object {
+      "data": Array [
+        84,
+        104,
+        105,
+        115,
+        32,
+        105,
+        115,
+        32,
+        97,
+        32,
+        116,
+        101,
+        115,
+        116,
+      ],
+      "type": "Buffer",
+    },
+  },
+]
+`;
+
 exports[`Encapsulation Test Encapsulation Generator Functions Register Session Returns Correct Encapsulation String 1`] = `
 Object {
   "data": Array [

@@ -21,7 +21,9 @@
         "CIP",
         "industrial"
     ],
-    "dependencies": {},
+    "dependencies": {
+        "colors": "^1.1.2"
+    },
     "devDependencies": {
         "jest": "^21.2.1"
     },

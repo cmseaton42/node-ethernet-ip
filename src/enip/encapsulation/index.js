@@ -58,9 +58,123 @@ const validateCommand = cmd => {
 };
 // endregion
 
+// region Compact Packet Format
+
+/**
+ * @typedef CommonPacketData
+ * @type {Object}
+ * @property {number} TypeID - Type of Item Encapsulated
+ * @property {Buffer} data - CIP Data Buffer
+ */
+
+let CPF = {};
+
+CPF.ItemIDs = {
+    Null: 0x00,
+    ListIdentity: 0x0c,
+    ConnectionBased: 0xa1,
+    ConnectedTransportPacket: 0xb1,
+    UCMM: 0xb2,
+    ListServices: 0x100,
+    SockaddrO2T: 0x8000,
+    SockaddrT2O: 0x8001,
+    SequencedAddrItem: 0x8002
+};
+
+/**
+ * Checks if Command is a Valid Encapsulation Command
+ *
+ * @param {Number} ecapsulation command
+ * @returns {boolean} test result
+ */
+CPF.isCmd = cmd => {
+    for (let key of Object.keys(CPF.ItemIDs)) {
+        if (cmd === CPF.ItemIDs[key]) return true;
+    }
+    return false;
+};
+
+/**
+ * Builds a Common Packet Formatted Buffer to be
+ * Encapsulated.
+ *
+ * @param {Array} dataItems - Array of CPF Data Items
+ * @returns {Buffer} CPF Buffer to be Encapsulated
+ */
+CPF.build = dataItems => {
+    // Write Item Count and Initialize Buffer
+    let buf = Buffer.alloc(2);
+    buf.writeInt16LE(dataItems.length, 0);
+
+    for (let item of dataItems) {
+        const { TypeID, data } = item;
+
+        if (!CPF.isCmd(TypeID)) throw new Error("Invalid CPF Type ID!");
+
+        let buf1 = Buffer.alloc(4);
+        let buf2 = Buffer.from(data);
+
+        buf1.writeInt16LE(TypeID, 0);
+        buf1.writeInt16LE(buf2.length, 2);
+
+        buf = buf2.length > 0 ? Buffer.concat([buf, buf1, buf2]) : Buffer.concat([buf, buf1]);
+    }
+
+    return buf;
+};
+
+/**
+ * Parses Incoming Common Packet Formatted Buffer
+ * and returns an Array of Objects.
+ *
+ * @param {Buffer} buf - Common Packet Formatted Data Buffer
+ * @returns {Array} Array of Common Packet Data Objects
+ */
+CPF.parse = buf => {
+    const itemCount = buf.readInt16LE(0);
+
+    let ptr = 2;
+    let arr = [];
+
+    for (let i = 0; i < itemCount; i++) {
+        // Get Type ID
+        const TypeID = buf.readInt16LE(ptr);
+        ptr += 2;
+
+        // Get Data Length
+        const length = buf.readInt16LE(ptr);
+        ptr += 2;
+
+        // Get Data from Data Buffer
+        const data = Buffer.alloc(length);
+        buf.copy(data, 0, ptr, ptr + length);
+
+        // Append Gathered Data Object to Return Array
+        arr.push({ TypeID, data });
+
+        ptr += length;
+    }
+
+    return arr;
+};
+// endregion
+
 // region Header Assemble Method Definitions
 
-const header = {};
+/**
+ * @typedef EncapsulationData
+ * @type {Object}
+ * @property {number} commandCode - Ecapsulation Command Code
+ * @property {string} command - Encapsulation Command String Interpretation
+ * @property {number} length - Length of Encapsulated Data
+ * @property {number} session - Session ID
+ * @property {number} statusCode - Status Code
+ * @property {string} status - Status Code String Interpretation
+ * @property {number} options - Options (Typically 0x00)
+ * @property {Buffer} data - Encapsulated Data Buffer
+ */
+
+let header = {};
 
 /**
  * Builds an ENIP Encapsolated Packet
@@ -99,20 +213,6 @@ header.build = (cmd, session = 0x00, data = []) => {
 
     return header;
 };
-
-/**
- * @typedef EncapsulationData
- * @type {Object}
- * @property {number} commandCode - Ecapsulation Command Code
- * @property {string} command - Encapsulation Command String Interpretation
- * @property {number} length - Length of Encapsulated Data
- * @property {number} session - Session ID
- * @property {number} statusCode - Status Code
- * @property {string} status - Status Code String Interpretation
- * @property {number} options - Options (Typically 0x00)
- * @property {Buffer} data - Encapsulated Data Buffer
- */
-/*****************************************************************/
 
 /**
  * Parses an Encapsulated Packet Received from ENIP Target
@@ -228,6 +328,7 @@ const sendUnitData = (session, data) => {
 
 module.exports = {
     header,
+    CPF,
     validateCommand,
     commands,
     parseStatus,

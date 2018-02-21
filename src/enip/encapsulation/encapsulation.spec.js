@@ -90,4 +90,53 @@ describe("Encapsulation", () => {
             expect(data).toMatchSnapshot();
         });
     });
+
+    describe("Test Common Packet Format Helper Functions", () => {
+        const { CPF: { parse, build, isCmd, ItemIDs } } = encapsulation;
+
+        it("Invalid CPF Commands causes an Error to be Thrown", () => {
+            const { Null, ListIdentity, ConnectionBased, UCMM } = ItemIDs;
+
+            expect(isCmd(Null)).toBeTruthy();
+            expect(isCmd(ListIdentity)).toBeTruthy();
+            expect(isCmd(ConnectionBased)).toBeTruthy();
+            expect(isCmd(UCMM)).toBeTruthy();
+            expect(isCmd(0x8001)).toBeTruthy();
+            expect(isCmd(0x01)).toBeFalsy();
+            expect(isCmd(0x8003)).toBeFalsy();
+            expect(isCmd(0xc1)).toBeFalsy();
+        });
+
+        it("Build Helper Function Generates Correct Output", () => {
+            const test1 = [
+                { TypeID: ItemIDs.Null, data: [] },
+                { TypeID: ItemIDs.UCMM, data: "hello world" }
+            ];
+
+            const test2 = [
+                { TypeID: ItemIDs.Null, data: [] },
+                { TypeID: ItemIDs.UCMM, data: "hello world" },
+                { TypeID: ItemIDs.ConnectionBased, data: "This is a test" }
+            ];
+
+            expect(build(test1)).toMatchSnapshot();
+            expect(build(test2)).toMatchSnapshot();
+        });
+
+        it("Parse Helper Function Generates Correct Output", () => {
+            const test1 = build([
+                { TypeID: ItemIDs.Null, data: [] },
+                { TypeID: ItemIDs.UCMM, data: "hello world" }
+            ]);
+
+            const test2 = build([
+                { TypeID: ItemIDs.Null, data: [] },
+                { TypeID: ItemIDs.UCMM, data: "hello world" },
+                { TypeID: ItemIDs.ConnectionBased, data: "This is a test" }
+            ]);
+
+            expect(parse(test1)).toMatchSnapshot();
+            expect(parse(test2)).toMatchSnapshot();
+        });
+    });
 });
