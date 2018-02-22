@@ -1,22 +1,48 @@
-const net = require("net");
-const { Socket } = net;
-const { EIP_PORT } = require("../config");
+const { ENIP } = require("../enip");
 
-class Controller {
-    constructor(IP_ADDR) {
-        if (!IP_ADDR) {
-            throw new Error("ERROR: Controller <class> requires IP_ADDR <string>!!!");
-        }
-
-        if (net.isIPv4(IP_ADDR)) {
-            throw new Error("ERROR: Invalid IP_ADDR <string> passed to Controller <class>");
-        }
-
-        this.enip = {
-            ip: IP_ADDR,
-            session_id: null
-        };
+class Controller extends ENIP {
+    constructor() {
+        super();
     }
+
+    // region Property Accessors
+
+    // endregion
+
+    // region Public Method Definitions
+
+    // endregion
+
+    // region Private Method Definitions
+    // endregion
+
+    // region Event Handlers
+    /**
+     * @typedef EncapsulationData
+     * @type {Object}
+     * @property {number} commandCode - Ecapsulation Command Code
+     * @property {string} command - Encapsulation Command String Interpretation
+     * @property {number} length - Length of Encapsulated Data
+     * @property {number} session - Session ID
+     * @property {number} statusCode - Status Code
+     * @property {string} status - Status Code String Interpretation
+     * @property {number} options - Options (Typically 0x00)
+     * @property {Buffer} data - Encapsulated Data Buffer
+     */
+    /*****************************************************************/
+    
+    _handleSessionRegistered(sessid) {}
+
+    _handleSessionUnregistered() {}
+
+    _handleSendRRDataReceived(data) {}
+
+    _handleSendUnitDataReceived(data) {}
+
+    _handleUnhandledEncapCommandReceived(data) {}
+
+    _handleSessionRegistrationFailed() {}
+    // endregion
 }
 
 module.exports.default = Controller;
