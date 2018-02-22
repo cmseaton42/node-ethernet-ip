@@ -112,6 +112,7 @@ class ENIP extends Socket {
     // region Private Instance Methods
     _initializeEventHandlers() {
         this.on("data", this._handleDataEvent);
+        this.on("close", this._handleCloseEvent);
     }
     //endregion
 
@@ -188,8 +189,11 @@ class ENIP extends Socket {
         }
     }
 
-
-    _handleDataEvent()
+    _handleCloseEvent(hadError) {
+        if (hadError) throw new Exception("Socket Transmission Failure Occurred!");
+        this.state.session.established = false;
+        this.state.TCP.established = false;
+    }
     // endregion
 }
 
