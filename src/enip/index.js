@@ -3,6 +3,18 @@ const { EIP_PORT } = require("../config");
 const colors = require("colors");
 const encapsulation = require("./encapsulation");
 
+/**
+ * Low Level Ethernet/IP
+ *
+ * @class ENIP
+ * @extends {Socket}
+ * @fires ENIP#Session Registration Failed
+ * @fires ENIP#Session Registered
+ * @fires ENIP#Session Unregistered
+ * @fires ENIP#SendRRData Received
+ * @fires ENIP#SendUnitData Received
+ * @fires ENIP#Unhandled Encapsulated Command Received
+ */
 class ENIP extends Socket {
     constructor() {
         super();
@@ -109,7 +121,7 @@ class ENIP extends Socket {
     }
     // endregion
 
-    // region Private Instance Methods
+    // region Private Method Definitions
     _initializeEventHandlers() {
         this.on("data", this._handleDataEvent);
         this.on("close", this._handleCloseEvent);
