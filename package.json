@@ -1,5 +1,5 @@
 {
-    "name": "node-ethernet-ip",
+    "name": "ethernet-ip",
     "version": "1.0.0",
     "description": "A simple node interface for Ethernet/IP.",
     "main": "./src/index.js",
