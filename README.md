@@ -9,5 +9,7 @@ I am only working on this at the moment as a *pet* project in my free time thoug
 #### Abbreviated Task List
 
 - [x] Build Ethernet/IP Encapsulation Helper Library
-- [ ] Build ENIP Socket Abstraction class *IN PROGRESS*
+- [x] Build ENIP Socket Abstraction class
+- [ ] Build Tag Class Abstraction
+- [ ] Build TagGroup Class
 - [ ] Extend ENIP Class for Rockwell Controller Specific Services and Commands
