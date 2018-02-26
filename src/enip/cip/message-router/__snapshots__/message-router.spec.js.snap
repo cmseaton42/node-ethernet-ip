@@ -1,0 +1,57 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Message Router Builder Produces the Correct Output Buffer 1`] = `
+Object {
+  "data": Array [
+    65,
+    6,
+    72,
+    101,
+    108,
+    108,
+    111,
+    32,
+    87,
+    111,
+    114,
+    108,
+    100,
+    0,
+    72,
+    101,
+    108,
+    108,
+    111,
+    32,
+    87,
+    111,
+    114,
+    108,
+    100,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Message Router Parser Parses MR Object Correctly 1`] = `
+Object {
+  "data": Object {
+    "data": Array [
+      1,
+      2,
+      3,
+      4,
+      5,
+    ],
+    "type": "Buffer",
+  },
+  "extendedStatus": Array [
+    769,
+    261,
+    1283,
+  ],
+  "extendedStatusLength": 3,
+  "generalStatusCode": 10,
+  "service": 65,
+}
+`;
