@@ -2,6 +2,7 @@ const { Socket, isIPv4 } = require("net");
 const { EIP_PORT } = require("../config");
 const colors = require("colors");
 const encapsulation = require("./encapsulation");
+const CIP = require("./cip")
 
 /**
  * Low Level Ethernet/IP
@@ -209,4 +210,4 @@ class ENIP extends Socket {
     // endregion
 }
 
-module.exports = { ENIP };
+module.exports = { ENIP, CIP };
