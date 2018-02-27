@@ -7,3 +7,6 @@
 
 # Ignore Jest Coverage Reports
 /coverage
+
+# Ignore Local Script Folder
+/scripts
