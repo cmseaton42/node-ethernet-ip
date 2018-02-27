@@ -4,3 +4,6 @@
 
 # Ethernet/IP Documentation Folder - for local use only
 /manuals
+
+# Ignore Jest Coverage Reports
+/coverage
