@@ -64,7 +64,6 @@ class Tag extends EventEmitter {
      * Gets Tag value
      * - Returns null if no value has been read
      *
-     * @readonly
      * @memberof Tag
      * @returns {number|string|boolean|object} value
      */
