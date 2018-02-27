@@ -1,10 +1,16 @@
 const { EventEmitter } = require("events");
+const { Types } = require("../enip/cip/data-types");
+const dateFormat = require("dateFormat");
 
 class Tag extends EventEmitter {
     constructor() {
-        super(tagname, datatype);
+        super(tagname, datatype = Types.UDINT);
 
-        this.state = { tag: { name: tagname, type: datatype } };
+        this.state = {
+            tag: { name: tagname, type: datatype },
+            error: { code: null, status: null },
+            timestamp: new Date()
+        };
     }
 
     // region Property Accessors

@@ -22,7 +22,8 @@
         "industrial"
     ],
     "dependencies": {
-        "colors": "^1.1.2"
+        "colors": "^1.1.2",
+        "dateformat": "^3.0.3"
     },
     "devDependencies": {
         "jest": "^21.2.1"
