@@ -2,7 +2,7 @@ const { Socket, isIPv4 } = require("net");
 const { EIP_PORT } = require("../config");
 const colors = require("colors");
 const encapsulation = require("./encapsulation");
-const CIP = require("./cip")
+const CIP = require("./cip");
 
 /**
  * Low Level Ethernet/IP
@@ -202,10 +202,16 @@ class ENIP extends Socket {
         }
     }
 
+    /**
+     * Socket.on('close',...) Event Handler
+     *
+     * @param {Boolean} hadError
+     * @memberof ENIP
+     */
     _handleCloseEvent(hadError) {
-        if (hadError) throw new Exception("Socket Transmission Failure Occurred!");
         this.state.session.established = false;
         this.state.TCP.established = false;
+        if (hadError) throw new Exception("Socket Transmission Failure Occurred!");
     }
     // endregion
 }
