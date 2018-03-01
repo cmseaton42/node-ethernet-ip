@@ -2,3 +2,5 @@
 /coverage
 /manuals
 /scripts
+
+**/__snapshots__

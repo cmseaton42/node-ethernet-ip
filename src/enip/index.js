@@ -87,7 +87,7 @@ class ENIP extends Socket {
             throw new Error("Controller <class> requires IP_ADDR <string>!!!");
         }
 
-        if (isIPv4(IP_ADDR)) {
+        if (!isIPv4(IP_ADDR)) {
             throw new Error("Invalid IP_ADDR <string> passed to Controller <class>");
         }
 
@@ -98,7 +98,7 @@ class ENIP extends Socket {
 
         return new Promise(resolve => {
             super.connect(EIP_PORT, IP_ADDR, () => {
-                this.state.session.establishing = false;
+                this.state.TCP.establishing = false;
                 this.state.TCP.established = true;
 
                 this.write(registerSession());
@@ -152,7 +152,7 @@ class ENIP extends Socket {
      * @memberof ENIP
      */
     _handleDataEvent(data) {
-        const { header, CPF } = encapsulation;
+        const { header, CPF, commands } = encapsulation;
 
         const encapsulatedData = header.parse(data);
         const { statusCode, status, commandCode } = encapsulatedData;
@@ -188,8 +188,8 @@ class ENIP extends Socket {
                     break;
 
                 case commands.SendUnitData:
-                    let buf1 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
-                    encapsulatedData.data.copy(buf1, 0, 6);
+                    let buf2 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
+                    encapsulatedData.data.copy(buf2, 0, 6);
 
                     const sud = CPF.parse(buf1);
                     this.emit("SendUnitData Received", sud);
