@@ -13,7 +13,7 @@ const SegmentTypes = {
  *
  * @param {number} port - Port to leave Current Node (1 if Backplane)
  * @param {number|string} link - link address to route packet
- * @returns {buffer} EPATH Segment
+ * @returns {buffer} EPATH Port Segment
  */
 const buildPortSegment = (port, link) => {
     if (typeof port !== "number" || port <= 0) throw new Error("Port Number must be a Positive Integer");
@@ -65,5 +65,7 @@ const buildPortSegment = (port, link) => {
     buf = Buffer.concat([buf, linkBuf]); // Buffer.from(linkBuf));Buffer.alloc(1))
     return buf.length % 2 === 1 ? Buffer.concat([buf, Buffer.alloc(1)]): buf;
 };
+
+// TODO: Add Other Segment Implementation
 
 module.exports = { buildPortSegment };
