@@ -1,6 +1,6 @@
 const { build } = require("./index");
 
-describe("Padded EPATH", () => {
+describe("EPATH", () => {
     describe("PORT Segment Build Utility", () => {
         it("Generates Appropriate Output", () => {
             let test = build(2, 6);
