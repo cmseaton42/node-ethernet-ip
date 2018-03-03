@@ -6,7 +6,7 @@ const { SegmentTypes } = require("../index");
  * @param {number|string} link - link address to route packet
  * @returns {buffer} EPATH Port Segment
  */
-const buildPortSegment = (port, link) => {
+const build = (port, link) => {
     if (typeof port !== "number" || port <= 0) throw new Error("Port Number must be a Positive Integer");
     if (!(typeof link === "string" || typeof link === "number") || link < 0) throw new Error("Link Number must be a Positive Integer or String");
 
@@ -57,4 +57,4 @@ const buildPortSegment = (port, link) => {
     return buf.length % 2 === 1 ? Buffer.concat([buf, Buffer.alloc(1)]): buf;
 };
 
-module.exports = { buildPortSegment };
+module.exports = { build };

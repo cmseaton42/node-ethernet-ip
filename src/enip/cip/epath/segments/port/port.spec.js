@@ -1,22 +1,22 @@
-const { buildPortSegment } = require("./index");
+const { build } = require("./index");
 
 describe("Padded EPATH", () => {
     describe("PORT Segment Build Utility", () => {
         it("Generates Appropriate Output", () => {
-            let test = buildPortSegment(2, 6);
+            let test = build(2, 6);
             expect(test).toMatchSnapshot();
 
-            test = buildPortSegment(18, 1);
+            test = build(18, 1);
             expect(test).toMatchSnapshot();
 
-            test = buildPortSegment(5, "130.151.137.105");
+            test = build(5, "130.151.137.105");
             expect(test).toMatchSnapshot();
         });
         
         it("Throws with Bad Input", () => {
             const fn = (port, link) => {
                 return () => {
-                    buildPortSegment(port, link);
+                    build(port, link);
                 }
             }
 
