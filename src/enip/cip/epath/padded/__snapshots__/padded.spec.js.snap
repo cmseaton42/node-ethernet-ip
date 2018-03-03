@@ -1,0 +1,97 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Padded EPATH PORT Segment Build Utility Generates Appropriate Output 1`] = `
+Object {
+  "data": Array [
+    2,
+    6,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Padded EPATH PORT Segment Build Utility Generates Appropriate Output 2`] = `
+Object {
+  "data": Array [
+    15,
+    18,
+    0,
+    1,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Padded EPATH PORT Segment Build Utility Generates Appropriate Output 3`] = `
+Object {
+  "data": Array [
+    21,
+    15,
+    49,
+    51,
+    48,
+    46,
+    49,
+    53,
+    49,
+    46,
+    49,
+    51,
+    55,
+    46,
+    49,
+    48,
+    53,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Padded EPATH PORT Segment Build Utility Responds Appropriately to Inputs 1`] = `
+Object {
+  "data": Array [
+    2,
+    6,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Padded EPATH PORT Segment Build Utility Responds Appropriately to Inputs 2`] = `
+Object {
+  "data": Array [
+    15,
+    18,
+    0,
+    1,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Padded EPATH PORT Segment Build Utility Responds Appropriately to Inputs 3`] = `
+Object {
+  "data": Array [
+    21,
+    15,
+    49,
+    51,
+    48,
+    46,
+    49,
+    53,
+    49,
+    46,
+    49,
+    51,
+    55,
+    46,
+    49,
+    48,
+    53,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;

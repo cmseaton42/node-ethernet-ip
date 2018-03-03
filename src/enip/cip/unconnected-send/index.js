@@ -36,6 +36,7 @@ const getEncodedTimeout = timeout => {
 
 const UnconnectedSend = {};
 
+// TODO: Finish This 
 UnconnectedSend.build = (buffer, timeout = 2000) => {
     const { build } = MessageRouter;
     const encodedTimeout = getEncodedTimeout(timeout);
