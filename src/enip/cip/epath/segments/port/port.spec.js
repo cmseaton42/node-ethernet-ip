@@ -12,7 +12,7 @@ describe("Padded EPATH", () => {
             test = buildPortSegment(5, "130.151.137.105");
             expect(test).toMatchSnapshot();
         });
-
+        
         it("Throws with Bad Input", () => {
             const fn = (port, link) => {
                 return () => {

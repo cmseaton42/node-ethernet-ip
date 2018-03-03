@@ -13,7 +13,7 @@ const MessageRouter = require("../message-router");
  * @param {number} timeout - Desired Timeout in ms
  * @returns {UCMMSendTimeout}
  */
-const getEncodedTimeout = timeout => {
+const generateEncodedTimeout = timeout => {
     let diff = Infinity; // let difference be very large
     let time_tick = 0;
     let ticks = 0;
@@ -39,7 +39,7 @@ const UnconnectedSend = {};
 // TODO: Finish This 
 UnconnectedSend.build = (buffer, timeout = 2000) => {
     const { build } = MessageRouter;
-    const encodedTimeout = getEncodedTimeout(timeout);
+    const encodedTimeout = generateEncodedTimeout(timeout);
 
     const path
 

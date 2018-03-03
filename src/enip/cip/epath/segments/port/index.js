@@ -1,13 +1,4 @@
-const SegmentTypes = {
-    PORT: 0 << 5, // Communication Port to Leave Node (Shall be 1 for a Backplane), Link Address of Next Device
-    LOGICAL: 1 << 5,
-    NETWORK: 2 << 5,
-    SYMBOLIC: 3 << 5,
-    DATA: 4 << 5,
-    DATATYPE_1: 5 << 5,
-    DATATYPE_2: 6 << 6
-};
-
+const { SegmentTypes } = require("../index");
 /**
  * Builds Port Segement for EPATH
  *
@@ -65,7 +56,5 @@ const buildPortSegment = (port, link) => {
     buf = Buffer.concat([buf, linkBuf]); // Buffer.from(linkBuf));Buffer.alloc(1))
     return buf.length % 2 === 1 ? Buffer.concat([buf, Buffer.alloc(1)]): buf;
 };
-
-// TODO: Add Other Segment Implementation
 
 module.exports = { buildPortSegment };

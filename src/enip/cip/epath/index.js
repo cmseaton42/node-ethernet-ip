@@ -1,3 +1,3 @@
-const padded = require("./padded");
+const segments = require("./segments");
 
-module.exports = { padded };
+module.exports = { segments };
