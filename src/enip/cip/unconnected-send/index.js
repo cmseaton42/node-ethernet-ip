@@ -66,13 +66,13 @@ const build = (message_request, path, timeout = 2000) => {
 
     // Build Message Request Buffer
     const msgReqLen = message_request.length;
-    const msgReqLenBuf = Buffer.alloc(1);
-    msgReqLenBuf.writeUInt8(msgReqLen, 0);
+    const msgReqLenBuf = Buffer.alloc(2);
+    msgReqLenBuf.writeUInt16LE(msgReqLen, 0);
 
     // Build Path Buffer
-    const pathLen = path.length % 2 === 0 ? path.length / 2 : Math.ceil(path.length / 2);
-    const pathLenBuf = Buffer.alloc(2);
-    pathLenBuf.writeUInt16LE(pathLen, 0);
+    const pathLen = Math.ceil(path.length / 2);
+    const pathLenBuf = Buffer.alloc(1);
+    pathLenBuf.writeUInt8(pathLen, 0);
 
     // Build Null Buffer
     const nullBuf = Buffer.alloc(1);
