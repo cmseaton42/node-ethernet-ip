@@ -2,6 +2,7 @@ const Types = {
     BOOL: 0xc1,
     SINT: 0xc2,
     INT: 0xc3,
+    DINT: 0xc4,
     LINT: 0xc5,
     USINT: 0xc6,
     UINT: 0xc7,
