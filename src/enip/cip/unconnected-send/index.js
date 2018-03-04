@@ -1,3 +1,9 @@
+const MessageRouter = require("../message-router");
+const { LOGICAL } = require("../epath").segments;
+
+const UNCONNECTED_SEND_SERVICE = 0x52;
+const UNCONNECTED_SEND_PATH = Buffer.concat([LOGICAL.build(LOGICAL.types.ClassID, 0x06), LOGICAL.build(LOGICAL.types.InstanceID, 1)]);
+
 /**
  * @typedef UCMMSendTimeout
  * @type {Object}
@@ -87,7 +93,7 @@ const build = (message_request, path, timeout = 2000) => {
         buf = Buffer.concat([buf, msgReqLenBuf, message_request, pathLenBuf, nullBuf, path]);
     }
 
-    return buf;
+    return MessageRouter.build(UNCONNECTED_SEND_SERVICE, UNCONNECTED_SEND_PATH, buf);
 };
 
 module.exports = { generateEncodedTimeout, build };

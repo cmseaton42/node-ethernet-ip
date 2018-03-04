@@ -10,8 +10,7 @@ const build = (service, path, data) => {
     const pathBuf = Buffer.from(path);
     const dataBuf = Buffer.from(data);
 
-    const pathLen =
-        pathBuf.length % 2 === 1 ? Math.trunc(pathBuf.length / 2) + 1 : Math.trunc(pathBuf.length);
+    const pathLen = Math.ceil(pathBuf.length / 2)
     const buf = Buffer.alloc(2 + pathLen * 2 + dataBuf.length);
 
     buf.writeUInt8(service, 0); // Write Service Code to Buffer <USINT>

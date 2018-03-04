@@ -11,6 +11,9 @@ describe("EPATH", () => {
 
             test = build(5, "130.151.137.105");
             expect(test).toMatchSnapshot();
+
+            test = build(1, 5);
+            expect(test).toMatchSnapshot();
         });
         
         it("Throws with Bad Input", () => {

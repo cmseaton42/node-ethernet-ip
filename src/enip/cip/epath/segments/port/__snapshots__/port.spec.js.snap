@@ -47,3 +47,13 @@ Object {
   "type": "Buffer",
 }
 `;
+
+exports[`EPATH PORT Segment Build Utility Generates Appropriate Output 4`] = `
+Object {
+  "data": Array [
+    1,
+    5,
+  ],
+  "type": "Buffer",
+}
+`;

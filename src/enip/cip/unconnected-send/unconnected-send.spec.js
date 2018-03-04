@@ -20,7 +20,6 @@ describe("Unconnected Send Service", () => {
             readTag_Data.writeUInt16LE(1, 0);
             const mr = MessageRouter.build(0x4c, readTag_Path, readTag_Data);
 
-
             let test = build(mr, PORT.build(1, 5));
             expect(test).toMatchSnapshot();
 
