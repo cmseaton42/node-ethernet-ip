@@ -113,30 +113,32 @@ class ENIP extends Socket {
      * Writes Ethernet/IP Data to Socket as an Unconnected Message
      * or a Transport Class 1 Datagram
      * 
-     * @override
+     * NOTE: Cant Override Socket Write due to net.Socket.write 
+     *        implementation. =[. Thus, I am spinning up a new Method to 
+     *        handle it. Dont Use Enip.write, use this function instead.
+     *
      * @param {buffer} data - Data Buffer to be Encapsulated
      * @param {boolean} [connected=false]
      * @param {number} [timeout=10] - Timeoue (sec)
      * @param {function} [cb=null] - Callback to be Passed to Parent.Write()
      * @memberof ENIP
      */
-    // write(data, connected = false, timeout = 10, cb = null) {
-    //     const { sendRRData, sendUnitData, types } = encapsulation;
-    //     const { session, connection } = this.state;
+    write_cip(data, connected = false, timeout = 10, cb = null) {
+        const { sendRRData, sendUnitData, types } = encapsulation;
+        const { session, connection } = this.state;
 
-    //     console.log("called");
-    //     if (session.established) {
-    //         const packet = connected
-    //             ? sendUnitData(session.id, data, connection.id, connection.seq_num)
-    //             : sendRRData(session.id, data, timeout);
+        if (session.established) {
+            const packet = connected
+                ? sendUnitData(session.id, data, connection.id, connection.seq_num)
+                : sendRRData(session.id, data, timeout);
 
-    //         if (cb) {
-    //             super.write(packet, cb);
-    //         } else {
-    //             super.write(packet);
-    //         }
-    //     }
-    // }
+            if (cb) {
+                this.write(packet, cb);
+            } else {
+                this.write(packet);
+            }
+        }
+    }
 
     /**
      * Sends Unregister Session Command and Destroys Underlying TCP Socket
