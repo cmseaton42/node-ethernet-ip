@@ -1,4 +1,3 @@
-const DATA_SEGMENT = 4 << 5;
 
 const Types = {
     Simple: 0x80,

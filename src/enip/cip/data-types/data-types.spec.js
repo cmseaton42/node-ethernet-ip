@@ -22,12 +22,12 @@ describe("CIP Data Types", () => {
         it("Returns Appropriate Data Type", () => {
             const fn = num => getTypeCodeString(num);
 
-            for(let type of Object.keys(Types)) {
+            for (let type of Object.keys(Types)) {
                 expect(fn(Types[type])).toEqual(type);
             }
 
             expect(fn(0)).toEqual(null);
             expect(fn("string")).toEqual(null);
-        })
-    })
+        });
+    });
 });

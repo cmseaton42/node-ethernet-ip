@@ -8,14 +8,18 @@ const PORT_SEGMENT = 0 << 5;
  * @returns {buffer} EPATH Port Segment
  */
 const build = (port, link) => {
-    if (typeof port !== "number" || port <= 0) throw new Error("Port Number must be a Positive Integer");
-    if (!(typeof link === "string" || typeof link === "number") || link < 0) throw new Error("Link Number must be a Positive Integer or String");
+    if (typeof port !== "number" || port <= 0)
+        throw new Error("Port Number must be a Positive Integer");
+    if (!(typeof link === "string" || typeof link === "number") || link < 0)
+        throw new Error("Link Number must be a Positive Integer or String");
 
     let buf = null;
     let portIdentifierByte = PORT_SEGMENT; // Set High Byte of Segement (0x00)
 
     // Check Link Buffer Length
     let linkBuf = null;
+
+    /* eslint-disable indent */
     switch (typeof link) {
         case "string":
             linkBuf = Buffer.from(link);
@@ -24,6 +28,7 @@ const build = (port, link) => {
             linkBuf = Buffer.from([link]);
             break;
     }
+    /* eslint-enable indent */
 
     // Build Port Buffer
     if (port < 15) {
@@ -36,10 +41,9 @@ const build = (port, link) => {
         } else {
             buf = Buffer.alloc(1);
         }
-        
     } else {
         portIdentifierByte |= 0x0f;
-        
+
         if (linkBuf.length > 1) {
             portIdentifierByte |= 0x10; // Set Flag to Identify a link of greater than 1 Byte
             buf = Buffer.alloc(4);
@@ -55,7 +59,7 @@ const build = (port, link) => {
 
     // Add Link to Buffer
     buf = Buffer.concat([buf, linkBuf]); // Buffer.from(linkBuf));Buffer.alloc(1))
-    return buf.length % 2 === 1 ? Buffer.concat([buf, Buffer.alloc(1)]): buf;
+    return buf.length % 2 === 1 ? Buffer.concat([buf, Buffer.alloc(1)]) : buf;
 };
 
 module.exports = { build };

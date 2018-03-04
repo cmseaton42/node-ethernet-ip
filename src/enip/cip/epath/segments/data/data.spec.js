@@ -23,7 +23,7 @@ describe("EPATH", () => {
             expect(fn("hello")).not.toThrow();
             expect(fn(32)).toThrow();
             expect(fn({ prop: 76 })).toThrow();
-            expect(fn(Buffer.from('hello world'))).not.toThrow();
+            expect(fn(Buffer.from("hello world"))).not.toThrow();
             expect(fn(Buffer.from("hello world"), false)).not.toThrow();
             expect(fn(1, -1)).toThrow();
             expect(fn(1, { hey: "you" })).toThrow();

@@ -3,7 +3,7 @@ const { types, build } = require("./index");
 describe("EPATH", () => {
     describe("LOGICAL Segment Build Utility", () => {
         it("Generates Appropriate Output", () => {
-            let test = build(types.ClassID, 5, false)
+            let test = build(types.ClassID, 5, false);
             expect(test).toMatchSnapshot();
 
             test = build(types.InstanceID, 2, false);

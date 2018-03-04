@@ -10,12 +10,6 @@ const types = {
     ServiceID: 6 << 2
 };
 
-const format = {
-    Byte: 0,
-    Word: 1,
-    DWord: 2
-};
-
 /**
  * Determines the Validity of the Type Code
  *
@@ -73,7 +67,7 @@ const build = (type, address, padded = true) => {
             Buffer.alloc(5);
             buf.writeUInt32LE(address, 1);
         }
-    } 
+    }
 
     // Build Segment Byte
     const segmentByte = LOGICAL_SEGMENT | type | format;
