@@ -276,7 +276,7 @@ const registerSession = () => {
  * @param {number} session - Encapsulation Session ID
  * @returns {string} unregister seeion strings
  */
-const unregisterSession = (session) => {
+const unregisterSession = session => {
     const { UnregisterSession } = commands;
     const { build } = header;
 
@@ -294,15 +294,22 @@ const unregisterSession = (session) => {
  */
 const sendRRData = (session, data, timeout = 10) => {
     const { SendRRData } = commands;
-    const { build } = header;
-    const cmdBuf = Buffer.alloc(data.length + 6);
-    cmdBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
-    cmdBuf.writeUInt16LE(timeout, 4); // Timeout (sec)
 
-    data.copy(cmdBuf, 6);
+    let timeoutBuf = Buffer.alloc(6);
+    timeoutBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
+    timeoutBuf.writeUInt16LE(timeout, 4); // Timeout (sec)
+
+    // Enclose in Common Packet Format
+    let buf = CPF.build([
+        { TypeID: CPF.ItemIDs.Null, data: Buffer.from([]) },
+        { TypeID: CPF.ItemIDs.UCMM, data: data }
+    ]);
+
+    // Join Timeout Data with
+    buf = Buffer.concat([timeoutBuf, buf]);
 
     // Build SendRRData Buffer
-    return build(SendRRData, session, cmdBuf);
+    return header.build(SendRRData, session, buf);
 };
 
 /**
@@ -310,19 +317,38 @@ const sendRRData = (session, data, timeout = 10) => {
  *
  * @param {number} session - Encapsulation Session ID
  * @param {Buffer} data - Data to be Sent via Connected Message
+ * @param {number} ConnectionID - Connection ID from FWD_OPEN
+ * @param {number} SequenceNumber - Sequence Number of Datagram
  * @returns {string} Connected Message Datagram String
  */
-const sendUnitData = (session, data) => {
+const sendUnitData = (session, data, ConnectionID, SequnceNumber) => {
     const { SendUnitData } = commands;
-    const { build } = header;
-    const cmdBuf = Buffer.alloc(data.length + 6);
-    cmdBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
-    cmdBuf.writeUInt16LE(0x00, 4); // Timeout (sec) (Shall be 0 for Connected Messages)
 
-    data.copy(cmdBuf, 6);
+    let timeoutBuf = Buffer.alloc(6);
+    timeoutBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
+    timeoutBuf.writeUInt16LE(0x00, 4); // Timeout (sec) (Shall be 0 for Connected Messages)
+
+    // Enclose in Common Packet Format
+    const seqAddrBuf = Buffer.alloc(8);
+    seqAddrBuf.writeUInt32LE(ConnectionID, 0);
+    seqAddrBuf.writeUInt32LE(SequnceNumber, 4);
+
+    let buf = CPF.build([
+        {
+            TypeID: CPF.ItemIDs.SequencedAddrItem,
+            data: seqAddrBuf
+        },
+        {
+            TypeID: CPF.ItemIDs.ConnectedTransportPacket,
+            data: data
+        }
+    ]);
+
+    // Join Timeout Data with
+    buf = Buffer.concat([timeoutBuf, buf]);
 
     // Build SendRRData Buffer
-    return build(SendUnitData, session, cmdBuf);
+    return header.build(SendUnitData, session, buf);
 };
 // endregion
 

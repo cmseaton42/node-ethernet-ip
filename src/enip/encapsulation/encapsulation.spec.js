@@ -28,7 +28,7 @@ describe("Encapsulation", () => {
 
     describe("Status Parser", () => {
         const { parseStatus } = encapsulation;
-
+        
         it("Rejects Non-Number Inputs", () => {
             expect(() => parseStatus("test")).toThrow();
             expect(() => parseStatus(null)).toThrow();
@@ -85,7 +85,7 @@ describe("Encapsulation", () => {
         });
 
         it("SendUnitData Returns Correct Encapsulation String", () => {
-            const data = sendUnitData(98705, Buffer.from("hello world"));
+            const data = sendUnitData(98705, Buffer.from("hello world"), 32145, 456);
 
             expect(data).toMatchSnapshot();
         });

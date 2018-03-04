@@ -23,6 +23,7 @@ class ENIP extends Socket {
         this.state = {
             TCP: { establishing: false, established: false },
             session: { id: null, establishing: false, established: false },
+            connection: { id: null, establishing: false, established: false, seq_num: 0 },
             error: { code: null, msg: null }
         };
 
@@ -78,6 +79,7 @@ class ENIP extends Socket {
     /**
      * Initializes Session with Desired IP Address
      *
+     * @override
      * @param {string} IP_ADDR - IPv4 Address
      * @returns {Promise}
      * @memberof ENIP
@@ -108,8 +110,38 @@ class ENIP extends Socket {
     }
 
     /**
+     * Writes Ethernet/IP Data to Socket as an Unconnected Message
+     * or a Transport Class 1 Datagram
+     * 
+     * @override
+     * @param {buffer} data - Data Buffer to be Encapsulated
+     * @param {boolean} [connected=false]
+     * @param {number} [timeout=10] - Timeoue (sec)
+     * @param {function} [cb=null] - Callback to be Passed to Parent.Write()
+     * @memberof ENIP
+     */
+    // write(data, connected = false, timeout = 10, cb = null) {
+    //     const { sendRRData, sendUnitData, types } = encapsulation;
+    //     const { session, connection } = this.state;
+
+    //     console.log("called");
+    //     if (session.established) {
+    //         const packet = connected
+    //             ? sendUnitData(session.id, data, connection.id, connection.seq_num)
+    //             : sendRRData(session.id, data, timeout);
+
+    //         if (cb) {
+    //             super.write(packet, cb);
+    //         } else {
+    //             super.write(packet);
+    //         }
+    //     }
+    // }
+
+    /**
      * Sends Unregister Session Command and Destroys Underlying TCP Socket
      *
+     * @override
      * @param {Exception} exception - Gets passed to 'error' event handler
      * @memberof ENIP
      */
@@ -216,4 +248,4 @@ class ENIP extends Socket {
     // endregion
 }
 
-module.exports = { ENIP, CIP, encapsulation};
+module.exports = { ENIP, CIP, encapsulation };
