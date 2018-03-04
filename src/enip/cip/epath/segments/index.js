@@ -1,5 +1,6 @@
 const PORT = require("./port");
 const LOGICAL = require("./logical");
+const DATA = require("./data");
 
 const SegmentTypes = {
     PORT: 0 << 5, // Communication Port to Leave Node (Shall be 1 for a Backplane), Link Address of Next Device
@@ -12,4 +13,4 @@ const SegmentTypes = {
 };
 
 
-module.exports = { SegmentTypes, PORT, LOGICAL };
+module.exports = { SegmentTypes, PORT, LOGICAL, DATA };
