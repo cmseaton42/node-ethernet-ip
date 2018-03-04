@@ -1,4 +1,4 @@
-const { SegmentTypes } = require("../index");
+const LOGICAL_SEGMENT = 1 << 5;
 
 const types = {
     ClassID: 0 << 2,
@@ -76,7 +76,7 @@ const build = (type, address, padded = true) => {
     } 
 
     // Build Segment Byte
-    const segmentByte = SegmentTypes.LOGICAL | type | format;
+    const segmentByte = LOGICAL_SEGMENT | type | format;
     buf.writeUInt8(segmentByte, 0);
 
     return buf;

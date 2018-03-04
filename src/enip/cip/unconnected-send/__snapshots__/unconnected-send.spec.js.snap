@@ -1,0 +1,29 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Unconnected Send Service Message Build Utility Generates Appropriate Output 1`] = `
+Object {
+  "data": Array [
+    4,
+    125,
+    12,
+    76,
+    4,
+    115,
+    111,
+    109,
+    101,
+    116,
+    97,
+    103,
+    0,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1,
+    5,
+  ],
+  "type": "Buffer",
+}
+`;

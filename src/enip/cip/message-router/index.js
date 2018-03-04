@@ -6,7 +6,7 @@
  * @param {Buffer} data - Service Specific Data to be Sent
  * @returns {Buffer} Message Router Request Buffer
  */
-build = (service, path, data) => {
+const build = (service, path, data) => {
     const pathBuf = Buffer.from(path);
     const dataBuf = Buffer.from(data);
 
@@ -14,8 +14,8 @@ build = (service, path, data) => {
         pathBuf.length % 2 === 1 ? Math.trunc(pathBuf.length / 2) + 1 : Math.trunc(pathBuf.length);
     const buf = Buffer.alloc(2 + pathLen * 2 + dataBuf.length);
 
-    buf.writeInt8(service, 0); // Write Service Code to Buffer <USINT>
-    buf.writeInt8(pathLen, 1); // Write Length of EPATH (16 bit word length)
+    buf.writeUInt8(service, 0); // Write Service Code to Buffer <USINT>
+    buf.writeUInt8(pathLen, 1); // Write Length of EPATH (16 bit word length)
 
     pathBuf.copy(buf, 2); // Write EPATH to Buffer
     dataBuf.copy(buf, 2 + pathLen * 2); // Write Service Data to Buffer
@@ -39,11 +39,11 @@ build = (service, path, data) => {
  * @param {Buffer} buf - Message Router Request Buffer
  * @returns {MessageRouter} Decoded Message Router Object
  */
-parse = buf => {
+const parse = buf => {
     let MessageRouter = {
-        service: buf.readInt8(0),
-        generalStatusCode: buf.readInt8(2),
-        extendedStatusLength: buf.readInt8(3),
+        service: buf.readUInt8(0),
+        generalStatusCode: buf.readUInt8(2),
+        extendedStatusLength: buf.readUInt8(3),
         extendedStatus: null,
         data: null
     };
@@ -51,7 +51,7 @@ parse = buf => {
     // Build Extended Status Array
     let arr = [];
     for (let i = 0; i < MessageRouter.extendedStatusLength; i++) {
-        arr.push(buf.readInt16LE(i * 2 + 4));
+        arr.push(buf.readUInt16LE(i * 2 + 4));
     }
     MessageRouter.extendedStatus = arr;
 

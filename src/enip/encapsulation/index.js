@@ -104,7 +104,7 @@ CPF.isCmd = cmd => {
 CPF.build = dataItems => {
     // Write Item Count and Initialize Buffer
     let buf = Buffer.alloc(2);
-    buf.writeInt16LE(dataItems.length, 0);
+    buf.writeUInt16LE(dataItems.length, 0);
 
     for (let item of dataItems) {
         const { TypeID, data } = item;
@@ -114,8 +114,8 @@ CPF.build = dataItems => {
         let buf1 = Buffer.alloc(4);
         let buf2 = Buffer.from(data);
 
-        buf1.writeInt16LE(TypeID, 0);
-        buf1.writeInt16LE(buf2.length, 2);
+        buf1.writeUInt16LE(TypeID, 0);
+        buf1.writeUInt16LE(buf2.length, 2);
 
         buf = buf2.length > 0 ? Buffer.concat([buf, buf1, buf2]) : Buffer.concat([buf, buf1]);
     }
@@ -131,18 +131,18 @@ CPF.build = dataItems => {
  * @returns {Array} Array of Common Packet Data Objects
  */
 CPF.parse = buf => {
-    const itemCount = buf.readInt16LE(0);
+    const itemCount = buf.readUInt16LE(0);
 
     let ptr = 2;
     let arr = [];
 
     for (let i = 0; i < itemCount; i++) {
         // Get Type ID
-        const TypeID = buf.readInt16LE(ptr);
+        const TypeID = buf.readUInt16LE(ptr);
         ptr += 2;
 
         // Get Data Length
-        const length = buf.readInt16LE(ptr);
+        const length = buf.readUInt16LE(ptr);
         ptr += 2;
 
         // Get Data from Data Buffer
@@ -203,12 +203,12 @@ header.build = (cmd, session = 0x00, data = []) => {
     let header = Buffer.alloc(24 + send.length);
 
     // Build header from encapsulation data
-    header.writeInt16LE(send.cmd, 0);
-    header.writeInt16LE(send.length, 2);
-    header.writeInt32LE(send.session, 4);
-    header.writeInt32LE(send.status, 8);
+    header.writeUInt16LE(send.cmd, 0);
+    header.writeUInt16LE(send.length, 2);
+    header.writeUInt32LE(send.session, 4);
+    header.writeUInt32LE(send.status, 8);
     send.context.copy(header, 12);
-    header.writeInt32LE(send.options, 20);
+    header.writeUInt32LE(send.options, 20);
     send.data.copy(header, 24);
 
     return header;
@@ -224,13 +224,13 @@ header.parse = buf => {
     if (!Buffer.isBuffer(buf)) throw new Error("header.parse accepts type <Buffer> only!");
 
     const received = {
-        commandCode: buf.readInt16LE(0),
+        commandCode: buf.readUInt16LE(0),
         command: null,
-        length: buf.readInt16LE(2),
-        session: buf.readInt32LE(4),
-        statusCode: buf.readInt32LE(8),
+        length: buf.readUInt16LE(2),
+        session: buf.readUInt32LE(4),
+        statusCode: buf.readUInt32LE(8),
         status: null,
-        options: buf.readInt32LE(20),
+        options: buf.readUInt32LE(20),
         data: null
     };
 
@@ -263,8 +263,8 @@ const registerSession = () => {
     const { RegisterSession } = commands;
     const { build } = header;
     const cmdBuf = Buffer.alloc(4);
-    cmdBuf.writeInt16LE(0x01, 0); // Protocol Version (Required to be 1)
-    cmdBuf.writeInt16LE(0x00, 2); // Opton Flags (Reserved for Future List)
+    cmdBuf.writeUInt16LE(0x01, 0); // Protocol Version (Required to be 1)
+    cmdBuf.writeUInt16LE(0x00, 2); // Opton Flags (Reserved for Future List)
 
     // Build Register Session Buffer and return it
     return build(RegisterSession, 0x00, cmdBuf);
@@ -296,8 +296,8 @@ const sendRRData = (session, data, timeout = 10) => {
     const { SendRRData } = commands;
     const { build } = header;
     const cmdBuf = Buffer.alloc(data.length + 6);
-    cmdBuf.writeInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
-    cmdBuf.writeInt16LE(timeout, 4); // Timeout (sec)
+    cmdBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
+    cmdBuf.writeUInt16LE(timeout, 4); // Timeout (sec)
 
     data.copy(cmdBuf, 6);
 
@@ -316,8 +316,8 @@ const sendUnitData = (session, data) => {
     const { SendUnitData } = commands;
     const { build } = header;
     const cmdBuf = Buffer.alloc(data.length + 6);
-    cmdBuf.writeInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
-    cmdBuf.writeInt16LE(0x00, 4); // Timeout (sec) (Shall be 0 for Connected Messages)
+    cmdBuf.writeUInt32LE(0x00, 0); // Interface Handle ID (Shall be 0 for CIP)
+    cmdBuf.writeUInt16LE(0x00, 4); // Timeout (sec) (Shall be 0 for Connected Messages)
 
     data.copy(cmdBuf, 6);
 

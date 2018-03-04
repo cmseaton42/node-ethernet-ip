@@ -1,5 +1,3 @@
-const MessageRouter = require("../message-router");
-
 /**
  * @typedef UCMMSendTimeout
  * @type {Object}
@@ -14,16 +12,19 @@ const MessageRouter = require("../message-router");
  * @returns {UCMMSendTimeout}
  */
 const generateEncodedTimeout = timeout => {
+    if (timeout <= 0 || typeof timeout !== "number")
+        throw new Error("Timeouts Must be Positive Integers");
+
     let diff = Infinity; // let difference be very large
     let time_tick = 0;
     let ticks = 0;
 
     // Search for Best Timeout Encoding Values
     for (let i = 0; i < 16; i++) {
-        for (let j = 0; j < 256; j++) {
-            const newDiff = timeout - (2 ^ time_ticks) * ticks;
-            if (newdiff < diff) {
-                diff = newdiff;
+        for (let j = 1; j < 256; j++) {
+            const newDiff = Math.abs(timeout - Math.pow(2, i) * j);
+            if (newDiff <= diff) {
+                diff = newDiff;
                 time_tick = i;
                 ticks = j;
             }
@@ -33,11 +34,9 @@ const generateEncodedTimeout = timeout => {
     return { time_tick, ticks };
 };
 
-const UnconnectedSend = {};
-
 /**
  * Builds an Unconnected Send Packet Buffer
- * 
+ *
  * @param {buffer} message_request - Message Request Encoded Buffer
  * @param {buffer} path - Padded EPATH Buffer
  * @param {number} [timeout=2000] - timeout
@@ -50,22 +49,24 @@ const build = (message_request, path, timeout = 2000) => {
     if (typeof timeout !== "number" || timeout < 100) timeout = 1000;
 
     // Get Encoded Timeout
-    const timeout = generateEncodedTimeout(timeout);
+    const encTimeout = generateEncodedTimeout(timeout);
 
     // Instantiate Buffer
     let buf = Buffer.alloc(2);
 
     // Write Encoded Timeout to Output Buffer
-    buf.writeUInt8(timeout.time_tick, 0);
-    buf.writeUInt8(timeout.ticks, 1);
+    buf.writeUInt8(encTimeout.time_tick, 0);
+    buf.writeUInt8(encTimeout.ticks, 1);
 
     // Build Message Request Buffer
     const msgReqLen = message_request.length;
-    const msgReqLenBuf = Buffer.alloc(1).writeUInt8(msgReqLen, 0);
+    const msgReqLenBuf = Buffer.alloc(1);
+    msgReqLenBuf.writeUInt8(msgReqLen, 0);
 
     // Build Path Buffer
     const pathLen = path.length % 2 === 0 ? path.length / 2 : Math.ceil(path.length / 2);
-    const pathLenBuf = Buffer.alloc(2).writeUInt16LE(pathLen, 0);
+    const pathLenBuf = Buffer.alloc(2);
+    pathLenBuf.writeUInt16LE(pathLen, 0);
 
     // Build Null Buffer
     const nullBuf = Buffer.alloc(1);
@@ -89,10 +90,4 @@ const build = (message_request, path, timeout = 2000) => {
     return buf;
 };
 
-
-const parse = buf => {
-    return MessageRouter.parse(buf);
-}
-
-
-module.exports = { generateEncodedTimeout, build, parse };
+module.exports = { generateEncodedTimeout, build };

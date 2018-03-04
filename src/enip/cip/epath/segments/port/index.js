@@ -1,4 +1,5 @@
-const { SegmentTypes } = require("../index");
+const PORT_SEGMENT = 0 << 5;
+
 /**
  * Builds Port Segement for EPATH
  *
@@ -11,7 +12,7 @@ const build = (port, link) => {
     if (!(typeof link === "string" || typeof link === "number") || link < 0) throw new Error("Link Number must be a Positive Integer or String");
 
     let buf = null;
-    let portIdentifierByte = SegmentTypes.PORT; // Set High Byte of Segement (0x00)
+    let portIdentifierByte = PORT_SEGMENT; // Set High Byte of Segement (0x00)
 
     // Check Link Buffer Length
     let linkBuf = null;

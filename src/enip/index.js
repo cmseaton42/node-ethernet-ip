@@ -216,4 +216,4 @@ class ENIP extends Socket {
     // endregion
 }
 
-module.exports = { ENIP, CIP };
+module.exports = { ENIP, CIP, encapsulation};

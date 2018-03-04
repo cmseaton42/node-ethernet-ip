@@ -1,0 +1,53 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 1`] = `
+Object {
+  "data": Array [
+    145,
+    10,
+    84,
+    111,
+    116,
+    97,
+    108,
+    67,
+    111,
+    117,
+    110,
+    116,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 2`] = `
+Object {
+  "data": Array [
+    128,
+    2,
+    1,
+    2,
+    3,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 3`] = `
+Object {
+  "data": Array [
+    145,
+    7,
+    83,
+    111,
+    109,
+    101,
+    84,
+    97,
+    103,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
