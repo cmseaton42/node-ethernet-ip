@@ -31,6 +31,16 @@ class Controller extends ENIP {
     // endregion
 
     // region Public Method Definitions
+    /**
+     * Initializes Session with Desired IP Address
+     * and Returns a Promise with the Established Session ID
+     *
+     * @override
+     * @param {string} IP_ADDR - IPv4 Address
+     * @param {number} SLOT - Controller Slot Number (0 if CompactLogix)
+     * @returns {Promise}
+     * @memberof ENIP
+     */
     async connect(IP_ADDR, SLOT = 0) {
         const { PORT } = CIP.EPATH.segments;
         const BACKPLANE = 1;
@@ -45,6 +55,11 @@ class Controller extends ENIP {
         await this.readControllerProps();
     }
 
+    /**
+     * Reads Controller Identity Object
+     * 
+     * @memberof Controller
+     */
     async readControllerProps() {
         const { GET_ATTRIBUTE_ALL } = CIP.MessageRouter.services;
         const { LOGICAL } = CIP.EPATH.segments;
@@ -79,7 +94,7 @@ class Controller extends ENIP {
         const nameBuf = Buffer.alloc(data.length - 15);
         data.copy(nameBuf, 0, 15);
 
-        this.state.controller.name = nameBuf.toString('utf8');
+        this.state.controller.name = nameBuf.toString("utf8");
 
         const major = data.readUInt8(6);
         const minor = data.readUInt8(7);
