@@ -1,3 +1,17 @@
+const services = {
+    GET_ATTRIBUTE_ALL: 0x01,
+    GET_ATTRIBUTE_SINGLE: 0x0e,
+    RESET: 0x05,
+    START: 0x06,
+    STOP: 0x07,
+    CREATE: 0x08,
+    DELETE: 0x09,
+    MULTIPLE_SERVICE: 0x0a,
+    APPLY_ATTRIBUTES: 0x0d,
+    SET_ATTRIBUTE_SINGLE: 0x01,
+    FIND_NEXT: 0x11
+}
+
 /**
  * Builds a Message Router Request Buffer
  *
@@ -67,4 +81,4 @@ const parse = buf => {
     return MessageRouter;
 };
 
-module.exports = { build, parse };
+module.exports = { build, parse, services };

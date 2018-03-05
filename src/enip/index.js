@@ -78,13 +78,14 @@ class ENIP extends Socket {
 
     /**
      * Initializes Session with Desired IP Address
+     * and Returns a Promise with the Established Session ID
      *
      * @override
      * @param {string} IP_ADDR - IPv4 Address
      * @returns {Promise}
      * @memberof ENIP
      */
-    connect(IP_ADDR) {
+    async connect(IP_ADDR) {
         if (!IP_ADDR) {
             throw new Error("Controller <class> requires IP_ADDR <string>!!!");
         }
@@ -98,7 +99,8 @@ class ENIP extends Socket {
         this.state.session.establishing = true;
         this.state.TCP.establishing = true;
 
-        return new Promise(resolve => {
+        // Connect to Controller and Then Send Register Session Packet
+        await new Promise((resolve, _) => {
             super.connect(EIP_PORT, IP_ADDR, () => {
                 this.state.TCP.establishing = false;
                 this.state.TCP.established = true;
@@ -107,14 +109,34 @@ class ENIP extends Socket {
                 resolve();
             });
         });
+
+        // Wait for Session to be Registered
+        const sessid = await new Promise((resolve, reject) => {
+            this.on("Session Registered", sessid => {
+                resolve(sessid);
+            });
+
+            this.on("Session Registration Failed", error => {
+                this.state.error.code = error;
+                this.state.error.msg = "Failed to Register Session";
+                resolve(null);
+            });
+        });
+
+        // Clean Up Local Listeners
+        this.removeAllListeners("Session Registered");
+        this.removeAllListeners("Session Registration Failed");
+        
+        // Return Session ID
+        return sessid;
     }
 
     /**
      * Writes Ethernet/IP Data to Socket as an Unconnected Message
      * or a Transport Class 1 Datagram
-     * 
-     * NOTE: Cant Override Socket Write due to net.Socket.write 
-     *        implementation. =[. Thus, I am spinning up a new Method to 
+     *
+     * NOTE: Cant Override Socket Write due to net.Socket.write
+     *        implementation. =[. Thus, I am spinning up a new Method to
      *        handle it. Dont Use Enip.write, use this function instead.
      *
      * @param {buffer} data - Data Buffer to be Encapsulated
