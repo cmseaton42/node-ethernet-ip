@@ -1,8 +1,17 @@
-const { ENIP } = require("../enip");
+const { ENIP, CIP } = require("../enip");
 
 class Controller extends ENIP {
     constructor() {
         super();
+
+        this.state = {
+            ...this.state,
+            controller: {
+                name: null,
+                slot: null,
+                time: null
+            }
+        }
     }
 
     // region Property Accessors
