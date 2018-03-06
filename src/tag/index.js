@@ -95,10 +95,11 @@ class Tag extends EventEmitter {
      */
     set value(newValue) {
         if (newValue !== this.state.tag.value) {
-            const oldValue = this.state.tag.value;
+            const lastValue = this.state.tag.value;
             this.state.tag.value = newValue;
             this.state.timestamp = new Date();
-            this.emit("changed", this, oldValue);
+            if (lastValue !== null) this.emit("Changed", this, lastValue);
+            else this.emit("Initialized", this);
         }
     }
 
