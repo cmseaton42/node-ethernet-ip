@@ -117,6 +117,8 @@ class Controller extends ENIP {
             });
         });
 
+        this.removeAllListeners("Get Attribute All");
+
         // Parse Returned Buffer
         this.state.controller.serial_number = data.readUInt32LE(10);
 
@@ -173,6 +175,8 @@ class Controller extends ENIP {
                 resolve(data);
             });
         });
+
+        this.removeAllListeners("Get Attribute Single");
 
         // Parse Returned Buffer
         let wallClockArray = [];
@@ -233,6 +237,8 @@ class Controller extends ENIP {
             });
         });
 
+        this.removeAllListeners("Set Attribute Single");
+
         this.state.controller.time = date;
     }
 
@@ -263,6 +269,8 @@ class Controller extends ENIP {
                 resolve(data);
             });
         });
+
+        this.removeAllListeners("Read Tag");
 
         // Set Type of Tag Read
         const type = data.readUInt16LE(0);
@@ -365,6 +373,8 @@ class Controller extends ENIP {
                 resolve(data);
             });
         });
+
+        this.removeAllListeners("Write Tag");
     }
     // endregion
 

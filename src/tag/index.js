@@ -98,7 +98,7 @@ class Tag extends EventEmitter {
             const oldValue = this.state.tag.value;
             this.state.tag.value = newValue;
             this.state.timestamp = new Date();
-            this.emit("change", oldValue, newValue);
+            this.emit("changed", this, oldValue);
         }
     }
 
