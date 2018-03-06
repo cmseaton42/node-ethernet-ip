@@ -4,7 +4,7 @@ const { Types, getTypeCodeString, isValidTypeCode } = require("../enip/cip/data-
 const dateFormat = require("dateFormat");
 
 class Tag extends EventEmitter {
-    constructor(tagname, program = null, datatype = Types.UDINT) {
+    constructor(tagname, program = null, datatype = Types.DINT) {
         super();
 
         if (!Tag.isValidTagname(tagname)) throw new Error("Tagname Must be of Type <string>");

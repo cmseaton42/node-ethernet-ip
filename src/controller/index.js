@@ -236,6 +236,14 @@ class Controller extends ENIP {
         this.state.controller.time = date;
     }
 
+    /**
+     * Reads Value of Tag and Type from Controller
+     *
+     * @param {Tag} tag - Tag Object to Write
+     * @param {number} [size=0x01]
+     * @returns {Promise}
+     * @memberof Controller
+     */
     async readTag(tag, size = 0x01) {
         const { READ_TAG } = CIP.MessageRouter.services;
         const { SINT, INT, DINT, REAL, BOOL } = CIP.DataTypes.Types;
@@ -282,6 +290,81 @@ class Controller extends ENIP {
                 throw new Error("Unrecognized Type Passed Read from Controller");
         }
         /* eslint-enable indent */
+    }
+
+    /**
+     * Writes value to Tag
+     *
+     * @param {Tag} tag - Tag Object to Write
+     * @param {number|boolean} value
+     * @param {number} [size=0x01]
+     * @returns {Promise}
+     * @memberof Controller
+     */
+    async writeTag(tag, value, size = 0x01) {
+        const { WRITE_TAG } = CIP.MessageRouter.services;
+        const { SINT, INT, DINT, REAL, BOOL } = CIP.DataTypes.Types;
+
+        // Set Type of Tag Read
+        const type = CIP.DataTypes.Types[tag.type];
+
+        // Build Message Router to Embed in UCMM
+        let buf = Buffer.alloc(4);
+        let valBuf = null;
+        buf.writeUInt16LE(type, 0);
+        buf.writeUInt16LE(size, 2);
+
+        /* eslint-disable indent */
+        switch (type) {
+            case SINT:
+                valBuf = Buffer.alloc(1);
+                valBuf.writeInt8(value);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case INT:
+                valBuf = Buffer.alloc(2);
+                valBuf.writeInt16LE(value);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case DINT:
+                valBuf = Buffer.alloc(4);
+                valBuf.writeInt32LE(value);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case REAL:
+                valBuf = Buffer.alloc(1);
+                valBuf.writeFloatLE(value);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case BOOL:
+                valBuf = Buffer.alloc(1);
+                if (value) valBuf.writeInt8(0x00);
+                else valBuf.writeInt8(0x01);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            default:
+                throw new Error("Unrecognized Type to Write to Controller");
+        }
+        /* eslint-enable indent */
+
+        const MR = CIP.MessageRouter.build(WRITE_TAG, tag.path, buf);
+
+        this.write_cip(MR);
+
+        // Wait for Response
+        const data = await new Promise((resolve, reject) => {
+            this.on("Write Tag", (err, data) => {
+                if (err) reject(err);
+
+                tag.value = value;
+                resolve(data);
+            });
+        });
     }
     // endregion
 
