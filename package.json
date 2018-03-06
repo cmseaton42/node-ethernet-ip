@@ -29,5 +29,9 @@
         "jest": "^21.2.1"
     },
     "author": "Canaan Seaton",
-    "license": "MIT"
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/cmseaton42/node-ethernet-ip"
+    }
 }
