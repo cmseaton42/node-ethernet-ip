@@ -126,7 +126,7 @@ class ENIP extends Socket {
         // Clean Up Local Listeners
         this.removeAllListeners("Session Registered");
         this.removeAllListeners("Session Registration Failed");
-        
+
         // Return Session ID
         return sessid;
     }

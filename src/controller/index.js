@@ -57,15 +57,42 @@ class Controller extends ENIP {
 
         if (!sessid) throw new Error("Failed to Register Session with Controller");
 
-        await this.readControllerProps();
+        this._initializeControllerEventHandlers();
 
+        // Fetch Controller Properties and Wall Clock
+        await this.readControllerProps();
         await this.readWallClock();
+    }
+
+    /**
+     * Writes Ethernet/IP Data to Socket as an Unconnected Message
+     * or a Transport Class 1 Datagram
+     *
+     * NOTE: Cant Override Socket Write due to net.Socket.write
+     *        implementation. =[. Thus, I am spinning up a new Method to
+     *        handle it. Dont Use Enip.write, use this function instead.
+     *
+     * @override
+     * @param {buffer} data - Message Router Packet Buffer
+     * @param {boolean} [connected=false]
+     * @param {number} [timeout=10] - Timeoue (sec)
+     * @param {function} [cb=null] - Callback to be Passed to Parent.Write()
+     * @memberof ENIP
+     */
+    write_cip(data, connected = false, timeout = 10, cb = null) {
+        const { UnconnectedSend } = CIP;
+
+        const msg = UnconnectedSend.build(data, this.state.controller.path);
+
+        //TODO: Implement Connected Version
+        super.write_cip(msg, connected, timeout, cb);
     }
 
     /**
      * Reads Controller Identity Object
      *
      * @memberof Controller
+     * @returns {Promise}
      */
     async readControllerProps() {
         const { GET_ATTRIBUTE_ALL } = CIP.MessageRouter.services;
@@ -80,20 +107,15 @@ class Controller extends ENIP {
         // Message Router to Embed in UCMM
         const MR = CIP.MessageRouter.build(GET_ATTRIBUTE_ALL, identityPath, []);
 
-        // Build UCMM Buffer
-        const UCMM = CIP.UnconnectedSend.build(MR, this.state.controller.path);
-
-        this.write_cip(UCMM);
+        this.write_cip(MR);
 
         // Wait for Response
-        const cpfData = await new Promise((resolve, _) => {
-            this.on("SendRRData Received", srrd => {
-                resolve(srrd);
+        const data = await new Promise((resolve, reject) => {
+            this.on("Get Attribute All", (err, data) => {
+                if (err) reject(err);
+                resolve(data);
             });
         });
-
-        // Get Returned Buffer
-        const data = CIP.MessageRouter.parse(cpfData[1].data).data;
 
         // Parse Returned Buffer
         this.state.controller.serial_number = data.readUInt32LE(10);
@@ -122,6 +144,12 @@ class Controller extends ENIP {
         this.state.controller.faulted = status >> 4 === 2 ? true : this.state.controller.faulted;
     }
 
+    /**
+     * Reads the Controller Wall Clock Object
+     *
+     * @memberof Controller
+     * @returns {Promise}
+     */
     async readWallClock() {
         const { GET_ATTRIBUTE_SINGLE } = CIP.MessageRouter.services;
         const { LOGICAL } = CIP.EPATH.segments;
@@ -136,20 +164,15 @@ class Controller extends ENIP {
         // Message Router to Embed in UCMM
         const MR = CIP.MessageRouter.build(GET_ATTRIBUTE_SINGLE, identityPath, []);
 
-        // Build UCMM Buffer
-        const UCMM = CIP.UnconnectedSend.build(MR, this.state.controller.path);
-
-        this.write_cip(UCMM);
+        this.write_cip(MR);
 
         // Wait for Response
-        const cpfData = await new Promise((resolve, _) => {
-            this.on("SendRRData Received", srrd => {
-                resolve(srrd);
+        const data = await new Promise((resolve, reject) => {
+            this.on("Get Attribute Single", (err, data) => {
+                if (err) reject(err);
+                resolve(data);
             });
         });
-
-        // Get Returned Buffer
-        const data = CIP.MessageRouter.parse(cpfData[1].data).data;
 
         // Parse Returned Buffer
         let wallClockArray = [];
@@ -165,6 +188,13 @@ class Controller extends ENIP {
         this.state.controller.time = date;
     }
 
+    /**
+     * Write to PLC Wall Clock
+     *
+     * @param {Date} [date=new Date()]
+     * @memberof Controller
+     * @returns {Promise}
+     */
     async writeWallClock(date = new Date()) {
         const { SET_ATTRIBUTE_SINGLE } = CIP.MessageRouter.services;
         const { LOGICAL } = CIP.EPATH.segments;
@@ -182,7 +212,6 @@ class Controller extends ENIP {
         for (let i = 0; i < 7; i++) {
             buf.writeUInt32LE(arr[i], 4 * i);
         }
-        //buf.writeUInt8(0x05);
 
         // Build Identity Object Logical Path Buffer
         const identityPath = Buffer.concat([
@@ -194,15 +223,13 @@ class Controller extends ENIP {
         // Message Router to Embed in UCMM
         const MR = CIP.MessageRouter.build(SET_ATTRIBUTE_SINGLE, identityPath, buf);
 
-        // Build UCMM Buffer
-        const UCMM = CIP.UnconnectedSend.build(MR, this.state.controller.path);
-
-        this.write_cip(UCMM);
+        this.write_cip(MR);
 
         // Wait for Response
-        const cpfData = await new Promise((resolve, _) => {
-            this.on("SendRRData Received", srrd => {
-                resolve(srrd);
+        const data = await new Promise((resolve, reject) => {
+            this.on("Set Attribute Single", (err, data) => {
+                if (err) reject(err);
+                resolve(data);
             });
         });
 
@@ -210,7 +237,14 @@ class Controller extends ENIP {
     }
     // endregion
 
-    // region Private Method Definitions
+    /**
+     * Initialized Controller Specific Event Handlers
+     *
+     * @memberof Controller
+     */
+    _initializeControllerEventHandlers() {
+        this.on("SendRRData Received", this._handleSendRRDataReceived);
+    }
     // endregion
 
     // region Event Handlers
@@ -228,13 +262,83 @@ class Controller extends ENIP {
      */
     /*****************************************************************/
 
-    _handleSendRRDataReceived(data) {}
+    /**
+     * @typedef MessageRouter
+     * @type {Object}
+     * @property {number} service - Reply Service Code
+     * @property {number} generalStatusCode - General Status Code (Vol 1 - Appendix B)
+     * @property {number} extendedStatusLength - Length of Extended Status (In 16-bit Words)
+     * @property {Array} extendedStatus - Extended Status
+     * @property {Buffer} data - Status Code
+     */
+    /*****************************************************************/
 
-    _handleSendUnitDataReceived(data) {}
+    /**
+     * Handles SendRRData Event Emmitted by Parent and Routes
+     * incoming Message
+     *
+     * @param {Array} srrd - Array of Common Packet Formatted Objects
+     * @memberof Controller
+     */
+    _handleSendRRDataReceived(srrd) {
+        const { service, generalStatusCode, extendedStatus, data } = CIP.MessageRouter.parse(
+            srrd[1].data
+        );
 
-    _handleUnhandledEncapCommandReceived(data) {}
+        const {
+            GET_ATTRIBUTE_SINGLE,
+            GET_ATTRIBUTE_ALL,
+            SET_ATTRIBUTE_SINGLE,
+            READ_TAG,
+            READ_TAG_FRAGMENTED,
+            WRITE_TAG,
+            WRITE_TAG_FRAGMENTED,
+            MULTIPLE_SERVICE_PACKET
+        } = CIP.MessageRouter.services;
 
-    _handleSessionRegistrationFailed() {}
+        const error = generalStatusCode !== 0 ? { generalStatusCode, extendedStatus } : null;
+
+        // Route Incoming Message Responses
+        /* eslint-disable indent */
+        switch (service - 0x80) {
+            case GET_ATTRIBUTE_SINGLE:
+                this.emit("Get Attribute Single", error, data);
+                break;
+            case GET_ATTRIBUTE_ALL:
+                this.emit("Get Attribute All", error, data);
+                break;
+            case SET_ATTRIBUTE_SINGLE:
+                this.emit("Set Attribute Single", error, data);
+                break;
+            case READ_TAG:
+                this.emit("Read Tag", error, data);
+                break;
+            case READ_TAG_FRAGMENTED:
+                this.emit("Read Tag Fragmented", error, data);
+                break;
+            case WRITE_TAG:
+                this.emit("Write Tag", error, data);
+                break;
+            case WRITE_TAG_FRAGMENTED:
+                this.emit("Write Tag Fragmented", error, data);
+                break;
+            case MULTIPLE_SERVICE_PACKET:
+                this.emit("Multiple Service Packet", error, data);
+                break;
+            default:
+                this.emit("Unknown Reply", { generalStatusCode: 0x99, extendedStatus: [] }, data);
+                break;
+        }
+        /* eslint-enable indent */
+    }
+
+    _handleSendUnitDataReceived(data) {
+        // TODO: Implement when ready for Connected Messaging
+    }
+
+    _handleSessionRegistrationFailed(error) {
+        // TODO: Implement Handler if Necessary
+    }
     // endregion
 }
 
