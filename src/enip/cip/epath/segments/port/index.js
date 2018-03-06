@@ -47,7 +47,7 @@ const build = (port, link) => {
         if (linkBuf.length > 1) {
             portIdentifierByte |= 0x10; // Set Flag to Identify a link of greater than 1 Byte
             buf = Buffer.alloc(4);
-            buf.writeInt8(linkBuf.length, 1);
+            buf.writeUInt8(linkBuf.length, 1);
             buf.writeUInt16LE(port, 2);
         } else {
             buf = Buffer.alloc(3);
@@ -55,7 +55,7 @@ const build = (port, link) => {
         }
     }
 
-    buf.writeInt8(portIdentifierByte, 0);
+    buf.writeUInt8(portIdentifierByte, 0);
 
     // Add Link to Buffer
     buf = Buffer.concat([buf, linkBuf]); // Buffer.from(linkBuf));Buffer.alloc(1))

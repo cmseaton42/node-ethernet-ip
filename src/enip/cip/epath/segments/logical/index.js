@@ -46,7 +46,7 @@ const build = (type, address, padded = true) => {
         format = 0;
 
         buf = Buffer.alloc(2);
-        buf.writeInt8(address, 1);
+        buf.writeUInt8(address, 1);
     } else if (address > 255 && address <= 65535) {
         format = 1;
 
