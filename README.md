@@ -25,9 +25,9 @@ Detailed Documentation Coming Soon...
 ![Simple Demo](http://f.cl.ly/items/3w452r3v3i1s0Z1f2X11/Screen%20recording%202018-03-06%20at%2004.58.30%20PM.gif)
 
 ```javascript
-const { Controller, Tag, EthernetIP } = require("ethernet-ip);
+const { Controller, Tag, EthernetIP } = require("ethernet-ip");
 
-const { SINT, INT, DINT, REAL, BOOL } = Ethernet.CIP.DataTypes.Types;
+const { SINT, INT, DINT, REAL, BOOL } = EthernetIP.CIP.DataTypes.Types;
 
 // Intantiate Controller
 const PLC = new Controller();
