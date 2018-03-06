@@ -4,15 +4,15 @@ const { Types } = require("../enip/cip/data-types");
 describe("Tag Class", () => {
     describe("New Instance", () => {
         it("Throws Error on Invalid Inputs", () => {
-            const fn = (tagname, type = Types.UDINT) => {
-                return () => new Tag(tagname, type);
+            const fn = (tagname, prog, type = Types.UDINT) => {
+                return () => new Tag(tagname, prog, type);
             }
 
             expect(fn(1234)).toThrow();
             expect(fn("hello")).not.toThrow();
-            expect(fn("someTag", 0x31)).toThrow();
-            expect(fn("someTag", Types.EPATH)).not.toThrow();
-            expect(fn("someTag", 0xc1)).not.toThrow();
+            expect(fn("someTag", "prog", 0x31)).toThrow();
+            expect(fn("someTag", "prog", Types.EPATH)).not.toThrow();
+            expect(fn("someTag", "prog", 0xc1)).not.toThrow();
 
         });
     })
@@ -26,6 +26,7 @@ describe("Tag Class", () => {
             expect(fn(null)).toBeFalsy();
             expect(fn(undefined)).toBeFalsy();
             expect(fn(`hello${311}`)).toBeTruthy();
+            expect(fn(`hello.how3`)).toBeTruthy();
             expect(fn({ prop: "value" })).toBeFalsy();
             expect(fn("fffffffffffffffffffffffffffffffffffffffff")).toBeFalsy();
             expect(fn("ffffffffffffffffffffffffffffffffffffffff")).toBeTruthy();

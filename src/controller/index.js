@@ -235,6 +235,54 @@ class Controller extends ENIP {
 
         this.state.controller.time = date;
     }
+
+    async readTag(tag, size = 0x01) {
+        const { READ_TAG } = CIP.MessageRouter.services;
+        const { SINT, INT, DINT, REAL, BOOL } = CIP.DataTypes.Types;
+
+        // Build Message Router to Embed in UCMM
+        let buf = Buffer.alloc(2);
+        buf.writeUInt16LE(size, 0);
+
+        const MR = CIP.MessageRouter.build(READ_TAG, tag.path, buf);
+
+        this.write_cip(MR);
+
+        // Wait for Response
+        const data = await new Promise((resolve, reject) => {
+            this.on("Read Tag", (err, data) => {
+                if (err) reject(err);
+                resolve(data);
+            });
+        });
+
+        // Set Type of Tag Read
+        const type = data.readUInt16LE(0);
+        tag.type = type;
+
+        // Read Tag Value
+        /* eslint-disable indent */
+        switch (type) {
+            case SINT:
+                tag.value = data.readInt8(2);
+                break;
+            case INT:
+                tag.value = data.readInt16LE(2);
+                break;
+            case DINT:
+                tag.value = data.readInt32LE(2);
+                break;
+            case REAL:
+                tag.value = data.readFloatLE(2);
+                break;
+            case BOOL:
+                tag.value = data.readUInt8(2) === 0x01 ? true : false;
+                break;
+            default:
+                throw new Error("Unrecognized Type Passed Read from Controller");
+        }
+        /* eslint-enable indent */
+    }
     // endregion
 
     /**

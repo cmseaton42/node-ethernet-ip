@@ -1,16 +1,32 @@
 const { EventEmitter } = require("events");
+const { CIP } = require("../enip");
 const { Types, getTypeCodeString, isValidTypeCode } = require("../enip/cip/data-types");
 const dateFormat = require("dateFormat");
 
 class Tag extends EventEmitter {
-    constructor(tagname, datatype = Types.UDINT) {
+    constructor(tagname, program = null, datatype = Types.UDINT) {
         super();
 
         if (!Tag.isValidTagname(tagname)) throw new Error("Tagname Must be of Type <string>");
-        if (!isValidTypeCode(datatype)) throw new Error("Datatype must be a Valid Type Code <number>");
+        if (!isValidTypeCode(datatype))
+            throw new Error("Datatype must be a Valid Type Code <number>");
+
+        // Split Tagname
+        let pathArr = tagname.split(".");
+        let bufArr = [];
+
+        // Push Program Path to Buffer if Present
+        if (program) bufArr.push(CIP.EPATH.segments.DATA.build(`Program:${program}`));
+
+        // Build EPATH Buffer
+        for (let path of pathArr) {
+            bufArr.push(CIP.EPATH.segments.DATA.build(path));
+        }
+
+        const pathBuf = Buffer.concat(bufArr);
 
         this.state = {
-            tag: { name: tagname, type: datatype, value: null },
+            tag: { name: tagname, type: datatype, value: null, path: pathBuf },
             error: { code: null, status: null },
             timestamp: new Date()
         };
@@ -118,12 +134,28 @@ class Tag extends EventEmitter {
     get error() {
         return this.state.error.code ? this.state.error : null;
     }
+
+    get path() {
+        return this.state.tag.path;
+    }
     // endregion
 
-    // region Static Class Methods
+    /**
+     * Determines if a Tagname is Valid
+     *
+     * @static
+     * @param {string} tagname
+     * @returns {boolean}
+     * @memberof Tag
+     */
     static isValidTagname(tagname) {
+        if (typeof tagname !== "string") return false;
+
+        const tag = tagname.split(".");
+
+        const test = tag[tag.length - 1];
         const regex = /^[a-zA-Z][a-zA-Z0-9_]*([a-zA-Z0-9_]|\[\d+\])$/i; // regex string to check for valid tagnames
-        return typeof tagname === "string" && regex.test(tagname) && tagname.length <= 40;
+        return typeof tagname === "string" && regex.test(test) && test.length <= 40;
     }
     // endregion
 }

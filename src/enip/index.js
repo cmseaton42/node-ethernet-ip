@@ -221,6 +221,8 @@ class ENIP extends Socket {
 
             this.emit("Session Registration Failed", this.state.error);
         } else {
+            this.state.error.code = null;
+            this.state.error.msg = null;
             /* eslint-disable indent */
             switch (commandCode) {
                 case commands.RegisterSession:
