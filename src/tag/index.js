@@ -1,8 +1,11 @@
 const { EventEmitter } = require("events");
+const crypto = require("crypto");
 const { CIP } = require("../enip");
 const { Types, getTypeCodeString, isValidTypeCode } = require("../enip/cip/data-types");
 const dateFormat = require("dateFormat");
 
+// Static Class Property - Tracks Instances
+let instances = 0;
 class Tag extends EventEmitter {
     constructor(tagname, program = null, datatype = Types.DINT) {
         super();
@@ -10,6 +13,9 @@ class Tag extends EventEmitter {
         if (!Tag.isValidTagname(tagname)) throw new Error("Tagname Must be of Type <string>");
         if (!isValidTypeCode(datatype))
             throw new Error("Datatype must be a Valid Type Code <number>");
+
+        // Increment Instances
+        instances += 1;
 
         // Split Tagname
         let pathArr = tagname.split(".");
@@ -28,11 +34,35 @@ class Tag extends EventEmitter {
         this.state = {
             tag: { name: tagname, type: datatype, value: null, path: pathBuf },
             error: { code: null, status: null },
-            timestamp: new Date()
+            timestamp: new Date(),
+            instance: hash(pathBuf)
         };
     }
 
     // region Property Accessors
+    /**
+     * Returns the total number of Tag Instances
+     * that have been Created
+     *
+     * @readonly
+     * @static
+     * @returns {number} instances
+     * @memberof Tag
+     */
+    static get instances() {
+        return instances;
+    }
+
+    /**
+     * Returns the Tag Instance ID
+     *
+     * @readonly
+     * @returns {string} Instance ID
+     * @memberof Tag
+     */
+    get instance_id() {
+        return this.state.instance;
+    }
 
     /**
      * Gets Tagname
@@ -160,5 +190,19 @@ class Tag extends EventEmitter {
     }
     // endregion
 }
+
+/**
+ * Generates Unique ID for Each Instance
+ * based on the Generated EPATH
+ *
+ * @param {buffer} input - EPATH of Tag
+ * @returns {string} hash
+ */
+const hash = input => {
+    return crypto
+        .createHash("md5")
+        .update(input)
+        .digest("hex");
+};
 
 module.exports = Tag;
