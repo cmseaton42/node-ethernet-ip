@@ -46,12 +46,8 @@ PLC.connect("10.1.60.205", 5).then(() => {
     // Log Connected to Console
     console.log(`\n\nConnected to PLC ${name}...\n`);
 
-    // Read Each Tag in group every 50ms
-    const interval = setInterval(async () => {
-        for (let tag of group) {
-            await PLC.readTag(tag);
-        }
-    }, 50);
+    // Begin Reading Tags
+    readGroup(group, 50);
 });
 
 // Subscribe to each tag's "Changed" Event
@@ -60,6 +56,30 @@ for (let tag of group) {
         console.log(`${tag.name} changed from ${lastValue} -> ${tag.value}`);
     });
 }
+
+///////////////////// FUNCTION DEFINITIONS ////////////////////////////////////////
+
+// Function to Delay X ms
+const delay = ms => {
+    return new Promise((resolve, _) => {
+        const timeout = setTimeout(() => {
+            resolve();
+        }, ms);
+    });
+};
+
+// Function to continuously Read Tag Group Every X ms
+const readGroup = async (group, ms) => {
+    while(true) {
+        // Read Each Tag in Group
+        for (let tag of group) {
+            await PLC.readTag(tag);
+        }
+    
+        // Wait X ms until Processing Continues
+        await delay(ms);
+    }
+};
 ```
 
 ## Built With
