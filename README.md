@@ -3,7 +3,7 @@
 
 A simple-lightweight node based API for interfacing with Rockwell Control/CompactLogix PLCs.
 
-### Prerequisites
+## Prerequisites
 
 latest version of [NodeJS](https://nodejs.org/en/)
 
@@ -50,7 +50,7 @@ PLC.connect("10.1.60.205", 5).then(() => {
     readGroup(group, 50);
 });
 
-// Subscribe to each tag's "Changed" Event
+// Subscribe to each tag's "Changed" Event to Log Values to Console
 for (let tag of group) {
     tag.on("Changed", (tag, lastValue) => {
         console.log(`${tag.name} changed from ${lastValue} -> ${tag.value}`);
@@ -60,13 +60,7 @@ for (let tag of group) {
 ///////////////////// FUNCTION DEFINITIONS ////////////////////////////////////////
 
 // Function to Delay X ms
-const delay = ms => {
-    return new Promise((resolve, _) => {
-        const timeout = setTimeout(() => {
-            resolve();
-        }, ms);
-    });
-};
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // Function to continuously Read Tag Group Every X ms
 const readGroup = async (group, ms) => {
