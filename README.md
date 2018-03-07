@@ -1,7 +1,14 @@
 
+
+
+
+![npm (custom registry)](https://img.shields.io/npm/v/npm.svg?registry_uri=https%3A%2F%2Fethernetip.npmjs.com&style=flat-square)
+[![GitHub stars](https://img.shields.io/github/stars/badges/shields.svg?registry_uri=https%3A%2F%2Fgithub.com%2Fcmseaton42%2Fnode-ethernet-ip&style=social&logo=github&label=Stars)](https://github.com/cmseaton42/node-ethernet-ip)
+
+
 # Node Ethernet/IP
 
-A simple-lightweight node based API for interfacing with Rockwell Control/CompactLogix PLCs.
+A simple and lightweight node based API for interfacing with Rockwell Control/CompactLogix PLCs.
 
 ## Prerequisites
 
