@@ -25,9 +25,7 @@ Detailed Documentation Coming Soon...
 ![Simple Demo](http://f.cl.ly/items/3w452r3v3i1s0Z1f2X11/Screen%20recording%202018-03-06%20at%2004.58.30%20PM.gif)
 
 ```javascript
-const { Controller, Tag, EthernetIP } = require("ethernet-ip");
-
-const { SINT, INT, DINT, REAL, BOOL } = EthernetIP.CIP.DataTypes.Types;
+const { Controller, Tag } = require("ethernet-ip");
 
 // Intantiate Controller
 const PLC = new Controller();
@@ -46,7 +44,7 @@ PLC.connect("10.1.60.205", 5).then(() => {
     const { name } = PLC.properties;
 
     // Log Connected to Console
-    console.log("\n\nConnected to PLC", `${name}`.green.bold, "...\n");
+    console.log(`\n\nConnected to PLC ${name}...\n`);
 
     // Read Each Tag in group every 50ms
     const interval = setInterval(async () => {
