@@ -1,6 +1,9 @@
 const { EventEmitter } = require("events");
 const crypto = require("crypto");
 const { CIP } = require("../enip");
+const { LOGICAL } = CIP.EPATH.segments;
+const { MessageRouter } = CIP;
+const { READ_TAG, WRITE_TAG } = MessageRouter.services;
 const { Types, getTypeCodeString, isValidTypeCode } = require("../enip/cip/data-types");
 const dateFormat = require("dateFormat");
 
@@ -32,7 +35,13 @@ class Tag extends EventEmitter {
         const pathBuf = Buffer.concat(bufArr);
 
         this.state = {
-            tag: { name: tagname, type: datatype, value: null, path: pathBuf },
+            tag: {
+                name: tagname,
+                type: datatype,
+                value: null,
+                controllerValue: null,
+                path: pathBuf
+            },
             error: { code: null, status: null },
             timestamp: new Date(),
             instance: hash(pathBuf)
@@ -124,13 +133,35 @@ class Tag extends EventEmitter {
      * @property {number|string|boolean|object} new value
      */
     set value(newValue) {
-        if (newValue !== this.state.tag.value) {
-            const lastValue = this.state.tag.value;
+        this.state.tag.value = newValue;
+    }
+
+    /**
+     * Sets Controller Tag Value and Emits Changed Event
+     *
+     * @memberof Tag
+     * @property {number|string|boolean|object} new value
+     */
+    set controller_value(newValue) {
+        if (newValue !== this.state.tag.controllerValue) {
+            const lastValue = this.state.tag.controllerValue;
+            this.state.tag.controllerValue = newValue;
             this.state.tag.value = newValue;
             this.state.timestamp = new Date();
+
             if (lastValue !== null) this.emit("Changed", this, lastValue);
             else this.emit("Initialized", this);
         }
+    }
+
+    /**
+     * Sets Controller Tag Value and Emits Changed Event
+     *
+     * @memberof Tag
+     * @returns {number|string|boolean|object} new value
+     */
+    get controller_value() {
+        return this.state.tag.controllerValue;
     }
 
     /**
@@ -166,8 +197,96 @@ class Tag extends EventEmitter {
         return this.state.error.code ? this.state.error : null;
     }
 
+    /**
+     * Returns a Padded EPATH of Tag
+     *
+     * @readonly
+     * @returns {buffer} Padded EPATH
+     * @memberof Tag
+     */
     get path() {
         return this.state.tag.path;
+    }
+    // endregion
+
+    // region Public Methods
+    /**
+     * Generates Read Tag Message
+     *
+     * @param {number} [size=0x01]
+     * @returns {buffer} - Read Tag Message Service
+     * @memberof Tag
+     */
+    generateReadMessageRequest(size = 0x01) {
+        const { tag } = this.state;
+
+        // Build Message Router to Embed in UCMM
+        let buf = Buffer.alloc(2);
+        buf.writeUInt16LE(size, 0);
+
+        // Build Current Message
+        return MessageRouter.build(READ_TAG, tag.path, buf);
+    }
+
+    /**
+     * Generates Write Tag Message
+     *
+     * @param {number|boolean|object|string} [newValue=null] - If Omitted, Tag.value will be used
+     * @param {number} [size=0x01]
+     * @returns {buffer} - Write Tag Message Service
+     * @memberof Tag
+     */
+    generateWriteMessageRequest(value = null, size = 0x01) {
+        if (value !== null) this.state.tag.value = value;
+
+        const { tag } = this.state;
+        const { SINT, INT, DINT, REAL, BOOL } = Types;
+
+        // Build Message Router to Embed in UCMM
+        let buf = Buffer.alloc(4);
+        let valBuf = null;
+        buf.writeUInt16LE(tag.type, 0);
+        buf.writeUInt16LE(size, 2);
+
+        /* eslint-disable indent */
+        switch (tag.type) {
+            case SINT:
+                valBuf = Buffer.alloc(1);
+                valBuf.writeInt8(tag.value);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case INT:
+                valBuf = Buffer.alloc(2);
+                valBuf.writeInt16LE(tag.value);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case DINT:
+                valBuf = Buffer.alloc(4);
+                valBuf.writeInt32LE(tag.value);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case REAL:
+                valBuf = Buffer.alloc(4);
+                valBuf.writeFloatLE(tag.value);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            case BOOL:
+                valBuf = Buffer.alloc(1);
+                if (!tag.value) valBuf.writeInt8(0x00);
+                else valBuf.writeInt8(0x01);
+
+                buf = Buffer.concat([buf, valBuf]);
+                break;
+            default:
+                throw new Error("Unrecognized Type to Write to Controller");
+        }
+
+        // Build Current Message
+        return MessageRouter.build(WRITE_TAG, tag.path, buf);
     }
     // endregion
 

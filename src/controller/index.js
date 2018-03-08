@@ -251,14 +251,9 @@ class Controller extends ENIP {
      * @memberof Controller
      */
     async readTag(tag, size = 0x01) {
-        const { READ_TAG } = CIP.MessageRouter.services;
         const { SINT, INT, DINT, REAL, BOOL } = CIP.DataTypes.Types;
 
-        // Build Message Router to Embed in UCMM
-        let buf = Buffer.alloc(2);
-        buf.writeUInt16LE(size, 0);
-
-        const MR = CIP.MessageRouter.build(READ_TAG, tag.path, buf);
+        const MR = tag.generateReadMessageRequest(size);
 
         this.write_cip(MR);
 
@@ -280,19 +275,19 @@ class Controller extends ENIP {
         /* eslint-disable indent */
         switch (type) {
             case SINT:
-                tag.value = data.readInt8(2);
+                tag.controller_value = data.readInt8(2);
                 break;
             case INT:
-                tag.value = data.readInt16LE(2);
+                tag.controller_value = data.readInt16LE(2);
                 break;
             case DINT:
-                tag.value = data.readInt32LE(2);
+                tag.controller_value = data.readInt32LE(2);
                 break;
             case REAL:
-                tag.value = data.readFloatLE(2);
+                tag.controller_value = data.readFloatLE(2);
                 break;
             case BOOL:
-                tag.value = data.readUInt8(2) === 0x01 ? true : false;
+                tag.controller_value = data.readUInt8(2) === 0x01 ? true : false;
                 break;
             default:
                 throw new Error("Unrecognized Type Passed Read from Controller");
@@ -304,63 +299,13 @@ class Controller extends ENIP {
      * Writes value to Tag
      *
      * @param {Tag} tag - Tag Object to Write
-     * @param {number|boolean} value
+     * @param {number|boolean|object|string} [value=null] - If Omitted, Tag.value will be used
      * @param {number} [size=0x01]
      * @returns {Promise}
      * @memberof Controller
      */
-    async writeTag(tag, value, size = 0x01) {
-        const { WRITE_TAG } = CIP.MessageRouter.services;
-        const { SINT, INT, DINT, REAL, BOOL } = CIP.DataTypes.Types;
-
-        // Set Type of Tag Read
-        const type = CIP.DataTypes.Types[tag.type];
-
-        // Build Message Router to Embed in UCMM
-        let buf = Buffer.alloc(4);
-        let valBuf = null;
-        buf.writeUInt16LE(type, 0);
-        buf.writeUInt16LE(size, 2);
-
-        /* eslint-disable indent */
-        switch (type) {
-            case SINT:
-                valBuf = Buffer.alloc(1);
-                valBuf.writeInt8(value);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            case INT:
-                valBuf = Buffer.alloc(2);
-                valBuf.writeInt16LE(value);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            case DINT:
-                valBuf = Buffer.alloc(4);
-                valBuf.writeInt32LE(value);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            case REAL:
-                valBuf = Buffer.alloc(1);
-                valBuf.writeFloatLE(value);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            case BOOL:
-                valBuf = Buffer.alloc(1);
-                if (value) valBuf.writeInt8(0x00);
-                else valBuf.writeInt8(0x01);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            default:
-                throw new Error("Unrecognized Type to Write to Controller");
-        }
-        /* eslint-enable indent */
-
-        const MR = CIP.MessageRouter.build(WRITE_TAG, tag.path, buf);
+    async writeTag(tag, value = null, size = 0x01) {
+        const MR = tag.generateWriteMessageRequest(value, size);
 
         this.write_cip(MR);
 
@@ -369,7 +314,7 @@ class Controller extends ENIP {
             this.on("Write Tag", (err, data) => {
                 if (err) reject(err);
 
-                tag.value = value;
+                tag.controller_value = tag.value;
                 resolve(data);
             });
         });

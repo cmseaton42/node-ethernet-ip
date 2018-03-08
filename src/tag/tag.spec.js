@@ -6,16 +6,15 @@ describe("Tag Class", () => {
         it("Throws Error on Invalid Inputs", () => {
             const fn = (tagname, prog, type = Types.UDINT) => {
                 return () => new Tag(tagname, prog, type);
-            }
+            };
 
             expect(fn(1234)).toThrow();
             expect(fn("hello")).not.toThrow();
             expect(fn("someTag", "prog", 0x31)).toThrow();
             expect(fn("someTag", "prog", Types.EPATH)).not.toThrow();
             expect(fn("someTag", "prog", 0xc1)).not.toThrow();
-
         });
-    })
+    });
 
     describe("Tagname Validator", () => {
         it("Accepts and Rejects Appropriate Inputs", () => {
@@ -38,6 +37,38 @@ describe("Tag Class", () => {
             expect(fn("tagname")).toBeTruthy();
             expect(fn("tag_with_underscores45")).toBeTruthy();
             expect(fn("someTagArray[0]")).toBeTruthy();
+        });
+    });
+
+    describe("Read Message Generator Method", () => {
+        it("Generates Appropriate Buffer", () => {
+            const tag1 = new Tag("tag", null, Types.DINT);
+            const tag2 = new Tag("tag", null, Types.BOOL);
+            const tag3 = new Tag("tag", null, Types.REAL);
+            const tag4 = new Tag("tag", null, Types.SINT);
+            const tag5 = new Tag("tag", null, Types.INT);
+
+            expect(tag1.generateReadMessageRequest()).toMatchSnapshot();
+            expect(tag2.generateReadMessageRequest()).toMatchSnapshot();
+            expect(tag3.generateReadMessageRequest()).toMatchSnapshot();
+            expect(tag4.generateReadMessageRequest()).toMatchSnapshot();
+            expect(tag5.generateReadMessageRequest()).toMatchSnapshot();
+        });
+    });
+
+    describe("Write Message Generator Method", () => {
+        it("Generates Appropriate Buffer", () => {
+            const tag1 = new Tag("tag", null, Types.DINT);
+            const tag2 = new Tag("tag", null, Types.BOOL);
+            const tag3 = new Tag("tag", null, Types.REAL);
+            const tag4 = new Tag("tag", null, Types.SINT);
+            const tag5 = new Tag("tag", null, Types.INT);
+            
+            expect(tag1.generateWriteMessageRequest(100)).toMatchSnapshot();
+            expect(tag2.generateWriteMessageRequest(true)).toMatchSnapshot();
+            expect(tag3.generateWriteMessageRequest(32.1234)).toMatchSnapshot();
+            expect(tag4.generateWriteMessageRequest(4)).toMatchSnapshot();
+            expect(tag5.generateWriteMessageRequest(-10)).toMatchSnapshot();
         });
     });
 });
