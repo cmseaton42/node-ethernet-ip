@@ -298,7 +298,7 @@ class Controller extends ENIP {
     }
 
     /**
-     *  Reads All Tags in the Passed Tag Group
+     * Reads All Tags in the Passed Tag Group
      *
      * @param {TagGroup} group
      * @memberof Controller
@@ -306,9 +306,11 @@ class Controller extends ENIP {
     async readTagGroup(group) {
         const messages = group.generateReadMessageRequests();
 
+        // Send Each Multi Service Message
         for (let msg of messages) {
             this.write_cip(msg.data);
 
+            // Wait for Controller to Respond
             const data = await new Promise((resolve, reject) => {
                 this.on("Multiple Service Packet", (err, data) => {
                     if (err) reject(err);
@@ -319,6 +321,7 @@ class Controller extends ENIP {
 
             this.removeAllListeners("Multiple Service Packet");
 
+            // Parse Messages
             group.parseReadMessageResponses(data, msg.tag_ids);
         }
     }
@@ -410,25 +413,30 @@ class Controller extends ENIP {
                 this.emit("Write Tag Fragmented", error, data);
                 break;
             case MULTIPLE_SERVICE_PACKET:
+                // If service errored then propogate error
                 if (error) {
                     this.emit("Multiple Service Packet", error, data);
                     break;
                 }
 
+                // Get Number of Services to be Enclosed
                 let services = data.readUInt16LE(0);
                 let offsets = [];
                 let responses = [];
 
+                // Build Array of Buffer Offsets
                 for (let i = 0; i < services; i++) {
                     offsets.push(data.readUInt16LE(i * 2 + 2));
                 }
 
+                // Gather Messages within Buffer
                 for (let i = 0; i < offsets.length - 1; i++) {
                     const length = offsets[i + 1] - offsets[i];
 
                     let buf = Buffer.alloc(length);
                     data.copy(buf, 0, offsets[i], offsets[i + 1]);
 
+                    // Parse Message Data
                     const msgData = CIP.MessageRouter.parse(buf);
 
                     if (msgData.generalStatusCode !== 0) {
@@ -441,6 +449,7 @@ class Controller extends ENIP {
                     responses.push(msgData);
                 }
 
+                // Handle Final Message
                 const length = data.length - offsets[offsets.length - 1];
 
                 let buf = Buffer.alloc(length);

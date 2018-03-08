@@ -53,7 +53,7 @@ class TagGroup extends EventEmitter {
     }
 
     forEach(callback) {
-        for(let key of Object.keys(this.state.tags)) callback(this.state.tags[key]);
+        for (let key of Object.keys(this.state.tags)) callback(this.state.tags[key]);
     }
 
     /**
@@ -95,8 +95,8 @@ class TagGroup extends EventEmitter {
 
                 for (let i = 0; i < msgArr.length; i++) {
                     buf.writeUInt16LE(offset, ptr);
-                    ptr += 2
-                    offset += msgArr[i].length
+                    ptr += 2;
+                    offset += msgArr[i].length;
                 }
 
                 buf = Buffer.concat([buf, ...msgArr]);
@@ -132,8 +132,15 @@ class TagGroup extends EventEmitter {
         return messages;
     }
 
+    /**
+     * Parse Incoming Multi Service Request Messages
+     *
+     * @param {Array} responses
+     * @param {Arrayany} ids
+     * @memberof TagGroup
+     */
     parseReadMessageResponses(responses, ids) {
-        for(let i = 0; i < ids.length; i++) {
+        for (let i = 0; i < ids.length; i++) {
             this.state.tags[ids[i]].parseReadMessageResponse(responses[i].data);
         }
     }
@@ -176,7 +183,7 @@ class TagGroup extends EventEmitter {
 
                 for (let msg of msgArr) {
                     buf.writeUInt16LE(msg.length, ptr);
-                    ptr += 2
+                    ptr += 2;
                 }
 
                 buf = Buffer.concat([buf, ...msgArr]);
