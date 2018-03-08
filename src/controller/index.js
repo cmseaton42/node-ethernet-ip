@@ -246,11 +246,11 @@ class Controller extends ENIP {
      * Reads Value of Tag and Type from Controller
      *
      * @param {Tag} tag - Tag Object to Write
-     * @param {number} [size=0x01]
+     * @param {number} [size=null]
      * @returns {Promise}
      * @memberof Controller
      */
-    async readTag(tag, size = 0x01) {
+    async readTag(tag, size = null) {
         const { SINT, INT, DINT, REAL, BOOL } = CIP.DataTypes.Types;
 
         const MR = tag.generateReadMessageRequest(size);
@@ -267,32 +267,7 @@ class Controller extends ENIP {
 
         this.removeAllListeners("Read Tag");
 
-        // Set Type of Tag Read
-        const type = data.readUInt16LE(0);
-        tag.type = type;
-
-        // Read Tag Value
-        /* eslint-disable indent */
-        switch (type) {
-            case SINT:
-                tag.controller_value = data.readInt8(2);
-                break;
-            case INT:
-                tag.controller_value = data.readInt16LE(2);
-                break;
-            case DINT:
-                tag.controller_value = data.readInt32LE(2);
-                break;
-            case REAL:
-                tag.controller_value = data.readFloatLE(2);
-                break;
-            case BOOL:
-                tag.controller_value = data.readUInt8(2) === 0x01 ? true : false;
-                break;
-            default:
-                throw new Error("Unrecognized Type Passed Read from Controller");
-        }
-        /* eslint-enable indent */
+        tag.parseReadMessageResponse(data);
     }
 
     /**
@@ -321,6 +296,22 @@ class Controller extends ENIP {
 
         this.removeAllListeners("Write Tag");
     }
+
+    /**
+     *  Reads All Tags in the Passed Tag Group
+     *
+     * @param {TagGroup} group
+     * @memberof Controller
+     */
+    // async readTagGroup(group) {
+    //     const { MULTIPLE_SERVICE_PACKET } = CIP.MessageRouter.services;
+
+    //     const messages = group.generateReadMessageRequests();
+
+    //     for(let msg of messages) {
+    //         const MR = CIP.MessageRouter.build(MULTIPLE_SERVICE_PACKET, );
+    //     }
+    // }
     // endregion
 
     /**

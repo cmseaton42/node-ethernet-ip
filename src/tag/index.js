@@ -42,6 +42,7 @@ class Tag extends EventEmitter {
                 controllerValue: null,
                 path: pathBuf
             },
+            read_size: 0x01,
             error: { code: null, status: null },
             timestamp: new Date(),
             instance: hash(pathBuf)
@@ -113,6 +114,28 @@ class Tag extends EventEmitter {
     set type(type) {
         if (!isValidTypeCode(type)) throw new Error("Datatype must be a Valid Type Code <number>");
         this.state.tag.type = type;
+    }
+
+    /**
+     * Gets Tag Read Size
+     *
+     * @memberof Tag
+     * @returns {number} read size
+     */
+    get read_size() {
+        return this.state.read_size;
+    }
+
+    /**
+     * Sets Tag Read Size
+     *
+     * @memberof Tag
+     * @property {number} read size
+     */
+    set read_size(size) {
+        if (typeof type !== "number")
+            throw new Error("Read Size must be a Valid Type Code <number>");
+        this.state.read_size = size;
     }
 
     /**
@@ -213,19 +236,58 @@ class Tag extends EventEmitter {
     /**
      * Generates Read Tag Message
      *
-     * @param {number} [size=0x01]
+     * @param {number} [size=null]
      * @returns {buffer} - Read Tag Message Service
      * @memberof Tag
      */
-    generateReadMessageRequest(size = 0x01) {
+    generateReadMessageRequest(size = null) {
+        if (size) this.state.read_size = size;
+
         const { tag } = this.state;
 
         // Build Message Router to Embed in UCMM
         let buf = Buffer.alloc(2);
-        buf.writeUInt16LE(size, 0);
+        buf.writeUInt16LE(this.state.read_size, 0);
 
         // Build Current Message
         return MessageRouter.build(READ_TAG, tag.path, buf);
+    }
+
+    /**
+     *  Parses Good Read Request Messages
+     *
+     * @param {buffer} Data Returned from Successful Read Tag Request
+     * @memberof Tag
+     */
+    parseReadMessageResponse(data) {
+        const { SINT, INT, DINT, REAL, BOOL } = Types;
+
+        // Set Type of Tag Read
+        const type = data.readUInt16LE(0);
+        this.state.tag.type = type;
+
+        // Read Tag Value
+        /* eslint-disable indent */
+        switch (type) {
+            case SINT:
+                this.controller_value = data.readInt8(2);
+                break;
+            case INT:
+                this.controller_value = data.readInt16LE(2);
+                break;
+            case DINT:
+                this.controller_value = data.readInt32LE(2);
+                break;
+            case REAL:
+                this.controller_value = data.readFloatLE(2);
+                break;
+            case BOOL:
+                this.controller_value = data.readUInt8(2) === 0x01 ? true : false;
+                break;
+            default:
+                throw new Error("Unrecognized Type Passed Read from Controller");
+        }
+        /* eslint-enable indent */
     }
 
     /**
