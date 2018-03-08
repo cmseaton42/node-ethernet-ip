@@ -303,15 +303,25 @@ class Controller extends ENIP {
      * @param {TagGroup} group
      * @memberof Controller
      */
-    // async readTagGroup(group) {
-    //     const { MULTIPLE_SERVICE_PACKET } = CIP.MessageRouter.services;
+    async readTagGroup(group) {
+        const messages = group.generateReadMessageRequests();
 
-    //     const messages = group.generateReadMessageRequests();
+        for (let msg of messages) {
+            this.write_cip(msg.data);
 
-    //     for(let msg of messages) {
-    //         const MR = CIP.MessageRouter.build(MULTIPLE_SERVICE_PACKET, );
-    //     }
-    // }
+            const data = await new Promise((resolve, reject) => {
+                this.on("Multiple Service Packet", (err, data) => {
+                    if (err) reject(err);
+
+                    resolve(data);
+                });
+            });
+
+            this.removeAllListeners("Multiple Service Packet");
+
+            group.parseReadMessageResponses(data, msg.tag_ids);
+        }
+    }
     // endregion
 
     /**
@@ -373,7 +383,7 @@ class Controller extends ENIP {
             MULTIPLE_SERVICE_PACKET
         } = CIP.MessageRouter.services;
 
-        const error = generalStatusCode !== 0 ? { generalStatusCode, extendedStatus } : null;
+        let error = generalStatusCode !== 0 ? { generalStatusCode, extendedStatus } : null;
 
         // Route Incoming Message Responses
         /* eslint-disable indent */
@@ -400,7 +410,54 @@ class Controller extends ENIP {
                 this.emit("Write Tag Fragmented", error, data);
                 break;
             case MULTIPLE_SERVICE_PACKET:
-                this.emit("Multiple Service Packet", error, data);
+                if (error) {
+                    this.emit("Multiple Service Packet", error, data);
+                    break;
+                }
+
+                let services = data.readUInt16LE(0);
+                let offsets = [];
+                let responses = [];
+
+                for (let i = 0; i < services; i++) {
+                    offsets.push(data.readUInt16LE(i * 2 + 2));
+                }
+
+                for (let i = 0; i < offsets.length - 1; i++) {
+                    const length = offsets[i + 1] - offsets[i];
+
+                    let buf = Buffer.alloc(length);
+                    data.copy(buf, 0, offsets[i], offsets[i + 1]);
+
+                    const msgData = CIP.MessageRouter.parse(buf);
+
+                    if (msgData.generalStatusCode !== 0) {
+                        error = {
+                            generalStatusCode: msgData.generalStatusCode,
+                            extendedStatus: msgData.extendedStatus
+                        };
+                    }
+
+                    responses.push(msgData);
+                }
+
+                const length = data.length - offsets[offsets.length - 1];
+
+                let buf = Buffer.alloc(length);
+                data.copy(buf, 0, offsets[offsets.length - 1]);
+
+                const msgData = CIP.MessageRouter.parse(buf);
+
+                if (msgData.generalStatusCode !== 0) {
+                    error = {
+                        generalStatusCode: msgData.generalStatusCode,
+                        extendedStatus: msgData.extendedStatus
+                    };
+                }
+
+                responses.push(msgData);
+
+                this.emit("Multiple Service Packet", error, responses);
                 break;
             default:
                 this.emit("Unknown Reply", { generalStatusCode: 0x99, extendedStatus: [] }, data);

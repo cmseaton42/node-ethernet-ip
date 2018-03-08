@@ -52,6 +52,10 @@ class TagGroup extends EventEmitter {
         if (this.state.tags[tag.instance_id]) delete this.state.tags[tag.instance_id];
     }
 
+    forEach(callback) {
+        for(let key of Object.keys(this.state.tags)) callback(this.state.tags[key]);
+    }
+
     /**
      * Generates Array of Messages to Compile into a Multiple
      * Service Request
@@ -75,17 +79,30 @@ class TagGroup extends EventEmitter {
 
             // Build Current Message
             let msg = tag.generateReadMessageRequest();
-            tagIds.push(tag.instance_id);
 
             messageLength += msg.length + 2;
+
+            tagIds.push(tag.instance_id);
             msgArr.push(msg);
 
             // If Current Message Length is > 350 Bytes then Assemble Message and Move to Next Message
             if (messageLength >= 350) {
-                let buf = Buffer.concat(msgArr);
+                let buf = Buffer.alloc(2 + 2 * msgArr.length);
+                buf.writeUInt16LE(msgArr.length, 0);
 
-                MessageRouter.build(MULTIPLE_SERVICE_PACKET);
-                messages.push({ data: , tag_ids: tagIds });
+                let ptr = 2;
+                let offset = buf.length;
+
+                for (let i = 0; i < msgArr.length; i++) {
+                    buf.writeUInt16LE(offset, ptr);
+                    ptr += 2
+                    offset += msgArr[i].length
+                }
+
+                buf = Buffer.concat([buf, ...msgArr]);
+                buf = MessageRouter.build(MULTIPLE_SERVICE_PACKET, this.state.path, buf);
+
+                messages.push({ data: buf, tag_ids: tagIds });
                 messageLength = 0;
                 msgArr = [];
                 tagIds = [];
@@ -93,13 +110,32 @@ class TagGroup extends EventEmitter {
         }
 
         // Assemble and Push Last Message
-        if (msgArr.length > 0)
-            messages.push({
-                data: Buffer.concat(msgArr),
-                tag_ids: tagIds
-            });
+        if (msgArr.length > 0) {
+            let buf = Buffer.alloc(2 + 2 * msgArr.length);
+            buf.writeUInt16LE(msgArr.length, 0);
+
+            let ptr = 2;
+            let offset = buf.length;
+
+            for (let i = 0; i < msgArr.length; i++) {
+                buf.writeUInt16LE(offset, ptr);
+                ptr += 2;
+                offset += msgArr[i].length;
+            }
+
+            buf = Buffer.concat([buf, ...msgArr]);
+            buf = MessageRouter.build(MULTIPLE_SERVICE_PACKET, this.state.path, buf);
+
+            messages.push({ data: buf, tag_ids: tagIds });
+        }
 
         return messages;
+    }
+
+    parseReadMessageResponses(responses, ids) {
+        for(let i = 0; i < ids.length; i++) {
+            this.state.tags[ids[i]].parseReadMessageResponse(responses[i].data);
+        }
     }
 
     /**
@@ -117,39 +153,59 @@ class TagGroup extends EventEmitter {
         let msgArr = [];
         let tagIds = [];
         let messageLength = 0;
+        let offset = 2;
 
         // Loop Over Tags in List
-        for (let tag of Object.keys(tags)) {
+        for (let key of Object.keys(tags)) {
             const tag = tags[key];
 
-            // Only Add Message if Write is Necessary
-            if (tag.value !== tag.controller_value) {
-                // Build Current Message
-                let msg = tag.generateWriteMessageRequest();
-                tagIds.push(tag.instance_id);
+            // Build Current Message
+            let msg = tag.generateWriteMessageRequest();
 
-                messageLength += msg.length + 2;
-                msgArr.push(msg);
+            messageLength += msg.length + 2;
 
-                // If Current Message Length is > 350 Bytes then Assemble Message and Move to Next Message
-                if (messageLength >= 350) {
-                    messages.push({
-                        data: Buffer.concat(msgArr),
-                        tag_ids: tagIds
-                    });
-                    messageLength = 0;
-                    msgArr = [];
-                    tagIds = [];
+            tagIds.push(tag.instance_id);
+            msgArr.push(msg);
+
+            // If Current Message Length is > 350 Bytes then Assemble Message and Move to Next Message
+            if (messageLength >= 350) {
+                let buf = Buffer.alloc(2 + 2 * msgArr.length);
+                buf.writeUInt16LE(msgArr.length, 0);
+
+                let ptr = 2;
+
+                for (let msg of msgArr) {
+                    buf.writeUInt16LE(msg.length, ptr);
+                    ptr += 2
                 }
+
+                buf = Buffer.concat([buf, ...msgArr]);
+                buf = MessageRouter.build(MULTIPLE_SERVICE_PACKET, this.state.path, buf);
+
+                messages.push({ data: buf, tag_ids: tagIds });
+                messageLength = 0;
+                msgArr = [];
+                tagIds = [];
             }
         }
 
         // Assemble and Push Last Message
-        if (msgArr.length > 0)
-            messages.push({
-                data: Buffer.concat(msgArr),
-                tag_ids: tagIds
-            });
+        if (msgArr.length > 0) {
+            let buf = Buffer.alloc(2 + 2 * msgArr.length);
+            buf.writeUInt16LE(msgArr.length, 0);
+
+            let ptr = 2;
+
+            for (let msg of msgArr) {
+                buf.writeUInt16LE(msg.length, ptr);
+                ptr += 2;
+            }
+
+            buf = Buffer.concat([buf, ...msgArr]);
+            buf = MessageRouter.build(MULTIPLE_SERVICE_PACKET, this.state.path, buf);
+
+            messages.push({ data: buf, tag_ids: tagIds });
+        }
 
         return messages;
     }
@@ -163,3 +219,5 @@ class TagGroup extends EventEmitter {
 
     // endregion
 }
+
+module.exports = TagGroup;
