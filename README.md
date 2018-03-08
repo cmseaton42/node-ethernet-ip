@@ -1,6 +1,6 @@
 
 [![npm](https://img.shields.io/npm/v/ethernet-ip.svg?style=flat-square)](https://www.npmjs.com/package/ethernet-ip)
-[![license](https://img.shields.io/github/license/cmseaton42/node-ethernet-ip.svg?style=flat-square?colorB=00b200)](https://github.com/cmseaton42/node-ethernet-ip/blob/master/LICENSE)
+[![license](https://img.shields.io/github/license/cmseaton42/node-ethernet-ip.svg?style=flat-square)](https://github.com/cmseaton42/node-ethernet-ip/blob/master/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/cmseaton42/node-ethernet-ip.svg?&style=social&logo=github&label=Stars)](https://github.com/cmseaton42/node-ethernet-ip)
 
 
