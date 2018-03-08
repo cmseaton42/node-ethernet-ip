@@ -52,6 +52,12 @@ class TagGroup extends EventEmitter {
         if (this.state.tags[tag.instance_id]) delete this.state.tags[tag.instance_id];
     }
 
+    /**
+     * Iterable, Allows user to Iterate of each Tag in Group
+     *
+     * @param {function} callback - Accepts Tag Class
+     * @memberof TagGroup
+     */
     forEach(callback) {
         for (let key of Object.keys(this.state.tags)) callback(this.state.tags[key]);
     }
