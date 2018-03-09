@@ -328,6 +328,35 @@ class Controller extends ENIP {
     // endregion
 
     /**
+     * Writes to Tag Group Tags
+     *
+     * @param {TAgGroup} group
+     * @memberof Controller
+     */
+    async writeTagGroup(group) {
+        const messages = group.generateWriteMessageRequests();
+
+        // Send Each Multi Service Message
+        for (let msg of messages) {
+            console.log(msg.data);
+            this.write_cip(msg.data);
+
+            // Wait for Controller to Respond
+            const data = await new Promise((resolve, reject) => {
+                this.on("Multiple Service Packet", (err, data) => {
+                    if (err) reject(err);
+
+                    resolve(data);
+                });
+            });
+
+            this.removeAllListeners("Multiple Service Packet");
+
+            group.parseWriteMessageRequests(data, msg.tag_ids);
+        }
+    }
+
+    /**
      * Initialized Controller Specific Event Handlers
      *
      * @memberof Controller
