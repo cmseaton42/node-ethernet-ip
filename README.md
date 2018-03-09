@@ -209,7 +209,7 @@ PLC.connect("192.168.1.1", 0).then(() => {
 // Catch the Tag "Changed" and "Initialized" Events
 PLC.forEach(tag => {
     // Called on the First Successful Read from the Controller
-    tag.on("Initialized", (tag, oldValue) => {
+    tag.on("Initialized", tag => {
         console.log("Initialized", tag.value);
     });
 
