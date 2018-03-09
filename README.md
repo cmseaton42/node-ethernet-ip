@@ -270,4 +270,4 @@ Wanna *become* a contributor? [Here's](https://github.com/cmseaton42/node-ethern
 
 ## License
 
-This project is licensed under the MIT License - see the LICENCE file for details
+This project is licensed under the MIT License - see the [LICENCE](https://github.com/cmseaton42/node-ethernet-ip/blob/master/LICENSE) file for details
