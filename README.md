@@ -36,14 +36,11 @@ const { Controller, Tag } = require("ethernet-ip");
 // Intantiate Controller
 const PLC = new Controller();
 
-// Instantiate some Tag Instances
-const tag1 = new Tag("TEST_TAG"); // Controller Scoped
-const tag2 = new Tag("TEST", "Prog"); // Locally Scoped in Program "Prog"
-const tag3 = new Tag("TEST_REAL", "Prog");
-const tag4 = new Tag("TEST_BOOL", "Prog");
-
-// build tag array
-const group = [tag1, tag2, tag3, tag4];
+// Subscribe to Tags
+PLC.subscribe(new Tag("TEST_TAG"););
+PLC.subscribe(new Tag("TEST", "Prog"););
+PLC.subscribe(new Tag("TEST_REAL", "Prog"););
+PLC.subscribe(new Tag("TEST_BOOL", "Prog"););
 
 // Connect to PLC at IP, SLOT
 PLC.connect("10.1.60.205", 5).then(() => {
@@ -52,34 +49,16 @@ PLC.connect("10.1.60.205", 5).then(() => {
     // Log Connected to Console
     console.log(`\n\nConnected to PLC ${name}...\n`);
 
-    // Begin Reading Tags
-    readGroup(group, 50);
+    // Begin Scanning Subscription Group
+    PLC.scan();
 });
 
-// Subscribe to each tag's "Changed" Event to Log Values to Console
-for (let tag of group) {
+// Initialize Event Handlers
+PLC.forEach(tag => {
     tag.on("Changed", (tag, lastValue) => {
         console.log(`${tag.name} changed from ${lastValue} -> ${tag.value}`);
     });
-}
-
-///////////////////// FUNCTION DEFINITIONS ////////////////////////////////////////
-
-// Function to Delay X ms
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-// Function to continuously Read Tag Group Every X ms
-const readGroup = async (group, ms) => {
-    while(true) {
-        // Read Each Tag in Group
-        for (let tag of group) {
-            await PLC.readTag(tag);
-        }
-    
-        // Wait X ms until Processing Continues
-        await delay(ms);
-    }
-};
+})
 ```
 
 ## Built With
