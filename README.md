@@ -134,7 +134,7 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 #### Writing Tags
 
-**NOTE:** You *Must* read the tags first or manually provide a valid CIP Datatype.
+**NOTE:** You *MUST* read the tags first or manually provide a valid CIP datatype. The following examples are taking the latter approach.
 
 Writing Tags `Individually`...
 ```javascript
@@ -199,6 +199,10 @@ PLC.subscribe(new Tag("contTag")); // Controller Scope Tag
 PLC.subscribe(new Tag("progTag", "prog")); // Program Scope Tag in PLC Program "prog"
 
 PLC.connect("192.168.1.1", 0).then(() => {
+    // Set Scan Rate of Subscription Group to 50 ms (defaults to 200 ms)
+    PLC.scan_rate(50);
+
+    // Begin Scanning
     PLC.scan();
 });
 
@@ -218,7 +222,7 @@ PLC.forEach(tag => {
 
 ## Demos
 
-- **Simple Demo**
+- **Monitor Tags for Changes Demo**
 
 ![Simple Demo](http://f.cl.ly/items/3w452r3v3i1s0Z1f2X11/Screen%20recording%202018-03-06%20at%2004.58.30%20PM.gif)
 
