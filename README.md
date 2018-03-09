@@ -29,7 +29,7 @@ How the heck does this thing work anyway? Great question!
 #### Getting Connected
 
 ```javascript
-const { Contoller } = require("ethernet-ip");
+const { Contorller } = require("ethernet-ip");
 
 const PLC = new Controller();
 
