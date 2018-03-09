@@ -40,7 +40,7 @@ PLC.connect("192.168.1.1", 0).then(() => {
 });
 ```
 
-Controller.Properties Object
+Controller.properties Object
 ```javascript
  {
     name: String, // eg "1756-L83E/B"
