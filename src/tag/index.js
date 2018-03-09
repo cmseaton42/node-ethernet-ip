@@ -10,11 +10,11 @@ const dateFormat = require("dateFormat");
 // Static Class Property - Tracks Instances
 let instances = 0;
 class Tag extends EventEmitter {
-    constructor(tagname, program = null, datatype = Types.DINT) {
+    constructor(tagname, program = null, datatype = null) {
         super();
 
         if (!Tag.isValidTagname(tagname)) throw new Error("Tagname Must be of Type <string>");
-        if (!isValidTypeCode(datatype))
+        if (!isValidTypeCode(datatype) && datatype !== null)
             throw new Error("Datatype must be a Valid Type Code <number>");
 
         // Increment Instances
@@ -303,6 +303,13 @@ class Tag extends EventEmitter {
 
         const { tag } = this.state;
         const { SINT, INT, DINT, REAL, BOOL } = Types;
+
+        if (tag.type === null)
+            throw new Error(
+                `Tag ${
+                    tag.name
+                } has not been initialized. Try reading the tag from the controller first or manually providing a valid CIP datatype.`
+            );
 
         // Build Message Router to Embed in UCMM
         let buf = Buffer.alloc(4);

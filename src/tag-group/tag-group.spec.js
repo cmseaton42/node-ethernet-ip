@@ -5,11 +5,11 @@ const { Types } = require("../enip/cip/data-types");
 describe("Tag Class", () => {
     describe("Generate Requests Method", () => {
         it("Generates Appropriate Output", () => {
-            const tag1 = new Tag("helloTag1", "prog");
-            const tag2 = new Tag("helloTag2", "prog");
-            const tag3 = new Tag("helloTag3", "prog");
-            const tag4 = new Tag("helloTag4", "prog");
-            const tag5 = new Tag("helloTag5", "prog");
+            const tag1 = new Tag("helloTag1", "prog", Types.DINT);
+            const tag2 = new Tag("helloTag2", "prog", Types.DINT);
+            const tag3 = new Tag("helloTag3", "prog", Types.DINT);
+            const tag4 = new Tag("helloTag4", "prog", Types.DINT);
+            const tag5 = new Tag("helloTag5", "prog", Types.DINT);
 
             const group = new TagGroup();
 
@@ -25,11 +25,11 @@ describe("Tag Class", () => {
 
     describe("Generate Requests Method", () => {
         it("Generates Appropriate Output", () => {
-            const tag1 = new Tag("helloTag1", "prog");
-            const tag2 = new Tag("helloTag2", "prog");
-            const tag3 = new Tag("helloTag3", "prog");
-            const tag4 = new Tag("helloTag4", "prog");
-            const tag5 = new Tag("helloTag5", "prog");
+            const tag1 = new Tag("helloTag1", "prog", Types.DINT);
+            const tag2 = new Tag("helloTag2", "prog", Types.DINT);
+            const tag3 = new Tag("helloTag3", "prog", Types.DINT);
+            const tag4 = new Tag("helloTag4", "prog", Types.DINT);
+            const tag5 = new Tag("helloTag5", "prog", Types.DINT);
 
             const group = new TagGroup();
 
