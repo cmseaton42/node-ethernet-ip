@@ -64,7 +64,7 @@ Controller.properties Object
 Sync Controller WallClock to PC Datetime
 
 ```javascript
-const { Contoller } = require("ethernet-ip");
+const { Controller } = require("ethernet-ip");
 
 const PLC = new Controller();
 
@@ -78,7 +78,7 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 Set Controller WallClock to a Specific Date
 
 ```javascript
-const { Contoller } = require("ethernet-ip");
+const { Controller } = require("ethernet-ip");
 
 const PLC = new Controller();
 
@@ -94,7 +94,7 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 Reading Tags `Individually`...
 ```javascript
-const { Contoller, Tag } = require("ethernet-ip");
+const { Controller, Tag } = require("ethernet-ip");
 
 const PLC = new Controller();
 
@@ -113,7 +113,7 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 Reading Tags as a `Group`...
 ```javascript
-const { Contoller, Tag, TagGroup } = require("ethernet-ip");
+const { Controller, Tag, TagGroup } = require("ethernet-ip");
 
 const PLC = new Controller();
 const group = new TagGroup();
@@ -138,7 +138,7 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 Writing Tags `Individually`...
 ```javascript
-const { Contoller, Tag, CIP } = require("ethernet-ip");
+const { Controller, Tag, CIP } = require("ethernet-ip");
 const { DINT, BOOL } = CIP.DataTypes.Types;
 
 const PLC = new Controller();
@@ -163,7 +163,7 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 Writing Tags as a `Group`...
 ```javascript
-const { Contoller, Tag, TagGroup, CIP } = require("ethernet-ip");
+const { Controller, Tag, TagGroup, CIP } = require("ethernet-ip");
 const { DINT, BOOL } = CIP.DataTypes.Types;
 
 const PLC = new Controller();
@@ -190,7 +190,7 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 #### Subscribing to Controller Tags
 
 ```javascript
-const { Contoller, Tag } = require("ethernet-ip");
+const { Controller, Tag } = require("ethernet-ip");
 
 const PLC = new Controller();
 
