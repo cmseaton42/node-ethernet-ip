@@ -91,6 +91,8 @@ const readGroup = async (group, ms) => {
 
 * **Canaan Seaton** - *Owner* - [GitHub Profile](https://github.com/cmseaton42) - [Personal Website](http://www.canaanseaton.com/)
 
+Wanna *become* a contributor? [Here's](https://github.com/cmseaton42/node-ethernet-ip/blob/master/CONTRIBUTE.md) how!
+
 ## License
 
 This project is licensed under the MIT License - see the LICENCE file for details
