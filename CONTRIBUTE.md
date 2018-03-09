@@ -49,17 +49,17 @@ Contributing to the Code is great but feedback on the project is just as importa
 
 1. Research to make sure the issue isn't already being tracked
 2. Submit your issue via the project [issue tracker]()
-  - Be Clear
-  - Be Thorough (too much information >>> not enough information)
-  - Include Pictures (Screenshots of Errors, gifs, etc)
+    - Be Clear
+    - Be Thorough (too much information >>> not enough information)
+    - Include Pictures (Screenshots of Errors, gifs, etc)
 
 **Feature Requests**
 
 Have you ever been working with a project and thought *Man, I wish it just did this out of the box*? 
 
 1. Submit your feature request to the [issue tracker]() **Be Sure to Mark your Issue as a Feature Request in the title (eg `[FEATURE REQUEST] Some Awesome Idea`)
-  - Be Clear
-  - Be Thorough (too much information >>> not enough information)
-  - Don't submit it and *forget* it, be prepared to answer some follow up questions
+    - Be Clear
+    - Be Thorough (too much information >>> not enough information)
+    - Don't submit it and *forget* it, be prepared to answer some follow up questions
 
 
