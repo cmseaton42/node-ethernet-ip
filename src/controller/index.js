@@ -1,5 +1,6 @@
 const { ENIP, CIP } = require("../enip");
 const dateFormat = require("dateformat");
+const TagGroup = require("../tag-group");
 
 class Controller extends ENIP {
     constructor() {
@@ -21,11 +22,27 @@ class Controller extends ENIP {
                 majorRecoverableFault: false,
                 majorUnrecoverableFault: false,
                 io_faulted: false
-            }
+            },
+            subs: new TagGroup(),
+            scanning: false,
+            scan_rate: 200 // ms
         };
     }
 
     // region Property Accessors
+    get scan_rate() {
+        return this.state.scan_rate;
+    }
+
+    set scan_rate(rate) {
+        if (typeof scan !== "number") throw new Error("scan_rate must be of Type <number>");
+        this.state.scan_rate = rate;
+    }
+
+    get scanning() {
+        return this.state.scanning;
+    }
+
     get properties() {
         return this.state.controller;
     }
@@ -325,7 +342,6 @@ class Controller extends ENIP {
             group.parseReadMessageResponses(data, msg.tag_ids);
         }
     }
-    // endregion
 
     /**
      * Writes to Tag Group Tags
@@ -338,7 +354,6 @@ class Controller extends ENIP {
 
         // Send Each Multi Service Message
         for (let msg of messages) {
-            console.log(msg.data);
             this.write_cip(msg.data);
 
             // Wait for Controller to Respond
@@ -356,6 +371,36 @@ class Controller extends ENIP {
         }
     }
 
+    /**
+     * Adds Tag to Subscription Group
+     *
+     * @param {Tagany} tag
+     * @memberof Controller
+     */
+    subscribe(tag) {
+        this.state.subs.add(tag);
+    }
+
+    async scan() {
+        this.state.scanning = true;
+
+        while (this.state.scanning) {
+            await this.readTagGroup(this.state.subs);
+
+            delay(this.state.scan_rate);
+        }
+    }
+
+    pauseScan() {
+        this.state.scanning = false;
+    }
+
+    forEach(callback) {
+        this.state.subs.forEach(callback);
+    }
+    // endregion
+
+    // region Private Methods
     /**
      * Initialized Controller Specific Event Handlers
      *
@@ -513,5 +558,7 @@ class Controller extends ENIP {
     }
     // endregion
 }
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 module.exports = Controller;
