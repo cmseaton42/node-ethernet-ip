@@ -247,7 +247,7 @@ class Controller extends ENIP {
         this.write_cip(MR);
 
         // Wait for Response
-        const data = await new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
             this.on("Set Attribute Single", (err, data) => {
                 if (err) reject(err);
                 resolve(data);
@@ -268,8 +268,6 @@ class Controller extends ENIP {
      * @memberof Controller
      */
     async readTag(tag, size = null) {
-        const { SINT, INT, DINT, REAL, BOOL } = CIP.DataTypes.Types;
-
         const MR = tag.generateReadMessageRequest(size);
 
         this.write_cip(MR);
@@ -302,7 +300,7 @@ class Controller extends ENIP {
         this.write_cip(MR);
 
         // Wait for Response
-        const data = await new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
             this.on("Write Tag", (err, data) => {
                 if (err) reject(err);
 
@@ -486,7 +484,7 @@ class Controller extends ENIP {
             case WRITE_TAG_FRAGMENTED:
                 this.emit("Write Tag Fragmented", error, data);
                 break;
-            case MULTIPLE_SERVICE_PACKET:
+            case MULTIPLE_SERVICE_PACKET: {
                 // If service errored then propogate error
                 if (error) {
                     this.emit("Multiple Service Packet", error, data);
@@ -542,6 +540,7 @@ class Controller extends ENIP {
 
                 this.emit("Multiple Service Packet", error, responses);
                 break;
+            }
             default:
                 this.emit("Unknown Reply", { generalStatusCode: 0x99, extendedStatus: [] }, data);
                 break;
@@ -549,13 +548,13 @@ class Controller extends ENIP {
         /* eslint-enable indent */
     }
 
-    _handleSendUnitDataReceived(data) {
-        // TODO: Implement when ready for Connected Messaging
-    }
+    // _handleSendUnitDataReceived(data) {
+    //     // TODO: Implement when ready for Connected Messaging
+    // }
 
-    _handleSessionRegistrationFailed(error) {
-        // TODO: Implement Handler if Necessary
-    }
+    // _handleSessionRegistrationFailed(error) {
+    //     // TODO: Implement Handler if Necessary
+    // }
     // endregion
 }
 

@@ -21,7 +21,7 @@ describe("Message Router", () => {
                 0x01, // Extended Status
                 0x03,
                 0x05,
-                0x01, 
+                0x01,
                 0x03,
                 0x05,
                 0x01, // Reply Service Data
@@ -30,9 +30,9 @@ describe("Message Router", () => {
                 0x04,
                 0x05
             ]);
-        
+
             const test = parse(buf);
             expect(test).toMatchSnapshot();
-        })
-    })
+        });
+    });
 });

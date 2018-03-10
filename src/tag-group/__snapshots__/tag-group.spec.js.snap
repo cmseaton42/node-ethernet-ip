@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Tag Class Generate Requests Method Generates Appropriate Output 1`] = `
+exports[`Tag Class Generate Read Requests Method Generates Appropriate Output 1`] = `
 Array [
   Object {
     "data": Object {
@@ -187,4 +187,4 @@ Array [
 ]
 `;
 
-exports[`Tag Class Generate Requests Method Generates Appropriate Output 2`] = `Array []`;
+exports[`Tag Class Generate Write Requests Method Generates Appropriate Output 1`] = `Array []`;

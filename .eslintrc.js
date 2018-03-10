@@ -4,7 +4,15 @@ module.exports = {
         es6: true,
         node: true
     },
-    extends: "eslint:recommended",
+    extends: ["eslint:recommended"],
+    parserOptions: {
+        ecmaVersion: 8,
+        sourceType: "module",
+        ecmaFeatures: {
+            jsx: true,
+            experimentalObjectRestSpread: true
+        }
+    },
     rules: {
         indent: ["error", 4],
         "no-console": 0,

@@ -1,7 +1,6 @@
 const { EventEmitter } = require("events");
 const crypto = require("crypto");
 const { CIP } = require("../enip");
-const { LOGICAL } = CIP.EPATH.segments;
 const { MessageRouter } = CIP;
 const { READ_TAG, WRITE_TAG } = MessageRouter.services;
 const { Types, getTypeCodeString, isValidTypeCode } = require("../enip/cip/data-types");

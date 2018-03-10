@@ -1,4 +1,4 @@
-const { Types, build } = require("./index");
+const { build } = require("./index");
 
 describe("EPATH", () => {
     describe("DATA Segment Build Utility", () => {

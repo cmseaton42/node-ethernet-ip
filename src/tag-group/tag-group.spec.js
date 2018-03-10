@@ -3,7 +3,7 @@ const Tag = require("../tag");
 const { Types } = require("../enip/cip/data-types");
 
 describe("Tag Class", () => {
-    describe("Generate Requests Method", () => {
+    describe("Generate Read Requests Method", () => {
         it("Generates Appropriate Output", () => {
             const tag1 = new Tag("helloTag1", "prog", Types.DINT);
             const tag2 = new Tag("helloTag2", "prog", Types.DINT);
@@ -23,7 +23,7 @@ describe("Tag Class", () => {
         });
     });
 
-    describe("Generate Requests Method", () => {
+    describe("Generate Write Requests Method", () => {
         it("Generates Appropriate Output", () => {
             const tag1 = new Tag("helloTag1", "prog", Types.DINT);
             const tag2 = new Tag("helloTag2", "prog", Types.DINT);

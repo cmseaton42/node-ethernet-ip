@@ -77,7 +77,6 @@ class TagGroup extends EventEmitter {
         let msgArr = [];
         let tagIds = [];
         let messageLength = 0;
-        let offset = 2;
 
         // Loop Over Tags in List
         for (let key of Object.keys(tags)) {
@@ -166,7 +165,6 @@ class TagGroup extends EventEmitter {
         let msgArr = [];
         let tagIds = [];
         let messageLength = 0;
-        let offset = 2;
 
         // Loop Over Tags in List
         for (let key of Object.keys(tags)) {

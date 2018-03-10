@@ -1,6 +1,5 @@
 const { Socket, isIPv4 } = require("net");
 const { EIP_PORT } = require("../config");
-const colors = require("colors");
 const encapsulation = require("./encapsulation");
 const CIP = require("./cip");
 
@@ -100,7 +99,7 @@ class ENIP extends Socket {
         this.state.TCP.establishing = true;
 
         // Connect to Controller and Then Send Register Session Packet
-        await new Promise((resolve, _) => {
+        await new Promise(resolve => {
             super.connect(EIP_PORT, IP_ADDR, () => {
                 this.state.TCP.establishing = false;
                 this.state.TCP.established = true;
@@ -111,7 +110,7 @@ class ENIP extends Socket {
         });
 
         // Wait for Session to be Registered
-        const sessid = await new Promise((resolve, reject) => {
+        const sessid = await new Promise(resolve => {
             this.on("Session Registered", sessid => {
                 resolve(sessid);
             });
@@ -146,7 +145,7 @@ class ENIP extends Socket {
      * @memberof ENIP
      */
     write_cip(data, connected = false, timeout = 10, cb = null) {
-        const { sendRRData, sendUnitData, types } = encapsulation;
+        const { sendRRData, sendUnitData } = encapsulation;
         const { session, connection } = this.state;
 
         if (session.established) {
@@ -237,22 +236,22 @@ class ENIP extends Socket {
                     this.emit("Session Unregistered");
                     break;
 
-                case commands.SendRRData:
+                case commands.SendRRData: {
                     let buf1 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
                     encapsulatedData.data.copy(buf1, 0, 6);
 
                     const srrd = CPF.parse(buf1);
                     this.emit("SendRRData Received", srrd);
                     break;
-
-                case commands.SendUnitData:
+                }
+                case commands.SendUnitData: {
                     let buf2 = Buffer.alloc(encapsulatedData.length - 6); // length of Data - Interface Handle <UDINT> and Timeout <UINT>
                     encapsulatedData.data.copy(buf2, 0, 6);
 
-                    const sud = CPF.parse(buf1);
+                    const sud = CPF.parse(buf2);
                     this.emit("SendUnitData Received", sud);
                     break;
-
+                }
                 default:
                     this.emit("Unhandled Encapsulated Command Received", encapsulatedData);
             }
@@ -269,7 +268,7 @@ class ENIP extends Socket {
     _handleCloseEvent(hadError) {
         this.state.session.established = false;
         this.state.TCP.established = false;
-        if (hadError) throw new Exception("Socket Transmission Failure Occurred!");
+        if (hadError) throw new Error("Socket Transmission Failure Occurred!");
     }
     // endregion
 }

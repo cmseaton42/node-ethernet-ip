@@ -15,20 +15,20 @@ describe("EPATH", () => {
             test = build(1, 5);
             expect(test).toMatchSnapshot();
         });
-        
+
         it("Throws with Bad Input", () => {
             const fn = (port, link) => {
                 return () => {
                     build(port, link);
-                }
-            }
+                };
+            };
 
             expect(fn("hello", 5)).toThrow();
             expect(fn(0, 5)).toThrow();
             expect(fn(-5, 5)).toThrow();
             expect(fn(1, 5)).not.toThrow();
             expect(fn(1, -1)).toThrow();
-            expect(fn(1, {hey: "you"})).toThrow();
+            expect(fn(1, { hey: "you" })).toThrow();
         });
     });
 });

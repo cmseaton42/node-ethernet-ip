@@ -15,7 +15,7 @@ const services = {
     READ_TAG_FRAGMENTED: 0x52,
     WRITE_TAG_FRAGMENTED: 0x53,
     READ_MODIFY_WRITE_TAG: 0x4e
-}
+};
 
 /**
  * Builds a Message Router Request Buffer
@@ -29,7 +29,7 @@ const build = (service, path, data) => {
     const pathBuf = Buffer.from(path);
     const dataBuf = Buffer.from(data);
 
-    const pathLen = Math.ceil(pathBuf.length / 2)
+    const pathLen = Math.ceil(pathBuf.length / 2);
     const buf = Buffer.alloc(2 + pathLen * 2 + dataBuf.length);
 
     buf.writeUInt8(service, 0); // Write Service Code to Buffer <USINT>
