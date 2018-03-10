@@ -28,14 +28,14 @@
         "controller"
     ],
     "dependencies": {
-        "colors": "^1.1.2",
         "dateformat": "^3.0.3"
     },
     "devDependencies": {
+        "colors": "^1.2.0",
+        "coveralls": "^3.0.0",
         "eslint": "^4.18.2",
         "eslint-plugin-jest": "^21.13.0",
-        "jest": "^21.2.1",
-        "coveralls": "^3.0.0"
+        "jest": "^21.2.1"
     },
     "author": "Canaan Seaton",
     "license": "MIT",
