@@ -10,7 +10,7 @@
         "test:coverage": "jest --coverage",
         "test:detailed": "jest --verbose",
         "test:update": "jest -u",
-        "lint": "./node_modules/.bin/eslint --ext .js",
+        "lint": "./node_modules/.bin/eslint . --ext .js",
         "lint:fix": "npm run lint -- --fix"
     },
     "keywords": [

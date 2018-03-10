@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Controller Class Properties Accessors Controller Properties 1`] = `
+Object {
+  "faulted": false,
+  "io_faulted": false,
+  "majorRecoverableFault": false,
+  "majorUnrecoverableFault": false,
+  "minorRecoverableFault": false,
+  "minorUnrecoverableFault": false,
+  "name": null,
+  "path": null,
+  "serial_number": null,
+  "slot": null,
+  "status": null,
+  "time": null,
+  "version": null,
+}
+`;
+
+exports[`Controller Class Properties Accessors Time 1`] = `"January 05, 2016 - 12:00:00 AM"`;

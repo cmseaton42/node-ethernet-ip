@@ -29,24 +29,55 @@ class Controller extends ENIP {
         };
     }
 
-    // region Property Accessors
+    // region Property Definitions
+    /**
+     * Returns the Scan Rate of Subscription Tags
+     *
+     * @memberof Controller
+     * @returns {number} ms
+     */
     get scan_rate() {
         return this.state.scan_rate;
     }
 
+    /**
+     * Sets the Subsciption Group Scan Rate
+     *
+     * @memberof Controller
+     */
     set scan_rate(rate) {
-        if (typeof scan !== "number") throw new Error("scan_rate must be of Type <number>");
-        this.state.scan_rate = rate;
+        if (typeof rate !== "number") throw new Error("scan_rate must be of Type <number>");
+        this.state.scan_rate = Math.trunc(rate);
     }
 
+    /**
+     * Get the status of Scan Group
+     *
+     * @readonly
+     * @memberof Controller
+     */
     get scanning() {
         return this.state.scanning;
     }
 
+    /**
+     * Gets the Controller Properties Object
+     *
+     * @readonly
+     * @memberof Controller
+     * @returns {object}
+     */
     get properties() {
         return this.state.controller;
     }
 
+    /**
+     * Fetches the last timestamp retrieved from the controller
+     * in human readable form
+     *
+     * @readonly
+     * @memberof Controller
+     */
     get time() {
         return dateFormat(this.state.controller.time, "mmmm dd, yyyy - hh:MM:ss TT");
     }
@@ -379,6 +410,11 @@ class Controller extends ENIP {
         this.state.subs.add(tag);
     }
 
+    /**
+     * Begin Scanning Subscription Group
+     *
+     * @memberof Controller
+     */
     async scan() {
         this.state.scanning = true;
 
@@ -389,10 +425,21 @@ class Controller extends ENIP {
         }
     }
 
+    /**
+     * Pauses Scanning of Subscription Group
+     *
+     * @memberof Controller
+     */
     pauseScan() {
         this.state.scanning = false;
     }
 
+    /**
+     * Iterates of each tag in Subscription Group
+     * 
+     * @param {function} callback 
+     * @memberof Controller
+     */
     forEach(callback) {
         this.state.subs.forEach(callback);
     }
