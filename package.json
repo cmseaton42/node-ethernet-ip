@@ -4,7 +4,7 @@
     "description": "A simple node interface for Ethernet/IP.",
     "main": "./src/index.js",
     "scripts": {
-        "test": "jest",
+        "test": "npm run lint && jest && npm run test:coverage",
         "test:watch": "npm test -- --watch",
         "test:coverage": "npm test -- --coverage",
         "test:detailed": "npm test -- --verbose",
