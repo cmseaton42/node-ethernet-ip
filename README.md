@@ -3,6 +3,7 @@
 [![Gitter](https://img.shields.io/gitter/room/node-ethernet-ip/nw.js.svg?style=flat-square)](https://gitter.im/node-ethernet-ip/Lobby)
 [![license](https://img.shields.io/github/license/cmseaton42/node-ethernet-ip.svg?style=flat-square)](https://github.com/cmseaton42/node-ethernet-ip/blob/master/LICENSE)
 ![Travis](https://img.shields.io/travis/cmseaton42/node-ethernet-ip.svg?style=flat-square)
+![Coveralls github](https://img.shields.io/coveralls/github/cmseaton42/node-ethernet-ip.svg?style=flat-square)
 [![GitHub stars](https://img.shields.io/github/stars/cmseaton42/node-ethernet-ip.svg?&style=social&logo=github&label=Stars)](https://github.com/cmseaton42/node-ethernet-ip)
 
 
