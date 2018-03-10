@@ -4,13 +4,14 @@
     "description": "A simple node interface for Ethernet/IP.",
     "main": "./src/index.js",
     "scripts": {
-        "test": "npm run lint && jest && npm run test:coverage",
+        "test": "npm run lint && jest && npm run test:coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
+        "test:local": "npm run lint && jest && npm run test:coverage",
         "test:watch": "jest --watch",
         "test:coverage": "jest --coverage",
         "test:detailed": "jest --verbose",
         "test:update": "jest -u",
-        "lint": "./node_modules/.bin/eslint . ./**/*.js",
-        "lint:fix": "./node_modules/.bin/eslint . ./**/*.js --fix"
+        "lint": "./node_modules/.bin/eslint --ext .js",
+        "lint:fix": "npm run lint -- --fix"
     },
     "keywords": [
         "rockwell",
@@ -21,7 +22,10 @@
         "ethernet-ip",
         "ethernet/ip",
         "CIP",
-        "industrial"
+        "industrial",
+        "PLC",
+        "communication",
+        "controller"
     ],
     "dependencies": {
         "colors": "^1.1.2",
@@ -30,7 +34,8 @@
     "devDependencies": {
         "eslint": "^4.18.2",
         "eslint-plugin-jest": "^21.13.0",
-        "jest": "^21.2.1"
+        "jest": "^21.2.1",
+        "coveralls": "^3.0.0"
     },
     "author": "Canaan Seaton",
     "license": "MIT",
