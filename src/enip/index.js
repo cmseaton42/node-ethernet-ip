@@ -2,6 +2,7 @@ const { Socket, isIPv4 } = require("net");
 const { EIP_PORT } = require("../config");
 const encapsulation = require("./encapsulation");
 const CIP = require("./cip");
+const { promiseTimeout } = require("../utilities");
 
 /**
  * Low Level Ethernet/IP
@@ -99,7 +100,7 @@ class ENIP extends Socket {
         this.state.TCP.establishing = true;
 
         // Connect to Controller and Then Send Register Session Packet
-        await new Promise(resolve => {
+        await promiseTimeout(new Promise(resolve => {
             super.connect(EIP_PORT, IP_ADDR, () => {
                 this.state.TCP.establishing = false;
                 this.state.TCP.established = true;
@@ -107,7 +108,7 @@ class ENIP extends Socket {
                 this.write(registerSession());
                 resolve();
             });
-        });
+        }), 2000);
 
         // Wait for Session to be Registered
         const sessid = await new Promise(resolve => {

@@ -1,6 +1,7 @@
 const { ENIP, CIP } = require("../enip");
 const dateFormat = require("dateformat");
 const TagGroup = require("../tag-group");
+const { delay } = require("../utilities");
 
 class Controller extends ENIP {
     constructor() {
@@ -436,8 +437,8 @@ class Controller extends ENIP {
 
     /**
      * Iterates of each tag in Subscription Group
-     * 
-     * @param {function} callback 
+     *
+     * @param {function} callback
      * @memberof Controller
      */
     forEach(callback) {
@@ -604,7 +605,5 @@ class Controller extends ENIP {
     // }
     // endregion
 }
-
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 module.exports = Controller;
