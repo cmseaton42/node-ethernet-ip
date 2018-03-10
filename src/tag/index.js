@@ -5,7 +5,7 @@ const { LOGICAL } = CIP.EPATH.segments;
 const { MessageRouter } = CIP;
 const { READ_TAG, WRITE_TAG } = MessageRouter.services;
 const { Types, getTypeCodeString, isValidTypeCode } = require("../enip/cip/data-types");
-const dateFormat = require("dateFormat");
+const dateFormat = require("dateformat");
 
 // Static Class Property - Tracks Instances
 let instances = 0;
