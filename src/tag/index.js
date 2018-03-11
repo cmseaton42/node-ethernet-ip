@@ -84,7 +84,7 @@ class Tag extends EventEmitter {
     get name() {
         const { program, name } = this.state.tag;
 
-        if(program === null){
+        if (program === null) {
             return name;
         } else {
             return `Program:${program}.${name}`;
