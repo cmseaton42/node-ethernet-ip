@@ -39,7 +39,9 @@ class Tag extends EventEmitter {
                 type: datatype,
                 value: null,
                 controllerValue: null,
-                path: pathBuf
+                path: pathBuf,
+                program: program,
+                stage_write: false
             },
             read_size: 0x01,
             error: { code: null, status: null },
@@ -80,7 +82,13 @@ class Tag extends EventEmitter {
      * @returns {string} tagname
      */
     get name() {
-        return this.state.tag.name;
+        const { program, name } = this.state.tag;
+
+        if(program === null){
+            return name;
+        } else {
+            return `Program:${program}.${name}`;
+        }
     }
 
     /**
@@ -155,6 +163,7 @@ class Tag extends EventEmitter {
      * @property {number|string|boolean|object} new value
      */
     set value(newValue) {
+        this.state.tag.stage_write = true;
         this.state.tag.value = newValue;
     }
 
@@ -168,7 +177,10 @@ class Tag extends EventEmitter {
         if (newValue !== this.state.tag.controllerValue) {
             const lastValue = this.state.tag.controllerValue;
             this.state.tag.controllerValue = newValue;
-            this.state.tag.value = newValue;
+
+            const { stage_write } = this.state.tag;
+            if (!stage_write) this.state.tag.value = newValue;
+
             this.state.timestamp = new Date();
 
             if (lastValue !== null) this.emit("Changed", this, lastValue);
@@ -228,6 +240,16 @@ class Tag extends EventEmitter {
      */
     get path() {
         return this.state.tag.path;
+    }
+
+    /**
+     * Returns a whether or not a write is staging
+     *
+     * @returns {boolean}
+     * @memberof Tag
+     */
+    get write_ready() {
+        return this.state.tag.stage_write;
     }
     // endregion
 
@@ -355,6 +377,16 @@ class Tag extends EventEmitter {
 
         // Build Current Message
         return MessageRouter.build(WRITE_TAG, tag.path, buf);
+    }
+
+    /**
+     * Unstages Value Edit
+     *
+     * @memberof Tag
+     */
+    unstageWriteRequest() {
+        this.state.tag.stage_write = false;
+        this.state.tag.value = this.state.controllerValue;
     }
     // endregion
 

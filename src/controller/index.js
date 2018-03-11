@@ -363,7 +363,7 @@ class Controller extends ENIP {
                 this.on("Write Tag", (err, data) => {
                     if (err) reject(err);
 
-                    tag.controller_value = tag.value;
+                    tag.unstageWriteRequest();
                     resolve(data);
                 });
             }),
@@ -463,6 +463,14 @@ class Controller extends ENIP {
 
         while (this.state.scanning) {
             await this.readTagGroup(this.state.subs).catch(e => {
+                if (e.message) {
+                    throw new Error(`<SCAN_GROUP> ${e.message}`);
+                } else {
+                    throw e;
+                }
+            });
+
+            await this.writeTagGroup(this.state.subs).catch(e => {
                 if (e.message) {
                     throw new Error(`<SCAN_GROUP> ${e.message}`);
                 } else {

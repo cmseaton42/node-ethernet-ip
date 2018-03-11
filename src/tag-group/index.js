@@ -236,7 +236,7 @@ class TagGroup extends EventEmitter {
      */
     parseWriteMessageRequests(responses, ids) {
         for (let id of ids) {
-            this.state.tags[id].controller_value = this.state.tags[id].value;
+            this.state.tags[id].unstageWriteRequest();
         }
     }
     // endregion
