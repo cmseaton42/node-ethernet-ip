@@ -99,29 +99,45 @@ class ENIP extends Socket {
         this.state.session.establishing = true;
         this.state.TCP.establishing = true;
 
-        // Connect to Controller and Then Send Register Session Packet
-        await promiseTimeout(new Promise(resolve => {
-            super.connect(EIP_PORT, IP_ADDR, () => {
-                this.state.TCP.establishing = false;
-                this.state.TCP.established = true;
+        const connectErr = new Error(
+            "TIMEOUT occurred while attempting to establish TCP connection with Controller."
+        );
 
-                this.write(registerSession());
-                resolve();
-            });
-        }), 2000);
+        // Connect to Controller and Then Send Register Session Packet
+        await promiseTimeout(
+            new Promise(resolve => {
+                super.connect(EIP_PORT, IP_ADDR, () => {
+                    this.state.TCP.establishing = false;
+                    this.state.TCP.established = true;
+
+                    this.write(registerSession());
+                    resolve();
+                });
+            }),
+            10000,
+            connectErr
+        );
+
+        const sessionErr = new Error(
+            "TIMEOUT occurred while attempting to establish Ethernet/IP session with Controller."
+        );
 
         // Wait for Session to be Registered
-        const sessid = await new Promise(resolve => {
-            this.on("Session Registered", sessid => {
-                resolve(sessid);
-            });
+        const sessid = await promiseTimeout(
+            new Promise(resolve => {
+                this.on("Session Registered", sessid => {
+                    resolve(sessid);
+                });
 
-            this.on("Session Registration Failed", error => {
-                this.state.error.code = error;
-                this.state.error.msg = "Failed to Register Session";
-                resolve(null);
-            });
-        });
+                this.on("Session Registration Failed", error => {
+                    this.state.error.code = error;
+                    this.state.error.msg = "Failed to Register Session";
+                    resolve(null);
+                });
+            }),
+            10000,
+            sessionErr
+        );
 
         // Clean Up Local Listeners
         this.removeAllListeners("Session Registered");

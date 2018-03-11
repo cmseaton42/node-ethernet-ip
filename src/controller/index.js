@@ -1,7 +1,7 @@
 const { ENIP, CIP } = require("../enip");
 const dateFormat = require("dateformat");
 const TagGroup = require("../tag-group");
-const { delay } = require("../utilities");
+const { delay, promiseTimeout } = require("../utilities");
 
 class Controller extends ENIP {
     constructor() {
@@ -158,13 +158,19 @@ class Controller extends ENIP {
 
         this.write_cip(MR);
 
+        const readPropsErr = new Error("TIMEOUT occurred while reading Controller Props.");
+
         // Wait for Response
-        const data = await new Promise((resolve, reject) => {
-            this.on("Get Attribute All", (err, data) => {
-                if (err) reject(err);
-                resolve(data);
-            });
-        });
+        const data = await promiseTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Get Attribute All", (err, data) => {
+                    if (err) reject(err);
+                    resolve(data);
+                });
+            }),
+            10000,
+            readPropsErr
+        );
 
         this.removeAllListeners("Get Attribute All");
 
@@ -217,13 +223,19 @@ class Controller extends ENIP {
 
         this.write_cip(MR);
 
+        const readPropsErr = new Error("TIMEOUT occurred while reading Controller Clock.");
+
         // Wait for Response
-        const data = await new Promise((resolve, reject) => {
-            this.on("Get Attribute Single", (err, data) => {
-                if (err) reject(err);
-                resolve(data);
-            });
-        });
+        const data = await promiseTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Get Attribute Single", (err, data) => {
+                    if (err) reject(err);
+                    resolve(data);
+                });
+            }),
+            10000,
+            readPropsErr
+        );
 
         this.removeAllListeners("Get Attribute Single");
 
@@ -278,13 +290,19 @@ class Controller extends ENIP {
 
         this.write_cip(MR);
 
+        const writeClockErr = new Error("TIMEOUT occurred while writing Controller Clock.");
+
         // Wait for Response
-        await new Promise((resolve, reject) => {
-            this.on("Set Attribute Single", (err, data) => {
-                if (err) reject(err);
-                resolve(data);
-            });
-        });
+        await promiseTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Set Attribute Single", (err, data) => {
+                    if (err) reject(err);
+                    resolve(data);
+                });
+            }),
+            10000,
+            writeClockErr
+        );
 
         this.removeAllListeners("Set Attribute Single");
 
@@ -304,13 +322,19 @@ class Controller extends ENIP {
 
         this.write_cip(MR);
 
+        const readTagErr = new Error(`TIMEOUT occurred while writing Reading Tag: ${tag.name}.`);
+
         // Wait for Response
-        const data = await new Promise((resolve, reject) => {
-            this.on("Read Tag", (err, data) => {
-                if (err) reject(err);
-                resolve(data);
-            });
-        });
+        const data = await promistTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Read Tag", (err, data) => {
+                    if (err) reject(err);
+                    resolve(data);
+                });
+            }),
+            10000,
+            readTagErr
+        );
 
         this.removeAllListeners("Read Tag");
 
@@ -331,15 +355,21 @@ class Controller extends ENIP {
 
         this.write_cip(MR);
 
-        // Wait for Response
-        await new Promise((resolve, reject) => {
-            this.on("Write Tag", (err, data) => {
-                if (err) reject(err);
+        const writeTagErr = new Error(`TIMEOUT occurred while writing Writing Tag: ${tag.name}.`);
 
-                tag.controller_value = tag.value;
-                resolve(data);
-            });
-        });
+        // Wait for Response
+        await promiseTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Write Tag", (err, data) => {
+                    if (err) reject(err);
+
+                    tag.controller_value = tag.value;
+                    resolve(data);
+                });
+            }),
+            10000,
+            writeTagErr
+        );
 
         this.removeAllListeners("Write Tag");
     }
@@ -353,18 +383,24 @@ class Controller extends ENIP {
     async readTagGroup(group) {
         const messages = group.generateReadMessageRequests();
 
+        const readTagGroupErr = new Error(`TIMEOUT occurred while writing Reading Tag Group.`);
+
         // Send Each Multi Service Message
         for (let msg of messages) {
             this.write_cip(msg.data);
 
             // Wait for Controller to Respond
-            const data = await new Promise((resolve, reject) => {
-                this.on("Multiple Service Packet", (err, data) => {
-                    if (err) reject(err);
+            const data = await promiseTimeout(
+                new Promise((resolve, reject) => {
+                    this.on("Multiple Service Packet", (err, data) => {
+                        if (err) reject(err);
 
-                    resolve(data);
-                });
-            });
+                        resolve(data);
+                    });
+                }),
+                10000,
+                readTagGroupErr
+            );
 
             this.removeAllListeners("Multiple Service Packet");
 
@@ -382,18 +418,24 @@ class Controller extends ENIP {
     async writeTagGroup(group) {
         const messages = group.generateWriteMessageRequests();
 
+        const writeTagGroupErr = new Error(`TIMEOUT occurred while writing Reading Tag Group.`);
+
         // Send Each Multi Service Message
         for (let msg of messages) {
             this.write_cip(msg.data);
 
             // Wait for Controller to Respond
-            const data = await new Promise((resolve, reject) => {
-                this.on("Multiple Service Packet", (err, data) => {
-                    if (err) reject(err);
+            const data = await promiseTimeout(
+                new Promise((resolve, reject) => {
+                    this.on("Multiple Service Packet", (err, data) => {
+                        if (err) reject(err);
 
-                    resolve(data);
-                });
-            });
+                        resolve(data);
+                    });
+                }),
+                10000,
+                writeTagGroupErr
+            );
 
             this.removeAllListeners("Multiple Service Packet");
 
@@ -420,7 +462,13 @@ class Controller extends ENIP {
         this.state.scanning = true;
 
         while (this.state.scanning) {
-            await this.readTagGroup(this.state.subs);
+            await this.readTagGroup(this.state.subs).catch(e => {
+                if (e.message) {
+                    throw new Error(`<SCAN_GROUP> ${e.message}`);
+                } else {
+                    throw e;
+                }
+            });
 
             delay(this.state.scan_rate);
         }
