@@ -325,7 +325,7 @@ class Controller extends ENIP {
         const readTagErr = new Error(`TIMEOUT occurred while writing Reading Tag: ${tag.name}.`);
 
         // Wait for Response
-        const data = await promistTimeout(
+        const data = await promiseTimeout(
             new Promise((resolve, reject) => {
                 this.on("Read Tag", (err, data) => {
                     if (err) reject(err);
@@ -383,7 +383,7 @@ class Controller extends ENIP {
     async readTagGroup(group) {
         const messages = group.generateReadMessageRequests();
 
-        const readTagGroupErr = new Error(`TIMEOUT occurred while writing Reading Tag Group.`);
+        const readTagGroupErr = new Error("TIMEOUT occurred while writing Reading Tag Group.");
 
         // Send Each Multi Service Message
         for (let msg of messages) {
@@ -418,7 +418,7 @@ class Controller extends ENIP {
     async writeTagGroup(group) {
         const messages = group.generateWriteMessageRequests();
 
-        const writeTagGroupErr = new Error(`TIMEOUT occurred while writing Reading Tag Group.`);
+        const writeTagGroupErr = new Error("TIMEOUT occurred while writing Reading Tag Group.");
 
         // Send Each Multi Service Message
         for (let msg of messages) {
