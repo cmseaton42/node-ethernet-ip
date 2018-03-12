@@ -100,10 +100,12 @@ describe("Utilites", () => {
             });
 
             it("Runs Tasks on Push", async () => {
-                const delayReturn = ms => new Promise((resolve, reject) => {
+                const delayReturn = ms =>
+                    new Promise((resolve, reject) => {
                         console.log(typeof ms);
                         if (typeof ms !== "number") reject("Bad Input");
-                        else setTimeout(() => {
+                        else
+                            setTimeout(() => {
                                 resolve(ms);
                             }, ms);
                     });
@@ -121,7 +123,7 @@ describe("Utilites", () => {
             it("Runs Tasks on Priority", async () => {
                 const delayReturn = ms =>
                     new Promise((resolve, reject) => {
-                        console.log(typeof ms)
+                        console.log(typeof ms);
                         if (typeof ms !== "number") reject("Bad Input");
                         else
                             setTimeout(() => {
