@@ -85,7 +85,7 @@ class TaskQueue {
         if (r < size && compare(this.tasks[r].priority_obj, this.tasks[swap].priority_obj))
             swap = r;
 
-        if (swap !== index) { 
+        if (swap !== index) {
             const temp = this.tasks[index];
             this.tasks[index] = this.tasks[swap];
             this.tasks[swap] = temp;
@@ -111,16 +111,20 @@ class TaskQueue {
         this.taskRunning = true;
 
         task(...args)
-            .then(resolve)
-            .catch(reject)
-            .finally(() => {
+            .then((...args) => {
+                resolve(...args);
+                this.taskRunning = false;
+                this._next();
+            })
+            .catch((...args) => {
+                reject(...args);
                 this.taskRunning = false;
                 this._next();
             });
     }
 
     _next() {
-        if (this.tasks.length !== 0 && this.tasks.taskRunning === false) {
+        if (this.tasks.length !== 0 && this.taskRunning === false) {
             this._runTask();
         }
     }
