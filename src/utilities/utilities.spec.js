@@ -100,6 +100,14 @@ describe("Utilites", () => {
             });
 
             it("Runs Tasks on Push", async () => {
+                const delayReturn = ms => new Promise((resolve, reject) => {
+                        console.log(typeof ms);
+                        if (typeof ms !== "number") reject("Bad Input");
+                        else setTimeout(() => {
+                                resolve(ms);
+                            }, ms);
+                    });
+
                 const q = new TaskQueue(compare);
                 const p1 = q.schedule(delayReturn, [50], { value: 1 });
                 const p2 = q.schedule(delayReturn, [60], { value: 1 });
