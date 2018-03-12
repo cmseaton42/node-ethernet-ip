@@ -1,0 +1,281 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Utilites Task Queue Class Private Methods Build Heap Works Correctly 1`] = `
+Array [
+  Object {
+    "args": Array [
+      1400,
+    ],
+    "priority_obj": Object {
+      "value": 14,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      1000,
+    ],
+    "priority_obj": Object {
+      "value": 10,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      1300,
+    ],
+    "priority_obj": Object {
+      "value": 13,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      800,
+    ],
+    "priority_obj": Object {
+      "value": 8,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      900,
+    ],
+    "priority_obj": Object {
+      "value": 9,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      1200,
+    ],
+    "priority_obj": Object {
+      "value": 12,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      600,
+    ],
+    "priority_obj": Object {
+      "value": 6,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      700,
+    ],
+    "priority_obj": Object {
+      "value": 7,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      300,
+    ],
+    "priority_obj": Object {
+      "value": 3,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      100,
+    ],
+    "priority_obj": Object {
+      "value": 1,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      400,
+    ],
+    "priority_obj": Object {
+      "value": 4,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      1100,
+    ],
+    "priority_obj": Object {
+      "value": 11,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      500,
+    ],
+    "priority_obj": Object {
+      "value": 5,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      200,
+    ],
+    "priority_obj": Object {
+      "value": 2,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      0,
+    ],
+    "priority_obj": Object {
+      "value": 0,
+    },
+    "task": [Function],
+  },
+]
+`;
+
+exports[`Utilites Task Queue Class Private Methods Reorder Method Produces Correct Output 1`] = `
+Array [
+  Object {
+    "args": Array [
+      200,
+    ],
+    "priority_obj": Object {
+      "value": 2,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      100,
+    ],
+    "priority_obj": Object {
+      "value": 1,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      600,
+    ],
+    "priority_obj": Object {
+      "value": 6,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      300,
+    ],
+    "priority_obj": Object {
+      "value": 3,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      400,
+    ],
+    "priority_obj": Object {
+      "value": 4,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      500,
+    ],
+    "priority_obj": Object {
+      "value": 5,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      1400,
+    ],
+    "priority_obj": Object {
+      "value": 14,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      700,
+    ],
+    "priority_obj": Object {
+      "value": 7,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      800,
+    ],
+    "priority_obj": Object {
+      "value": 8,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      900,
+    ],
+    "priority_obj": Object {
+      "value": 9,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      1000,
+    ],
+    "priority_obj": Object {
+      "value": 10,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      1100,
+    ],
+    "priority_obj": Object {
+      "value": 11,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      1200,
+    ],
+    "priority_obj": Object {
+      "value": 12,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      1300,
+    ],
+    "priority_obj": Object {
+      "value": 13,
+    },
+    "task": [Function],
+  },
+  Object {
+    "args": Array [
+      0,
+    ],
+    "priority_obj": Object {
+      "value": 0,
+    },
+    "task": [Function],
+  },
+]
+`;
