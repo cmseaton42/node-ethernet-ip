@@ -52,6 +52,8 @@ Contributing to the Code is great but feedback on the project is just as importa
     - Be Clear
     - Be Thorough (too much information >>> not enough information)
     - Include Pictures (Screenshots of Errors, gifs, etc)
+    - Include *Node Version* -> `node --version`
+    - Include *package version* -> `npm list`
 
 **Feature Requests**
 
