@@ -63,6 +63,8 @@ Controller.properties Object
 
 #### Set the Clock of the Controller
 
+**NOTE** `Controller.prototype.readWallClock` and `Controller.prototype.writeWallClock` are not currently supported by **CompactLogix** controllers.
+
 Sync Controller WallClock to PC Datetime
 
 ```javascript
