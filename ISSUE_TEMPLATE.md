@@ -1,12 +1,12 @@
 <!--- Provide a general summary of the issue in the Title above -->
 
-## Expected Behavior
-<!--- If you're describing a bug, tell us what should happen -->
-<!--- If you're suggesting a change/improvement, tell us how it should work -->
-
 ## Current Behavior
 <!--- If describing a bug, tell us what happens instead of the expected behavior -->
 <!--- If suggesting a change/improvement, explain the difference from current behavior -->
+
+## Expected Behavior
+<!--- If you're describing a bug, tell us what should happen -->
+<!--- If you're suggesting a change/improvement, tell us how it should work -->
 
 ## Possible Solution (Optional)
 <!--- Not obligatory, but suggest a fix/reason for the bug, -->
@@ -29,3 +29,5 @@
 * Package version (Use `npm list` - e.g. *1.0.6*):
 * Node Version (Use `node --version` - e.g. *9.8.0*):
 * Operating System and version:
+* Controller Type (eg 1756-L83E/B):
+* Controller Firmware (eg 30.11):
