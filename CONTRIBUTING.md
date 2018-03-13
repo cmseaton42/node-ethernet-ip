@@ -7,6 +7,7 @@ This is the **CONTRIBUTE** section of our project. Great to have you here. Here 
 *New Team Members Welcome...*
 
 * **Canaan Seaton** - *Owner* - [GitHub Profile](https://github.com/cmseaton42) - [Personal Website](http://www.canaanseaton.com/)
+* **Patrick McDonagh** - *Collaborator* - [GitHub Profile](https://github.com/patrickjmcd)
 
 ## Support
 
