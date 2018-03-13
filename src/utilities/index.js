@@ -26,21 +26,37 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
  * A simple Job Scheduler/ Task Runner class
  *
  * @param {function} compare_func - Compares Priority Objects
+ * @param {number}
  * @class JobQueue
  */
 class TaskQueue {
-    constructor(compare_func) {
+    constructor(compare_func, max_queue_size = 100) {
         this.tasks = [];
         this.taskRunning = false;
+        this.max = max_queue_size;
 
         if (typeof compare_func !== "function")
             throw new Error(
                 `JobQueue Comparison Function must be of Type <function> instead got ${typeof compare_func}`
             );
 
+        if (typeof max_queue_size !== "number")
+            throw new Error(
+                `JobQueue Max Queue Size must be of Type <function> instead got ${typeof number}`
+            );
+
         this.compare = compare_func;
     }
 
+    /**
+     * Schedules a new "Task" to be Performed
+     *
+     * @param {function} task - task to schedule
+     * @param {Array} args - array of arguments to pass to task
+     * @param {object} priority_obj - object that will be passed to comparison handler provided in the constructor
+     * @returns
+     * @memberof TaskQueue
+     */
     schedule(task, args, priority_obj) {
         if (typeof task !== "function")
             throw new Error(`Scheduler Task must be of Type <function> instead got ${typeof task}`);
@@ -53,24 +69,59 @@ class TaskQueue {
 
         // return Promise to Caller
         return new Promise((resolve, reject) => {
-            // Push Task to Queue
-            this.tasks.push({ task, args, priority_obj, resolve, reject });
-            this._next();
+            if (this.tasks.length > this.max) {
+                reject(new Error("Task Queue Exceeded Max Queue Size!!!"));
+            } else {
+                // Push Task to Queue
+                if (this.tasks.length === 0) {
+                    this.tasks.push({ task, args, priority_obj, resolve, reject });
+                    this._next();
+                } else {
+                    this.tasks.push({ task, args, priority_obj, resolve, reject });
+                }
+            }
         });
     }
 
+    /**
+     * Gets Parent Node Index
+     *
+     * @param {number} index
+     * @returns {number}
+     * @memberof TaskQueue
+     */
     _getParent(index) {
         return Math.trunc((index - 1) / 2);
     }
 
+    /**
+     * Gets Left Child Node Index
+     *
+     * @param {number} index
+     * @returns {number}
+     * @memberof TaskQueue
+     */
     _getLNode(index) {
         return index * 2 + 1;
     }
 
+    /**
+     * Gets Right Child Node Index
+     *
+     * @param {number} index
+     * @returns
+     * @memberof TaskQueue
+     */
     _getRNode(index) {
         return index * 2 + 2;
     }
 
+    /**
+     * Recursively Reorders from Seed Index Based on Outcome of Comparison Function
+     *
+     * @param {number} index
+     * @memberof TaskQueue
+     */
     _reorder(index) {
         const { compare } = this;
         const size = this.tasks.length;
@@ -93,6 +144,11 @@ class TaskQueue {
         }
     }
 
+    /**
+     * Organized Queue based on Priority
+     *
+     * @memberof TaskQueue
+     */
     _orderQueue() {
         const size = this.tasks.length;
         const start = Math.trunc((size - 2) / 2);
@@ -102,6 +158,11 @@ class TaskQueue {
         }
     }
 
+    /**
+     * Executes Highest Priority Task
+     *
+     * @memberof TaskQueue
+     */
     _runTask() {
         this._orderQueue();
 
@@ -123,6 +184,11 @@ class TaskQueue {
             });
     }
 
+    /**
+     * Executes Next Task in Queue if One Exists and One is Currently Running
+     *
+     * @memberof TaskQueue
+     */
     _next() {
         if (this.tasks.length !== 0 && this.taskRunning === false) {
             this._runTask();
