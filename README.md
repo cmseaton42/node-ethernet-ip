@@ -94,7 +94,7 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 #### Reading Tags
 
-**NOTE:** Currently, the `Tag` Class only supports *Atomic* datatypes (SINT, INT, BOOL, REAL, BOOL). Not to worry, support for STRING, ARRAY, and UDTs are in the plans and coming soon! =]
+**NOTE:** Currently, the `Tag` Class only supports *Atomic* datatypes (SINT, INT, DINT, REAL, BOOL). Not to worry, support for STRING, ARRAY, and UDTs are in the plans and coming soon! =]
 
 Reading Tags `Individually`...
 ```javascript
