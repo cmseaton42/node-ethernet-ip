@@ -26,6 +26,7 @@
 - [ ] I have read the **CONTRIBUTING** document.
 - [ ] I have added tests to cover my changes.
 - [ ] All new and existing tests passed.
+- [ ] This is a work in progress, and I want some feedback (If yes, please mark it in the title -> e.g. `[WIP] Some awesome PR title`)
 
 ## Related Issue
 <!--- This project only accepts pull requests related to open issues -->
