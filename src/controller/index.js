@@ -1,7 +1,13 @@
 const { ENIP, CIP } = require("../enip");
 const dateFormat = require("dateformat");
 const TagGroup = require("../tag-group");
-const { delay, promiseTimeout } = require("../utilities");
+const { delay, promiseTimeout, TaskQueue } = require("../utilities");
+
+const compare = (obj1, obj2) => {
+    if (obj1.priority > obj2.priority) return true;
+    else if (obj1.priority < obj2.priority) return false;
+    else return obj1.timestamp.getTime() < obj2.timestamp.getTime();
+};
 
 class Controller extends ENIP {
     constructor() {
@@ -24,9 +30,15 @@ class Controller extends ENIP {
                 majorUnrecoverableFault: false,
                 io_faulted: false
             },
-            subs: new TagGroup(),
+            subs: new TagGroup(compare),
             scanning: false,
-            scan_rate: 200 // ms
+            scan_rate: 200 //ms
+        };
+
+        this.workers = {
+            read: new TaskQueue(compare),
+            write: new TaskQueue(compare),
+            group: new TaskQueue(compare)
         };
     }
 
@@ -327,28 +339,11 @@ class Controller extends ENIP {
      * @returns {Promise}
      * @memberof Controller
      */
-    async readTag(tag, size = null) {
-        const MR = tag.generateReadMessageRequest(size);
-
-        this.write_cip(MR);
-
-        const readTagErr = new Error(`TIMEOUT occurred while writing Reading Tag: ${tag.name}.`);
-
-        // Wait for Response
-        const data = await promiseTimeout(
-            new Promise((resolve, reject) => {
-                this.on("Read Tag", (err, data) => {
-                    if (err) reject(err);
-                    resolve(data);
-                });
-            }),
-            10000,
-            readTagErr
-        );
-
-        this.removeAllListeners("Read Tag");
-
-        tag.parseReadMessageResponse(data);
+    readTag(tag, size = null) {
+        return this.workers.read.schedule(this._readTag.bind(this), [tag, size], {
+            priority: 1,
+            timestamp: new Date()
+        });
     }
 
     /**
@@ -360,97 +355,39 @@ class Controller extends ENIP {
      * @returns {Promise}
      * @memberof Controller
      */
-    async writeTag(tag, value = null, size = 0x01) {
-        const MR = tag.generateWriteMessageRequest(value, size);
-
-        this.write_cip(MR);
-
-        const writeTagErr = new Error(`TIMEOUT occurred while writing Writing Tag: ${tag.name}.`);
-
-        // Wait for Response
-        await promiseTimeout(
-            new Promise((resolve, reject) => {
-                this.on("Write Tag", (err, data) => {
-                    if (err) reject(err);
-
-                    tag.unstageWriteRequest();
-                    resolve(data);
-                });
-            }),
-            10000,
-            writeTagErr
-        );
-
-        this.removeAllListeners("Write Tag");
+    writeTag(tag, value = null, size = 0x01) {
+        return this.workers.write.schedule(this._writeTag.bind(this), [tag, value, size], {
+            priority: 1,
+            timestamp: new Date()
+        });
     }
 
     /**
      * Reads All Tags in the Passed Tag Group
      *
      * @param {TagGroup} group
+     * @returns {Promise}
      * @memberof Controller
      */
-    async readTagGroup(group) {
-        const messages = group.generateReadMessageRequests();
-
-        const readTagGroupErr = new Error("TIMEOUT occurred while writing Reading Tag Group.");
-
-        // Send Each Multi Service Message
-        for (let msg of messages) {
-            this.write_cip(msg.data);
-
-            // Wait for Controller to Respond
-            const data = await promiseTimeout(
-                new Promise((resolve, reject) => {
-                    this.on("Multiple Service Packet", (err, data) => {
-                        if (err) reject(err);
-
-                        resolve(data);
-                    });
-                }),
-                10000,
-                readTagGroupErr
-            );
-
-            this.removeAllListeners("Multiple Service Packet");
-
-            // Parse Messages
-            group.parseReadMessageResponses(data, msg.tag_ids);
-        }
+    readTagGroup(group) {
+        return this.workers.group.schedule(this._readTagGroup.bind(this), [group], {
+            priority: 1,
+            timestamp: new Date()
+        });
     }
 
     /**
      * Writes to Tag Group Tags
      *
      * @param {TAgGroup} group
+     * @returns {Promise}
      * @memberof Controller
      */
-    async writeTagGroup(group) {
-        const messages = group.generateWriteMessageRequests();
-
-        const writeTagGroupErr = new Error("TIMEOUT occurred while writing Reading Tag Group.");
-
-        // Send Each Multi Service Message
-        for (let msg of messages) {
-            this.write_cip(msg.data);
-
-            // Wait for Controller to Respond
-            const data = await promiseTimeout(
-                new Promise((resolve, reject) => {
-                    this.on("Multiple Service Packet", (err, data) => {
-                        if (err) reject(err);
-
-                        resolve(data);
-                    });
-                }),
-                10000,
-                writeTagGroupErr
-            );
-
-            this.removeAllListeners("Multiple Service Packet");
-
-            group.parseWriteMessageRequests(data, msg.tag_ids);
-        }
+    writeTagGroup(group) {
+        return this.workers.group.schedule(this._writeTagGroup.bind(this), [group], {
+            priority: 1,
+            timestamp: new Date()
+        });
     }
 
     /**
@@ -472,21 +409,31 @@ class Controller extends ENIP {
         this.state.scanning = true;
 
         while (this.state.scanning) {
-            await this.readTagGroup(this.state.subs).catch(e => {
-                if (e.message) {
-                    throw new Error(`<SCAN_GROUP> ${e.message}`);
-                } else {
-                    throw e;
-                }
-            });
+            await this.workers.group
+                .schedule(this._readTagGroup.bind(this), [this.state.subs], {
+                    priority: 10,
+                    timestamp: new Date()
+                })
+                .catch(e => {
+                    if (e.message) {
+                        throw new Error(`<SCAN_GROUP>\n ${e.message}`);
+                    } else {
+                        throw e;
+                    }
+                });
 
-            await this.writeTagGroup(this.state.subs).catch(e => {
-                if (e.message) {
-                    throw new Error(`<SCAN_GROUP> ${e.message}`);
-                } else {
-                    throw e;
-                }
-            });
+            await this.workers.group
+                .schedule(this._writeTagGroup.bind(this), [this.state.subs], {
+                    priority: 10,
+                    timestamp: new Date()
+                })
+                .catch(e => {
+                    if (e.message) {
+                        throw new Error(`<SCAN_GROUP>\n ${e.message}`);
+                    } else {
+                        throw e;
+                    }
+                });
 
             delay(this.state.scan_rate);
         }
@@ -520,6 +467,142 @@ class Controller extends ENIP {
      */
     _initializeControllerEventHandlers() {
         this.on("SendRRData Received", this._handleSendRRDataReceived);
+    }
+
+    /**
+     * Reads Value of Tag and Type from Controller
+     *
+     * @param {Tag} tag - Tag Object to Write
+     * @param {number} [size=null]
+     * @returns {Promise}
+     * @memberof Controller
+     */
+    async _readTag(tag, size = null) {
+        const MR = tag.generateReadMessageRequest(size);
+
+        this.write_cip(MR);
+
+        const readTagErr = new Error(`TIMEOUT occurred while writing Reading Tag: ${tag.name}.`);
+
+        // Wait for Response
+        const data = await promiseTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Read Tag", (err, data) => {
+                    if (err) reject(err);
+                    resolve(data);
+                });
+            }),
+            10000,
+            readTagErr
+        );
+
+        this.removeAllListeners("Read Tag");
+
+        tag.parseReadMessageResponse(data);
+    }
+
+    /**
+     * Writes value to Tag
+     *
+     * @param {Tag} tag - Tag Object to Write
+     * @param {number|boolean|object|string} [value=null] - If Omitted, Tag.value will be used
+     * @param {number} [size=0x01]
+     * @returns {Promise}
+     * @memberof Controller
+     */
+    async _writeTag(tag, value = null, size = 0x01) {
+        const MR = tag.generateWriteMessageRequest(value, size);
+
+        this.write_cip(MR);
+
+        const writeTagErr = new Error(`TIMEOUT occurred while writing Writing Tag: ${tag.name}.`);
+
+        // Wait for Response
+        await promiseTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Write Tag", (err, data) => {
+                    if (err) reject(err);
+
+                    tag.unstageWriteRequest();
+                    resolve(data);
+                });
+            }),
+            10000,
+            writeTagErr
+        );
+
+        this.removeAllListeners("Write Tag");
+    }
+
+    /**
+     * Reads All Tags in the Passed Tag Group
+     *
+     * @param {TagGroup} group
+     * @returns {Promise}
+     * @memberof Controller
+     */
+    async _readTagGroup(group) {
+        const messages = group.generateReadMessageRequests();
+
+        const readTagGroupErr = new Error("TIMEOUT occurred while writing Reading Tag Group.");
+
+        // Send Each Multi Service Message
+        for (let msg of messages) {
+            this.write_cip(msg.data);
+
+            // Wait for Controller to Respond
+            const data = await promiseTimeout(
+                new Promise((resolve, reject) => {
+                    this.on("Multiple Service Packet", (err, data) => {
+                        if (err) reject(err);
+
+                        resolve(data);
+                    });
+                }),
+                10000,
+                readTagGroupErr
+            );
+
+            this.removeAllListeners("Multiple Service Packet");
+
+            // Parse Messages
+            group.parseReadMessageResponses(data, msg.tag_ids);
+        }
+    }
+
+    /**
+     * Writes to Tag Group Tags
+     *
+     * @param {TagGroup} group
+     * @returns {Promise}
+     * @memberof Controller
+     */
+    async _writeTagGroup(group) {
+        const messages = group.generateWriteMessageRequests();
+
+        const writeTagGroupErr = new Error("TIMEOUT occurred while writing Reading Tag Group.");
+
+        // Send Each Multi Service Message
+        for (let msg of messages) {
+            this.write_cip(msg.data);
+
+            // Wait for Controller to Respond
+            const data = await promiseTimeout(
+                new Promise((resolve, reject) => {
+                    this.on("Multiple Service Packet", (err, data) => {
+                        if (err) reject(err);
+
+                        resolve(data);
+                    });
+                }),
+                10000,
+                writeTagGroupErr
+            );
+
+            this.removeAllListeners("Multiple Service Packet");
+
+            group.parseWriteMessageRequests(data, msg.tag_ids);
+        }
     }
     // endregion
 
