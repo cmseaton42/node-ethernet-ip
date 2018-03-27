@@ -430,7 +430,7 @@ class Controller extends ENIP {
                     }
                 });
 
-            delay(this.state.scan_rate);
+            await delay(this.state.scan_rate);
         }
     }
 
