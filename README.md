@@ -66,7 +66,7 @@ Controller.properties Object
 
 #### Set the Clock of the Controller
 
-**NOTE** `Controller.prototype.readWallClock` and `Controller.prototype.writeWallClock` are not currently supported by **CompactLogix** controllers.
+**NOTE** `Controller.prototype.readWallClock` and `Controller.prototype.writeWallClock` are experimental features and may not be available on all controllers. 1756-L8 ControlLogix Controllers are currently the only PLCs supporting these features.
 
 Sync Controller WallClock to PC Datetime
 

@@ -122,9 +122,6 @@ class Controller extends ENIP {
 
         // Fetch Controller Properties and Wall Clock
         await this.readControllerProps();
-
-        const cntType = this.state.controller.name.split("-")[0];
-        if (cntType === "1756") await this.readWallClock();
     }
 
     /**
@@ -222,9 +219,8 @@ class Controller extends ENIP {
      * @returns {Promise}
      */
     async readWallClock() {
-        const cntType = this.state.controller.name.split("-")[0];
-        if (cntType === "1769")
-            throw new Error("WallClock Utilities are not supported by CompactLogix");
+        if (this.state.controller.name.search("L8") === -1)
+            throw new Error("WallClock Utilities are not supported by this controller type");
 
         const { GET_ATTRIBUTE_SINGLE } = CIP.MessageRouter.services;
         const { LOGICAL } = CIP.EPATH.segments;
@@ -279,9 +275,8 @@ class Controller extends ENIP {
      * @returns {Promise}
      */
     async writeWallClock(date = new Date()) {
-        const cntType = this.state.controller.name.split("-")[0];
-        if (cntType === "1769")
-            throw new Error("WallClock Utilities are not supported by CompactLogix");
+        if (this.state.controller.name.search("L8") === -1)
+            throw new Error("WallClock Utilities are not supported by this controller type");
 
         const { SET_ATTRIBUTE_SINGLE } = CIP.MessageRouter.services;
         const { LOGICAL } = CIP.EPATH.segments;
