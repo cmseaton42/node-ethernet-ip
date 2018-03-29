@@ -3,6 +3,7 @@ const { EIP_PORT } = require("../config");
 const encapsulation = require("./encapsulation");
 const CIP = require("./cip");
 const { promiseTimeout } = require("../utilities");
+const { lookup } = require("dns");
 
 /**
  * Low Level Ethernet/IP
@@ -77,11 +78,11 @@ class ENIP extends Socket {
     // region Public Method Definitions
 
     /**
-     * Initializes Session with Desired IP Address
+     * Initializes Session with Desired IP Address or FQDN
      * and Returns a Promise with the Established Session ID
      *
      * @override
-     * @param {string} IP_ADDR - IPv4 Address
+     * @param {string} IP_ADDR - IPv4 Address (can also accept a FQDN, provided port forwarding is configured correctly.)
      * @returns {Promise}
      * @memberof ENIP
      */
@@ -89,10 +90,17 @@ class ENIP extends Socket {
         if (!IP_ADDR) {
             throw new Error("Controller <class> requires IP_ADDR <string>!!!");
         }
+        await new Promise((resolve, reject) => {
+            lookup(IP_ADDR, (err, addr) => {
+                if (err)
+                    reject(new Error("DNS Lookup failed for IP_ADDR " + IP_ADDR));
 
-        if (!isIPv4(IP_ADDR)) {
-            throw new Error("Invalid IP_ADDR <string> passed to Controller <class>");
-        }
+                if (!isIPv4(addr)) {
+                    reject(new Error("Invalid IP_ADDR <string> passed to Controller <class>"));
+                }
+                resolve();
+            });
+        });
 
         const { registerSession } = encapsulation;
 
