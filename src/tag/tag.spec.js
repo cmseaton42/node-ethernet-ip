@@ -20,7 +20,7 @@ describe("Tag Class", () => {
         it("Accepts and Rejects Appropriate Inputs", () => {
             const fn = test => Tag.isValidTagname(test);
 
-            expect(fn("_sometagname")).toBeFalsy();
+            expect(fn("_sometagname")).toBeTruthy();
             expect(fn(12345)).toBeFalsy();
             expect(fn(null)).toBeFalsy();
             expect(fn(undefined)).toBeFalsy();
@@ -63,7 +63,7 @@ describe("Tag Class", () => {
             const tag3 = new Tag("tag", null, Types.REAL);
             const tag4 = new Tag("tag", null, Types.SINT);
             const tag5 = new Tag("tag", null, Types.INT);
-            
+
             expect(tag1.generateWriteMessageRequest(100)).toMatchSnapshot();
             expect(tag2.generateWriteMessageRequest(true)).toMatchSnapshot();
             expect(tag3.generateWriteMessageRequest(32.1234)).toMatchSnapshot();
