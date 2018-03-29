@@ -3,7 +3,7 @@ const { EIP_PORT } = require("../config");
 const encapsulation = require("./encapsulation");
 const CIP = require("./cip");
 const { promiseTimeout } = require("../utilities");
-const { lookup } = require('dns');
+const { lookup } = require("dns");
 
 /**
  * Low Level Ethernet/IP
@@ -91,15 +91,15 @@ class ENIP extends Socket {
             throw new Error("Controller <class> requires IP_ADDR <string>!!!");
         }
         await new Promise((resolve, reject) => {
-          lookup(IP_ADDR, (err, addr, family) => {
-            if (err)
-              reject(new Error("DNS Lookup failed for IP_ADDR " + IP_ADDR));
+            lookup(IP_ADDR, (err, addr) => {
+                if (err)
+                    reject(new Error("DNS Lookup failed for IP_ADDR " + IP_ADDR));
 
-            if (!isIPv4(addr)) {
-                reject(new Error("Invalid IP_ADDR <string> passed to Controller <class>"));
-            }
-            resolve();
-          });
+                if (!isIPv4(addr)) {
+                    reject(new Error("Invalid IP_ADDR <string> passed to Controller <class>"));
+                }
+                resolve();
+            });
         });
 
         const { registerSession } = encapsulation;
