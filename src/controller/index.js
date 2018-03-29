@@ -102,7 +102,7 @@ class Controller extends ENIP {
      * and Returns a Promise with the Established Session ID
      *
      * @override
-     * @param {string} IP_ADDR - IPv4 Address
+     * @param {string} IP_ADDR - IPv4 Address (can also accept a FQDN, provided port forwarding is configured correctly.)
      * @param {number} SLOT - Controller Slot Number (0 if CompactLogix)
      * @returns {Promise}
      * @memberof ENIP
