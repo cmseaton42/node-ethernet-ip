@@ -78,7 +78,7 @@ class ENIP extends Socket {
     // region Public Method Definitions
 
     /**
-     * Initializes Session with Desired IP Address or FQ
+     * Initializes Session with Desired IP Address or FQDN
      * and Returns a Promise with the Established Session ID
      *
      * @override
