@@ -1,7 +1,8 @@
 const { ENIP, CIP } = require("../enip");
 const dateFormat = require("dateformat");
 const TagGroup = require("../tag-group");
-const { delay, promiseTimeout, TaskQueue } = require("../utilities");
+const { delay, promiseTimeout } = require("../utilities");
+const Queue = require("task-easy");
 
 const compare = (obj1, obj2) => {
     if (obj1.priority > obj2.priority) return true;
@@ -36,9 +37,9 @@ class Controller extends ENIP {
         };
 
         this.workers = {
-            read: new TaskQueue(compare),
-            write: new TaskQueue(compare),
-            group: new TaskQueue(compare)
+            read: new Queue(compare),
+            write: new Queue(compare),
+            group: new Queue(compare)
         };
     }
 
