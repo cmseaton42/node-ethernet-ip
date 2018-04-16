@@ -37,6 +37,15 @@ describe("Tag Class", () => {
             expect(fn("tagname")).toBeTruthy();
             expect(fn("tag_with_underscores45")).toBeTruthy();
             expect(fn("someTagArray[0]")).toBeTruthy();
+            expect(fn("someTagArray[:19]")).toBeTruthy();
+            expect(fn("someTagArray[0:]")).toBeTruthy();
+            expect(fn("someTagArray[0:9]")).toBeTruthy();
+            expect(fn("someTagArray[8:9]")).toBeTruthy();
+            expect(fn("someTagArray[5:19]")).toBeTruthy();
+            expect(fn("someTagArray[15:19]")).toBeTruthy();
+            expect(fn("someTagArray[-15:19]")).toBeFalsy();
+            expect(fn("someTagArray[5:-19]")).toBeFalsy();
+            expect(fn("someTagArray[-15]")).toBeFalsy();
         });
     });
 

@@ -12,7 +12,7 @@ class Tag extends EventEmitter {
     constructor(tagname, program = null, datatype = null, keepAlive = 0) {
         super();
 
-        if (!Tag.isValidTagname(tagname)) throw new Error("Tagname Must be of Type <string>");
+        if (!Tag.isValidTagname(tagname)) throw new Error("Tagname Must be of Type <string> and be a Valid Tag Entry.");
         if (!isValidTypeCode(datatype) && datatype !== null)
             throw new Error("Datatype must be a Valid Type Code <number>");
         if (typeof keepAlive !== "number") throw new Error(`Tag expected keepAlive of type <number> instead got type <${typeof keepAlive}>`);
@@ -43,7 +43,11 @@ class Tag extends EventEmitter {
                 controllerValue: null,
                 path: pathBuf,
                 program: program,
-                stage_write: false
+                stage_write: false,
+                isArray: false,
+                isString: false,
+                isStruct: false,
+                members: []
             },
             read_size: 0x01,
             error: { code: null, status: null },
@@ -421,7 +425,7 @@ class Tag extends EventEmitter {
         const tag = tagname.split(".");
 
         const test = tag[tag.length - 1];
-        const regex = /^[a-zA-Z_][a-zA-Z0-9_]*([a-zA-Z0-9_]|\[\d+\])$/i; // regex string to check for valid tagnames
+        const regex = /^[a-zA-Z_][a-zA-Z0-9_]*([a-zA-Z0-9_]|\[(\d+|\d+:\d+|\d+:|:\d+)\])$/i; // regex string to check for valid tagnames
         return typeof tagname === "string" && regex.test(test) && test.length <= 40;
     }
     // endregion
