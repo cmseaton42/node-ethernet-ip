@@ -1,4 +1,4 @@
-const { promiseTimeout, delay, TaskQueue } = require("./index");
+const { promiseTimeout, delay } = require("./index");
 
 describe("Utilites", () => {
     describe("Promise Timeout Utility", () => {
