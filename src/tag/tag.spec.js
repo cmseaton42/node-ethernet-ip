@@ -83,13 +83,13 @@ describe("Tag Class", () => {
         it("should throw an error on non-number types", () => {
             expect(() => {
                 new Tag("testkeepalive", undefined, undefined, "apple");
-            }).toThrowError();
+            }).toThrowError("Tag expected keepAlive of type <number> instead got type <string>");
         });
 
         it("should throw an error if keepAlive is less than 0", () => {
             expect(() => {
                 new Tag("testkeepalive", undefined, undefined, -20);
-            }).toThrowError();
+            }).toThrowError("Tag expected keepAlive to be greater than 0, got -20");
         });
     });
 });
