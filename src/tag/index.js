@@ -9,12 +9,14 @@ const dateFormat = require("dateformat");
 // Static Class Property - Tracks Instances
 let instances = 0;
 class Tag extends EventEmitter {
-    constructor(tagname, program = null, datatype = null) {
+    constructor(tagname, program = null, datatype = null, keepAlive = 0) {
         super();
 
         if (!Tag.isValidTagname(tagname)) throw new Error("Tagname Must be of Type <string>");
         if (!isValidTypeCode(datatype) && datatype !== null)
             throw new Error("Datatype must be a Valid Type Code <number>");
+        if (typeof keepAlive !== "number") throw new Error(`Tag expected keepAlive of type <number> instead got type <${typeof keepAlive}>`);
+        if (keepAlive < 0) throw new Error(`Tag expected keepAlive to be greater than 0, got ${keepAlive}`);
 
         // Increment Instances
         instances += 1;
@@ -46,7 +48,8 @@ class Tag extends EventEmitter {
             read_size: 0x01,
             error: { code: null, status: null },
             timestamp: new Date(),
-            instance: hash(pathBuf)
+            instance: hash(pathBuf),
+            keepAlive: keepAlive
         };
     }
 
@@ -185,6 +188,20 @@ class Tag extends EventEmitter {
 
             if (lastValue !== null) this.emit("Changed", this, lastValue);
             else this.emit("Initialized", this);
+        } else {
+            if (this.state.keepAlive > 0){
+                const now = new Date();
+                if ((now - this.state.timestamp) >= (this.state.keepAlive * 1000)){
+                    this.state.tag.controllerValue = newValue;
+
+                    const { stage_write } = this.state.tag;
+                    if (!stage_write) this.state.tag.value = newValue;
+                    this.state.timestamp = now;
+
+                    this.emit("KeepAlive", this);
+                }
+            }
+            
         }
     }
 

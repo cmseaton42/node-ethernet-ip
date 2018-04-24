@@ -71,4 +71,25 @@ describe("Tag Class", () => {
             expect(tag5.generateWriteMessageRequest(-10)).toMatchSnapshot();
         });
     });
+
+
+
+    describe("keepAlive parameter", () => {
+        it("should allow a number input", () => {
+            const testTag = new Tag("testkeepalive", undefined, undefined, 10);
+            expect(testTag).toBeInstanceOf(Tag);
+        });
+
+        it("should throw an error on non-number types", () => {
+            expect(() => {
+                new Tag("testkeepalive", undefined, undefined, "apple");
+            }).toThrowError("Tag expected keepAlive of type <number> instead got type <string>");
+        });
+
+        it("should throw an error if keepAlive is less than 0", () => {
+            expect(() => {
+                new Tag("testkeepalive", undefined, undefined, -20);
+            }).toThrowError("Tag expected keepAlive to be greater than 0, got -20");
+        });
+    });
 });
