@@ -16,7 +16,7 @@ class Tag extends EventEmitter {
         if (!isValidTypeCode(datatype) && datatype !== null)
             throw new Error("Datatype must be a Valid Type Code <number>");
         if (typeof keepAlive !== "number") throw new Error(`Tag expected keepAlive of type <number> instead got type <${typeof keepAlive}>`);
-        if (keepAlive < 0) throw new Error(`Tag expected keepAlive to be greater than 0, got ${keepAlive}`)
+        if (keepAlive < 0) throw new Error(`Tag expected keepAlive to be greater than 0, got ${keepAlive}`);
 
         // Increment Instances
         instances += 1;
