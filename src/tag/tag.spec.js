@@ -28,6 +28,7 @@ describe("Tag Class", () => {
             expect(fn("hello.how3")).toBeTruthy();
             expect(fn("randy.julian.bubbles")).toBeTruthy();
             expect(fn("a.b.c")).toBeTruthy();
+            expect(fn("1.1.1")).toBeFalsy();
             expect(fn({ prop: "value" })).toBeFalsy();
             expect(fn("fffffffffffffffffffffffffffffffffffffffff")).toBeFalsy();
             expect(fn("ffffffffffffffffffffffffffffffffffffffff")).toBeTruthy();
