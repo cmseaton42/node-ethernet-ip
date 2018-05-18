@@ -201,7 +201,7 @@ class Tag extends EventEmitter {
                     this.emit("KeepAlive", this);
                 }
             }
-            
+
         }
     }
 
@@ -421,7 +421,7 @@ class Tag extends EventEmitter {
         const tag = tagname.split(".");
 
         const test = tag[tag.length - 1];
-        const regex = /^[a-zA-Z_][a-zA-Z0-9_]*([a-zA-Z0-9_]|\[\d+\])$/i; // regex string to check for valid tagnames
+        const regex = /^[a-zA-Z_][a-zA-Z0-9_]*([a-zA-Z0-9_]*|\[\d+\])$/i; // regex string to check for valid tagnames
         return typeof tagname === "string" && regex.test(test) && test.length <= 40;
     }
     // endregion
