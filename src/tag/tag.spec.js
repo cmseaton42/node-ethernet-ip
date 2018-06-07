@@ -40,6 +40,31 @@ describe("Tag Class", () => {
             expect(fn("tagname")).toBeTruthy();
             expect(fn("tag_with_underscores45")).toBeTruthy();
             expect(fn("someTagArray[0]")).toBeTruthy();
+            expect(fn("a")).toBeTruthy();
+            expect(fn("tagBitIndex.0")).toBeTruthy();
+            expect(fn("tagBitIndex.31")).toBeTruthy();
+            expect(fn("tagBitIndex.0a")).toBeFalsy();
+            expect(fn("tagBitIndex.-1")).toBeFalsy();
+            expect(fn("tagArray[0,0]")).toBeTruthy();
+            expect(fn("tagArray[0,0,0]")).toBeTruthy();
+            expect(fn("tagArray[-1]")).toBeFalsy();
+            expect(fn("tagArray[0,0,-1]")).toBeFalsy();
+            expect(fn("Program:program.tag")).toBeTruthy();
+            expect(fn("Program:noProgramArray[0].tag")).toBeFalsy();
+            expect(fn("notProgram:program.tag")).toBeFalsy();
+            expect(fn("Program::noDoubleColon.tag")).toBeFalsy();
+            expect(fn("Program:noExtraColon:tag")).toBeFalsy();
+            expect(fn("Program:program.tag.singleDimMemArrayOk[0]")).toBeTruthy();
+            expect(fn("Program:program.tag.noMultiDimMemArray[0,0]")).toBeFalsy();
+            expect(fn("Program:program.tag.memberArray[0]._0member[4]._another_1member.f1nal_member.5")).toBeTruthy();
+            expect(fn("Program:9noNumberProgram.tag")).toBeFalsy();
+            expect(fn("tag.9noNumberMember")).toBeFalsy();
+            expect(fn("tag.noDouble__underscore1")).toBeFalsy();
+            expect(fn("tag.__noDoubleUnderscore2")).toBeFalsy();
+            expect(fn("tag.noEndInUnderscore_")).toBeFalsy();
+            expect(fn("tag._member_Length_Ok_And_ShouldPassAt40Char")).toBeTruthy();
+            expect(fn("tag._memberLengthTooLongAndShouldFailAt41Char")).toBeFalsy();
+            expect(fn("tag..noDoubleDelimitters")).toBeFalsy();
         });
     });
 
@@ -75,8 +100,6 @@ describe("Tag Class", () => {
         });
     });
 
-
-
     describe("keepAlive parameter", () => {
         it("should allow a number input", () => {
             const testTag = new Tag("testkeepalive", undefined, undefined, 10);
@@ -93,6 +116,18 @@ describe("Tag Class", () => {
             expect(() => {
                 new Tag("testkeepalive", undefined, undefined, -20);
             }).toThrowError("Tag expected keepAlive to be greater than 0, got -20");
+        });
+    });
+
+    describe("bitIndex parameter", () => {
+        it("should be null if no bit index is in tag name", () => {
+            const testTag = new Tag("tag");
+            expect(testTag.bitIndex).toEqual(null);
+        });
+
+        it("should equal bit index", () => {
+            const testTag = new Tag("tag.5");
+            expect(testTag.bitIndex).toEqual(5);
         });
     });
 });

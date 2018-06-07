@@ -26,7 +26,9 @@ const Types = {
     TIME: 0xdb,
     EPATH: 0xdc,
     ENGUNIT: 0xdd,
-    STRINGI: 0xde
+    STRINGI: 0xde,
+    STRUCT: 0xa002
+
 };
 
 /**
