@@ -27,6 +27,39 @@ describe("Controller Class", () => {
             }).toThrow();
         });
 
+        it("Scan Min Overhead Percent", () => {
+            const plc = new Controller();
+            expect(plc.scan_min_overhead_percent).toBe(20);
+
+            plc.scan_min_overhead_percent = 40;
+            expect(plc.scan_min_overhead_percent).not.toBe(20);
+            expect(plc.scan_min_overhead_percent).toBe(40);
+
+            expect(() => {
+                plc.scan_min_overhead_percent = null;
+            }).toThrow();
+
+            expect(() => {
+                plc.scan_min_overhead_percent = undefined;
+            }).toThrow();
+
+            expect(() => {
+                plc.scan_min_overhead_percent = "hello";
+            }).toThrow();
+        });
+
+        it("Scan Read Only", () => {
+            const plc = new Controller();
+            expect(plc.scan_read_only).toBeFalsy();
+
+            plc.scan_read_only = true;
+            expect(plc.scan_read_only).toBeTruthy();
+
+            
+            plc.scan_read_only = false;
+            expect(plc.scan_read_only).toBeFalsy();
+        });
+
         it("Scanning", () => {
             const plc = new Controller();
             expect(plc.scanning).toBeFalsy();

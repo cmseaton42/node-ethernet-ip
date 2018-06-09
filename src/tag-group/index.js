@@ -53,6 +53,17 @@ class TagGroup extends EventEmitter {
     }
 
     /**
+     * Queries Tag Group for Tag
+     *
+     * @param {Tag} tag - Tag to be Queried in Group
+     * @memberof TagGroup
+     */
+    contains(tag) {
+        if(this.state.tags[tag.instance_id]) return true;
+        return false;
+    }
+
+    /**
      * Iterable, Allows user to Iterate of each Tag in Group
      *
      * @param {function} callback - Accepts Tag Class

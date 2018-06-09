@@ -33,7 +33,9 @@ class Controller extends ENIP {
             },
             subs: new TagGroup(compare),
             scanning: false,
-            scan_rate: 200 //ms
+            scan_rate: 200, //ms
+            scan_min_overhead_percent: 0.2,
+            scan_read_only: false
         };
 
         this.workers = {
@@ -62,6 +64,47 @@ class Controller extends ENIP {
     set scan_rate(rate) {
         if (typeof rate !== "number") throw new Error("scan_rate must be of Type <number>");
         this.state.scan_rate = Math.trunc(rate);
+    }
+
+    /**
+     * Returns the Scan Min Overhead Percent for the Scan method
+     *
+     * @memberof Controller
+     * @returns {number} percent
+     */
+    get scan_min_overhead_percent() {
+        return this.state.scan_min_overhead_percent * 100;
+    }
+
+    /**
+     * Sets the Scan Min Overhead Percent for the Scan method
+     *
+     * @memberof Controller
+     */
+    set scan_min_overhead_percent(percent) {
+        if (typeof percent !== "number") throw new Error("scan_min_overhead_percent must be of Type <number>");
+        if (percent < 1 | percent > 99) throw new Error("scan_min_overhead_percent must be >=1 and <=99 ");
+        this.state.scan_min_overhead_percent = percent / 100;
+    }
+
+    /**
+     * Returns the status of the Scan Read Only property
+     *
+     * @memberof Controller
+     * @returns {boolean} percent
+     */
+    get scan_read_only() {
+        return this.state.scan_read_only;
+    }
+
+    /**
+     * Sets the status of the Scan Read Only property
+     *
+     * @memberof Controller
+     */
+    set scan_read_only(readOnly) {
+        if (typeof readOnly !== "boolean") throw new Error("scan_min_overhead_percent must be of Type <boolean>");
+        this.state.scan_read_only = readOnly;
     }
 
     /**
@@ -397,14 +440,41 @@ class Controller extends ENIP {
     }
 
     /**
+     * Removes Tag from Subscription Group
+     *
+     * @param {Tagany} tag
+     * @memberof Controller
+     */
+    unsubscribe(tag) {
+        this.state.subs.remove(tag);
+    }
+
+    /**
+     * Queries Tag in Subscription Group
+     *
+     * @param {Tagany} tag
+     * @memberof Controller
+     */
+    isSubscribed(tag) {
+        return this.state.subs.contains(tag);
+    }
+
+    /**
      * Begin Scanning Subscription Group
      *
      * @memberof Controller
      */
-    async scan() {
+    async scan(readOnly = false) {
         this.state.scanning = true;
 
+        this.state.scan_read_only = readOnly;
+
+        let startTime = 0;
+        let elapsedTime = 0;
+
         while (this.state.scanning) {
+            startTime = Date.now();
+            
             await this.workers.group
                 .schedule(this._readTagGroup.bind(this), [this.state.subs], {
                     priority: 10,
@@ -417,21 +487,24 @@ class Controller extends ENIP {
                         throw e;
                     }
                 });
-
-            await this.workers.group
-                .schedule(this._writeTagGroup.bind(this), [this.state.subs], {
-                    priority: 10,
-                    timestamp: new Date()
-                })
-                .catch(e => {
-                    if (e.message) {
-                        throw new Error(`<SCAN_GROUP>\n ${e.message}`);
-                    } else {
-                        throw e;
-                    }
-                });
-
-            await delay(this.state.scan_rate);
+            
+            if(!this.state.scan_read_only){
+                await this.workers.group
+                    .schedule(this._writeTagGroup.bind(this), [this.state.subs], {
+                        priority: 10,
+                        timestamp: new Date()
+                    })
+                    .catch(e => {
+                        if (e.message) {
+                            throw new Error(`<SCAN_GROUP>\n ${e.message}`);
+                        } else {
+                            throw e;
+                        }
+                    });
+            }
+            
+            elapsedTime = Date.now() - startTime;
+            await delay(Math.max(this.state.scan_rate - elapsedTime, elapsedTime / (1 - this.state.scan_min_overhead_percent) * (this.state.scan_min_overhead_percent)));
         }
     }
 

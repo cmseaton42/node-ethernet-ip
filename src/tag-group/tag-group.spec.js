@@ -42,4 +42,22 @@ describe("Tag Class", () => {
             expect(group.generateWriteMessageRequests()).toMatchSnapshot();
         });
     });
+
+    describe("Add, Remove, Query Tag Methods", () => {
+        it("Adds, Removes, Queries Tags", () => {
+            const tag = new Tag("tag", "prog", Types.DINT);
+
+            const group = new TagGroup();
+
+            expect(group.contains(tag)).toBeFalsy();
+            
+            group.add(tag);
+            
+            expect(group.contains(tag)).toBeTruthy();
+
+            group.remove(tag);
+            
+            expect(group.contains(tag)).toBeFalsy();
+        });
+    });
 });
