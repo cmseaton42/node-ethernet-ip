@@ -90,6 +90,90 @@ Object {
 }
 `;
 
+exports[`Tag Class Read Message Generator Method Generates Appropriate Buffer 6`] = `
+Object {
+  "data": Array [
+    76,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    1,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Read Message Generator Method Generates Appropriate Buffer 7`] = `
+Object {
+  "data": Array [
+    76,
+    4,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    40,
+    0,
+    1,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Read Message Generator Method Generates Appropriate Buffer 8`] = `
+Object {
+  "data": Array [
+    76,
+    5,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    40,
+    0,
+    40,
+    0,
+    1,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Read Message Generator Method Generates Appropriate Buffer 9`] = `
+Object {
+  "data": Array [
+    76,
+    6,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    40,
+    0,
+    40,
+    0,
+    40,
+    0,
+    1,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
 exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 1`] = `
 Object {
   "data": Array [
@@ -197,6 +281,116 @@ Object {
     0,
     246,
     255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 6`] = `
+Object {
+  "data": Array [
+    78,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    4,
+    0,
+    1,
+    0,
+    0,
+    0,
+    255,
+    255,
+    255,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 7`] = `
+Object {
+  "data": Array [
+    77,
+    4,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    40,
+    0,
+    196,
+    0,
+    1,
+    0,
+    99,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 8`] = `
+Object {
+  "data": Array [
+    77,
+    5,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    40,
+    0,
+    40,
+    0,
+    196,
+    0,
+    1,
+    0,
+    99,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 9`] = `
+Object {
+  "data": Array [
+    77,
+    6,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    40,
+    0,
+    40,
+    0,
+    40,
+    0,
+    196,
+    0,
+    1,
+    0,
+    99,
+    0,
+    0,
+    0,
   ],
   "type": "Buffer",
 }

@@ -538,6 +538,7 @@ class Controller extends ENIP {
         );
 
         this.removeAllListeners("Write Tag");
+        this.removeAllListeners("Read Modify Write Tag");
     }
 
     /**

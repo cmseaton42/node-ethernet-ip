@@ -75,11 +75,11 @@ const elementBuild = (data) =>{
     } else if(data < 65536){   
         type = ElementTypes.UINT16; // UINT16 x29 00 xx xx
         dataBuf = Buffer.alloc(3);
-        dataBuf.writeUint16BE(data,1);
+        dataBuf.writeUInt16LE(data,1);
     } else{ 
         type = ElementTypes.UINT32; // UINT32 x2a 00 xx xx xx xx
         dataBuf = Buffer.alloc(5);
-        dataBuf.writeUInt32BE(data,1);
+        dataBuf.writeUInt32LE(data,1);
     }
     
     // Initialize Buffer
