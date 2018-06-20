@@ -125,6 +125,7 @@ const barTag = new Tag("arrayTag[0]"); // Array Element
 const bazTag = new Tag("arrayTag[0,1,2]"); // Multi Dim Array Element
 const quxTag = new Tag("integerTag.0"); // SINT, INT, or DINT Bit
 const quuxTag = new Tag("udtTag.Member1"); // UDT Tag Atomic Member
+const quuzTag = new Tag("boolArray[0]", null, BIT_STRING); // bool array tag MUST have the data type "BIT_STRING" passed in
 ```
 
 Reading Tags as a `Group`...
