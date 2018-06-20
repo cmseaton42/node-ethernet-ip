@@ -13,6 +13,7 @@ describe("Tag Class", () => {
             expect(fn("someTag", "prog", 0x31)).toThrow();
             expect(fn("someTag", "prog", Types.EPATH)).not.toThrow();
             expect(fn("someTag", "prog", 0xc1)).not.toThrow();
+            expect(fn("tag[0].0",null,Types.BIT_STRING)).toThrow();
         });
     });
 
@@ -65,6 +66,13 @@ describe("Tag Class", () => {
             expect(fn("tag._member_Length_Ok_And_ShouldPassAt40Char")).toBeTruthy();
             expect(fn("tag._memberLengthTooLongAndShouldFailAt41Char")).toBeFalsy();
             expect(fn("tag..noDoubleDelimitters")).toBeFalsy();
+            expect(fn("Local:1:I.Data")).toBeTruthy();
+            expect(fn("Loca:1:I.Data")).toBeFalsy();
+            expect(fn("Local:1:I.Data.3")).toBeTruthy();
+            expect(fn("Local:1:i.Data.3")).toBeFalsy();
+            expect(fn("Remote_Rack:I.Data[1].5")).toBeTruthy();
+            expect(fn("Remote_Rack:O.Data[1].5")).toBeTruthy();
+            expect(fn("Remote_Rack:C.Data[1].5")).toBeTruthy();
         });
     });
 
