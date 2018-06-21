@@ -574,12 +574,12 @@ class Tag extends EventEmitter {
         if (typeof tagname !== "string") return false;
 
         // regex components
-        let nameRegex = function(captureIndex){
+        const nameRegex = (captureIndex) => {
             return `(_?[a-zA-Z]|_\\d)(?:(?=(_?[a-zA-Z0-9]))\\${captureIndex})*`;
         };
-        let multDimArrayRegex = "(\\[\\d+(,\\d+){0,2}])";
-        let arrayRegex = "(\\[\\d+])";
-        let bitIndexRegex = "(\\.\\d{1,2})";
+        const multDimArrayRegex = "(\\[\\d+(,\\d+){0,2}])";
+        const arrayRegex = "(\\[\\d+])";
+        const bitIndexRegex = "(\\.\\d{1,2})";
 
         // user regex for user tags
         const userRegex = new RegExp(
@@ -591,7 +591,7 @@ class Tag extends EventEmitter {
         // ^(Program:(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\3)*\.)?(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\5)*(\[\d+(,\d+){0,2}])?(\.(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\10)*(\[\d+])?)*(\.\d{1,2})?$
         
         // module regex for module tags
-        let moduleRegex = new RegExp(
+        const moduleRegex = new RegExp(
             "^" + nameRegex(2)                              // module name
             + "(:\\d{1,2})?"                                // optional slot num (not required for rack optimized connections)
             + ":[IOC]"                                      // input/output/config
