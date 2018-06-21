@@ -67,12 +67,11 @@ describe("Tag Class", () => {
             expect(fn("tag._memberLengthTooLongAndShouldFailAt41Char")).toBeFalsy();
             expect(fn("tag..noDoubleDelimitters")).toBeFalsy();
             expect(fn("Local:1:I.Data")).toBeTruthy();
-            expect(fn("Loca:1:I.Data")).toBeFalsy();
             expect(fn("Local:1:I.Data.3")).toBeTruthy();
-            expect(fn("Local:1:i.Data.3")).toBeFalsy();
             expect(fn("Remote_Rack:I.Data[1].5")).toBeTruthy();
             expect(fn("Remote_Rack:O.Data[1].5")).toBeTruthy();
             expect(fn("Remote_Rack:C.Data[1].5")).toBeTruthy();
+            expect(fn("Remote_Rack:1:I.0")).toBeTruthy();
         });
     });
 

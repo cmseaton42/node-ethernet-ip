@@ -581,7 +581,7 @@ class Tag extends EventEmitter {
         let arrayRegex = "(\\[\\d+])";
         let bitIndexRegex = "(\\.\\d{1,2})";
 
-        //uesr regex for user tags
+        // user regex for user tags
         const userRegex = new RegExp(
             "^(Program:" + nameRegex(3) + "\\.)?"           // optional program name
             + nameRegex(5) + multDimArrayRegex + "?"        // tag name
@@ -590,15 +590,15 @@ class Tag extends EventEmitter {
         // full user regex
         // ^(Program:(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\3)*\.)?(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\5)*(\[\d+(,\d+){0,2}])?(\.(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\10)*(\[\d+])?)*(\.\d{1,2})?$
         
-        //module regex for module tags
+        // module regex for module tags
         let moduleRegex = new RegExp(
-            "^(Local:\\d{1,2}|" + nameRegex(3) + ")"    // local or remote module
-            + ":[IOC]"                                  // input/output/config
-            + "\\." + nameRegex(5)                      // member
-            + arrayRegex + "?"                          // optional array index
-            + bitIndexRegex + "?$");                    // optional bit index
-        //full module regex
-        //^(Local:\d{1,2}|(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\3)*):[IOC]\.(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\5)*(\[\d+])?(\.\d{1,2})?$
+            "^" + nameRegex(2)                              // module name
+            + "(:\\d{1,2})?"                                // optional slot num (not required for rack optimized connections)
+            + ":[IOC]"                                      // input/output/config
+            + "(\\." + nameRegex(6) + arrayRegex + "?)?"    // optional member with optional array index
+            + bitIndexRegex + "?$");                        // optional bit index
+        // full module regex
+        // ^(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\2)*(:\d{1,2})?:[IOC](\.(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\6)*(\[\d+])?)?(\.\d{1,2})?$
 
         if (!userRegex.test(tagname) && !moduleRegex.test(tagname)) return false;
 
