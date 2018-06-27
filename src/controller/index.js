@@ -516,7 +516,17 @@ class Controller extends ENIP {
         // Wait for Response
         await promiseTimeout(
             new Promise((resolve, reject) => {
+
+                // Full Tag Writing
                 this.on("Write Tag", (err, data) => {
+                    if (err) reject(err);
+
+                    tag.unstageWriteRequest();
+                    resolve(data);
+                });
+
+                // Masked Bit Writing
+                this.on("Read Modify Write Tag", (err, data) => {
                     if (err) reject(err);
 
                     tag.unstageWriteRequest();
@@ -528,6 +538,7 @@ class Controller extends ENIP {
         );
 
         this.removeAllListeners("Write Tag");
+        this.removeAllListeners("Read Modify Write Tag");
     }
 
     /**
@@ -648,6 +659,7 @@ class Controller extends ENIP {
             READ_TAG_FRAGMENTED,
             WRITE_TAG,
             WRITE_TAG_FRAGMENTED,
+            READ_MODIFY_WRITE_TAG,
             MULTIPLE_SERVICE_PACKET
         } = CIP.MessageRouter.services;
 
@@ -676,6 +688,9 @@ class Controller extends ENIP {
                 break;
             case WRITE_TAG_FRAGMENTED:
                 this.emit("Write Tag Fragmented", error, data);
+                break;            
+            case READ_MODIFY_WRITE_TAG:
+                this.emit("Read Modify Write Tag", error, data);
                 break;
             case MULTIPLE_SERVICE_PACKET: {
                 // If service errored then propogate error

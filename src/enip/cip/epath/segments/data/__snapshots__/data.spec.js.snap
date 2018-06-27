@@ -51,3 +51,87 @@ Object {
   "type": "Buffer",
 }
 `;
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 4`] = `
+Object {
+  "data": Array [
+    40,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 5`] = `
+Object {
+  "data": Array [
+    40,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 6`] = `
+Object {
+  "data": Array [
+    41,
+    0,
+    0,
+    1,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 7`] = `
+Object {
+  "data": Array [
+    41,
+    0,
+    1,
+    1,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 8`] = `
+Object {
+  "data": Array [
+    41,
+    0,
+    255,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 9`] = `
+Object {
+  "data": Array [
+    42,
+    0,
+    0,
+    0,
+    1,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`EPATH DATA Segment Build Utility Generates Appropriate Output 10`] = `
+Object {
+  "data": Array [
+    42,
+    0,
+    1,
+    0,
+    1,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;

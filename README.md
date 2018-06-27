@@ -118,6 +118,16 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 });
 ```
 
+Additional Tag Name Examples ...
+```javascript
+const fooTag = new Tag("Program:prog.progTag"); // Alternative Syntax for Program Scope Tag in PLC Program "prog"
+const barTag = new Tag("arrayTag[0]"); // Array Element
+const bazTag = new Tag("arrayTag[0,1,2]"); // Multi Dim Array Element
+const quxTag = new Tag("integerTag.0"); // SINT, INT, or DINT Bit
+const quuxTag = new Tag("udtTag.Member1"); // UDT Tag Atomic Member
+const quuzTag = new Tag("boolArray[0]", null, BIT_STRING); // bool array tag MUST have the data type "BIT_STRING" passed in
+```
+
 Reading Tags as a `Group`...
 ```javascript
 const { Controller, Tag, TagGroup } = require("ethernet-ip");
@@ -207,7 +217,7 @@ PLC.subscribe(new Tag("progTag", "prog")); // Program Scope Tag in PLC Program "
 
 PLC.connect("192.168.1.1", 0).then(() => {
     // Set Scan Rate of Subscription Group to 50 ms (defaults to 200 ms)
-    PLC.scan_rate(50);
+    PLC.scan_rate = 50;
 
     // Begin Scanning
     PLC.scan();

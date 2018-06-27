@@ -16,6 +16,7 @@ const Types = {
     STRING: 0xd0,
     WORD: 0xd1,
     DWORD: 0xd2,
+    BIT_STRING: 0xd3,
     LWORD: 0xd4,
     STRING2: 0xd5,
     FTIME: 0xd6,
@@ -26,7 +27,9 @@ const Types = {
     TIME: 0xdb,
     EPATH: 0xdc,
     ENGUNIT: 0xdd,
-    STRINGI: 0xde
+    STRINGI: 0xde,
+    STRUCT: 0xa002
+
 };
 
 /**
