@@ -92,8 +92,7 @@ class ENIP extends Socket {
         }
         await new Promise((resolve, reject) => {
             lookup(IP_ADDR, (err, addr) => {
-                if (err)
-                    reject(new Error("DNS Lookup failed for IP_ADDR " + IP_ADDR));
+                if (err) reject(new Error("DNS Lookup failed for IP_ADDR " + IP_ADDR));
 
                 if (!isIPv4(addr)) {
                     reject(new Error("Invalid IP_ADDR <string> passed to Controller <class>"));
@@ -114,13 +113,17 @@ class ENIP extends Socket {
         // Connect to Controller and Then Send Register Session Packet
         await promiseTimeout(
             new Promise(resolve => {
-                super.connect(EIP_PORT, IP_ADDR, () => {
-                    this.state.TCP.establishing = false;
-                    this.state.TCP.established = true;
+                super.connect(
+                    EIP_PORT,
+                    IP_ADDR,
+                    () => {
+                        this.state.TCP.establishing = false;
+                        this.state.TCP.established = true;
 
-                    this.write(registerSession());
-                    resolve();
-                });
+                        this.write(registerSession());
+                        resolve();
+                    }
+                );
             }),
             10000,
             connectErr

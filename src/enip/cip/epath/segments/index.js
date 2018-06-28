@@ -12,5 +12,4 @@ const SegmentTypes = {
     DATATYPE_2: 6 << 6
 };
 
-
 module.exports = { SegmentTypes, PORT, LOGICAL, DATA };

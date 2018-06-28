@@ -1,6 +1,8 @@
 const { build, generateEncodedTimeout } = require("./index");
 const MessageRouter = require("../message-router");
-const { segments: { PORT } } = require("../epath");
+const {
+    segments: { PORT }
+} = require("../epath");
 
 describe("Unconnected Send Service", () => {
     describe("Timeout Encoding Utility", () => {
@@ -22,7 +24,6 @@ describe("Unconnected Send Service", () => {
 
             let test = build(mr, PORT.build(1, 5));
             expect(test).toMatchSnapshot();
-
         });
     });
 });

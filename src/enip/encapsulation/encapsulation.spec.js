@@ -28,7 +28,7 @@ describe("Encapsulation", () => {
 
     describe("Status Parser", () => {
         const { parseStatus } = encapsulation;
-        
+
         it("Rejects Non-Number Inputs", () => {
             expect(() => parseStatus("test")).toThrow();
             expect(() => parseStatus(null)).toThrow();
@@ -44,7 +44,10 @@ describe("Encapsulation", () => {
     });
 
     describe("Header Building Utility", () => {
-        const { header: { build }, commands: { RegisterSession } } = encapsulation;
+        const {
+            header: { build },
+            commands: { RegisterSession }
+        } = encapsulation;
 
         it("Builds Correct Encapsulation Buffer", () => {
             const snap = build(RegisterSession, 0x00, [0x01, 0x00, 0x00, 0x00]);
@@ -53,7 +56,10 @@ describe("Encapsulation", () => {
     });
 
     describe("Header Parsing Utility", () => {
-        const { header: { parse, build }, commands: { SendRRData } } = encapsulation;
+        const {
+            header: { parse, build },
+            commands: { SendRRData }
+        } = encapsulation;
 
         it("Builds Correct Encapsulation Buffer", () => {
             const data = build(SendRRData, 98705, [0x01, 0x00, 0x00, 0x00]);
@@ -92,7 +98,9 @@ describe("Encapsulation", () => {
     });
 
     describe("Test Common Packet Format Helper Functions", () => {
-        const { CPF: { parse, build, isCmd, ItemIDs } } = encapsulation;
+        const {
+            CPF: { parse, build, isCmd, ItemIDs }
+        } = encapsulation;
 
         it("Invalid CPF Commands causes an Error to be Thrown", () => {
             const { Null, ListIdentity, ConnectionBased, UCMM } = ItemIDs;

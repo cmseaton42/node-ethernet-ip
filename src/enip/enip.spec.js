@@ -4,7 +4,7 @@ describe("ENIP Class", () => {
     describe("Properties Accessors", () => {
         it("error", () => {
             const enip = new ENIP();
-            const error = { code: 0x41, msg: "this failed for some reason"};
+            const error = { code: 0x41, msg: "this failed for some reason" };
             enip.state.error = error;
 
             expect(enip.error).toMatchObject(error);

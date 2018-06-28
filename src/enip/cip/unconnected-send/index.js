@@ -2,7 +2,10 @@ const MessageRouter = require("../message-router");
 const { LOGICAL } = require("../epath").segments;
 
 const UNCONNECTED_SEND_SERVICE = 0x52;
-const UNCONNECTED_SEND_PATH = Buffer.concat([LOGICAL.build(LOGICAL.types.ClassID, 0x06), LOGICAL.build(LOGICAL.types.InstanceID, 1)]);
+const UNCONNECTED_SEND_PATH = Buffer.concat([
+    LOGICAL.build(LOGICAL.types.ClassID, 0x06),
+    LOGICAL.build(LOGICAL.types.InstanceID, 1)
+]);
 
 /**
  * @typedef UCMMSendTimeout

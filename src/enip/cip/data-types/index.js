@@ -29,14 +29,13 @@ const Types = {
     ENGUNIT: 0xdd,
     STRINGI: 0xde,
     STRUCT: 0xa002
-
 };
 
 /**
  * Checks if an Inputted Integer is a Valid Type Code (Vol1 Appendix C)
- * 
- * @param {number} num - Integer to be Tested 
- * @returns {boolean} 
+ *
+ * @param {number} num - Integer to be Tested
+ * @returns {boolean}
  */
 const isValidTypeCode = num => {
     if (!Number.isInteger(num)) return false;
@@ -48,8 +47,8 @@ const isValidTypeCode = num => {
 
 /**
  * Retrieves Human Readable Version of an Inputted Type Code
- * 
- * @param {number} num - Type Code to Request Human Readable version 
+ *
+ * @param {number} num - Type Code to Request Human Readable version
  * @returns {string} Type Code String Interpretation
  */
 const getTypeCodeString = num => {

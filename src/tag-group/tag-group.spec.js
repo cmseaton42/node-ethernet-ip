@@ -18,7 +18,7 @@ describe("Tag Class", () => {
             group.add(tag3);
             group.add(tag4);
             group.add(tag5);
-            
+
             expect(group.generateReadMessageRequests()).toMatchSnapshot();
         });
     });

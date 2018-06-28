@@ -13,7 +13,7 @@ describe("Tag Class", () => {
             expect(fn("someTag", "prog", 0x31)).toThrow();
             expect(fn("someTag", "prog", Types.EPATH)).not.toThrow();
             expect(fn("someTag", "prog", 0xc1)).not.toThrow();
-            expect(fn("tag[0].0",null,Types.BIT_STRING)).toThrow();
+            expect(fn("tag[0].0", null, Types.BIT_STRING)).toThrow();
         });
     });
 
@@ -57,7 +57,9 @@ describe("Tag Class", () => {
             expect(fn("Program:noExtraColon:tag")).toBeFalsy();
             expect(fn("Program:program.tag.singleDimMemArrayOk[0]")).toBeTruthy();
             expect(fn("Program:program.tag.noMultiDimMemArray[0,0]")).toBeFalsy();
-            expect(fn("Program:program.tag.memberArray[0]._0member[4]._another_1member.f1nal_member.5")).toBeTruthy();
+            expect(
+                fn("Program:program.tag.memberArray[0]._0member[4]._another_1member.f1nal_member.5")
+            ).toBeTruthy();
             expect(fn("Program:9noNumberProgram.tag")).toBeFalsy();
             expect(fn("tag.9noNumberMember")).toBeFalsy();
             expect(fn("tag.noDouble__underscore1")).toBeFalsy();

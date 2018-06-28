@@ -15,43 +15,50 @@ class Tag extends EventEmitter {
         if (!Tag.isValidTagname(tagname)) throw new Error("Tagname Must be of Type <string>");
         if (!isValidTypeCode(datatype) && datatype !== null)
             throw new Error("Datatype must be a Valid Type Code <number>");
-        if (typeof keepAlive !== "number") throw new Error(`Tag expected keepAlive of type <number> instead got type <${typeof keepAlive}>`);
-        if (keepAlive < 0) throw new Error(`Tag expected keepAlive to be greater than 0, got ${keepAlive}`);
+        if (typeof keepAlive !== "number")
+            throw new Error(
+                `Tag expected keepAlive of type <number> instead got type <${typeof keepAlive}>`
+            );
+        if (keepAlive < 0)
+            throw new Error(`Tag expected keepAlive to be greater than 0, got ${keepAlive}`);
 
         // Increment Instances
         instances += 1;
-    
+
         // Split by "." for memebers
         // Split by "[" or "]" for array indexes
         // Split by "," for array indexes with more than 1 dimension
         // Filter for length > 0 to remove empty elements (happens if tag ends with array index)
-        let pathArr = tagname.split(/[.[\],]/).filter(segment=>segment.length>0);
+        let pathArr = tagname.split(/[.[\],]/).filter(segment => segment.length > 0);
 
         let bitIndex = null;
 
         // Check for bit index (tag ends in .int) - this only applies to SINT, INT, DINT or array elements of
         // Split by "." to only check udt members and bit index.
         let memArr = tagname.split(".");
-        let isBitIndex = memArr.length > 1 & memArr[memArr.length -1] % 1 === 0;
+        let isBitIndex = (memArr.length > 1) & (memArr[memArr.length - 1] % 1 === 0);
 
         // Check if BIT_STRING data type was passed in
-        let isBitString = datatype === Types.BIT_STRING && pathArr[pathArr.length-1] % 1 === 0;
+        let isBitString = datatype === Types.BIT_STRING && pathArr[pathArr.length - 1] % 1 === 0;
 
         // Tag can not be both a bit index and BIT_STRING
-        if (isBitString && isBitIndex) throw("Tag cannot be defined as a BIT_STRING and have a bit index");
+        if (isBitString && isBitIndex)
+            throw "Tag cannot be defined as a BIT_STRING and have a bit index";
 
-        if (isBitString){
+        if (isBitString) {
             // BIT_STRING need to be converted to array with bit index
             // tag[x] converts to tag[(x-x%32)/32].x%32
             // e.g. tag[44] turns into tag[1].12
             bitIndex = parseInt(pathArr[pathArr.length - 1]) % 32;
-            pathArr[pathArr.length - 1] =   ((parseInt(pathArr[pathArr.length - 1]) - bitIndex ) / 32 ).toString();
-        }
-        else{
-            if(isBitIndex){
+            pathArr[pathArr.length - 1] = (
+                (parseInt(pathArr[pathArr.length - 1]) - bitIndex) /
+                32
+            ).toString();
+        } else {
+            if (isBitIndex) {
                 // normal bit index handling
                 bitIndex = parseInt(pathArr.pop(-1));
-                if (bitIndex < 0 | bitIndex > 31)
+                if ((bitIndex < 0) | (bitIndex > 31))
                     throw new Error(`Tag bit index must be between 0 and 31, received ${bitIndex}`);
             }
         }
@@ -70,12 +77,10 @@ class Tag extends EventEmitter {
 
         //buffer for instance id
         let bitIndexBuf = Buffer.alloc(1);
-        if(bitIndex === null)
-            bitIndexBuf.writeInt8(32);
-        else
-            bitIndexBuf.writeInt8(bitIndex);
-        
-        let instanceBuf = Buffer.concat([pathBuf,bitIndexBuf]);
+        if (bitIndex === null) bitIndexBuf.writeInt8(32);
+        else bitIndexBuf.writeInt8(bitIndex);
+
+        let instanceBuf = Buffer.concat([pathBuf, bitIndexBuf]);
 
         this.state = {
             tag: {
@@ -243,9 +248,9 @@ class Tag extends EventEmitter {
             if (lastValue !== null) this.emit("Changed", this, lastValue);
             else this.emit("Initialized", this);
         } else {
-            if (this.state.keepAlive > 0){
+            if (this.state.keepAlive > 0) {
                 const now = new Date();
-                if ((now - this.state.timestamp) >= (this.state.keepAlive * 1000)){
+                if (now - this.state.timestamp >= this.state.keepAlive * 1000) {
                     this.state.tag.controllerValue = newValue;
 
                     const { stage_write } = this.state.tag;
@@ -355,10 +360,8 @@ class Tag extends EventEmitter {
         const type = data.readUInt16LE(0);
         this.state.tag.type = type;
 
-        if (this.state.tag.bitIndex !== null)
-            this.parseReadMessageResponseValueForBitIndex(data);
-        else
-            this.parseReadMessageResponseValueForAtomic(data);
+        if (this.state.tag.bitIndex !== null) this.parseReadMessageResponseValueForBitIndex(data);
+        else this.parseReadMessageResponseValueForAtomic(data);
     }
 
     /**
@@ -370,22 +373,27 @@ class Tag extends EventEmitter {
     parseReadMessageResponseValueForBitIndex(data) {
         const { tag } = this.state;
         const { SINT, INT, DINT, BIT_STRING } = Types;
-        
+
         // Read Tag Value
         /* eslint-disable indent */
         switch (this.state.tag.type) {
             case SINT:
-                this.controller_value = (data.readInt8(2) & 1 << tag.bitIndex) == 0 ? false : true;
+                this.controller_value =
+                    (data.readInt8(2) & (1 << tag.bitIndex)) == 0 ? false : true;
                 break;
             case INT:
-                this.controller_value = (data.readInt16LE(2) & 1 << tag.bitIndex) == 0 ? false : true;
+                this.controller_value =
+                    (data.readInt16LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
                 break;
             case DINT:
             case BIT_STRING:
-                this.controller_value = (data.readInt32LE(2) & 1 << tag.bitIndex) == 0 ? false : true;
+                this.controller_value =
+                    (data.readInt32LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
                 break;
             default:
-                throw new Error("Data Type other than SINT, INT, DINT, or BIT_STRING returned when a Bit Index was requested");
+                throw new Error(
+                    "Data Type other than SINT, INT, DINT, or BIT_STRING returned when a Bit Index was requested"
+                );
         }
         /* eslint-enable indent */
     }
@@ -405,10 +413,10 @@ class Tag extends EventEmitter {
             case SINT:
                 this.controller_value = data.readInt8(2);
                 break;
-            case INT:    
+            case INT:
                 this.controller_value = data.readInt16LE(2);
                 break;
-            case DINT:    
+            case DINT:
                 this.controller_value = data.readInt32LE(2);
                 break;
             case REAL:
@@ -418,7 +426,9 @@ class Tag extends EventEmitter {
                 this.controller_value = data.readUInt8(2) === 0xff ? true : false;
                 break;
             default:
-                throw new Error(`Unrecognized Type Passed Read from Controller: ${this.state.tag.type}`);
+                throw new Error(
+                    `Unrecognized Type Passed Read from Controller: ${this.state.tag.type}`
+                );
         }
         /* eslint-enable indent */
     }
@@ -442,11 +452,9 @@ class Tag extends EventEmitter {
                     tag.name
                 } has not been initialized. Try reading the tag from the controller first or manually providing a valid CIP datatype.`
             );
-        
-        if (tag.bitIndex !== null)
-            return this.generateWriteMessageRequestForBitIndex(tag.value);
-        else 
-            return this.generateWriteMessageRequestForAtomic(tag.value,size);
+
+        if (tag.bitIndex !== null) return this.generateWriteMessageRequestForBitIndex(tag.value);
+        else return this.generateWriteMessageRequestForAtomic(tag.value, size);
     }
 
     /**
@@ -468,25 +476,27 @@ class Tag extends EventEmitter {
         switch (tag.type) {
             case SINT:
                 buf = Buffer.alloc(4);
-                buf.writeInt16LE(1);  //mask length
+                buf.writeInt16LE(1); //mask length
                 buf.writeUInt8(value ? 1 << tag.bitIndex : 0, 2); // or mask
                 buf.writeUInt8(value ? 255 : 255 & ~(1 << tag.bitIndex), 3); // and mask
                 break;
             case INT:
                 buf = Buffer.alloc(6);
-                buf.writeInt16LE(2);  //mask length
-                buf.writeUInt16LE(value? 1 << tag.bitIndex : 0, 2); // or mask
+                buf.writeInt16LE(2); //mask length
+                buf.writeUInt16LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
                 buf.writeUInt16LE(value ? 65535 : 65535 & ~(1 << tag.bitIndex), 4); // and mask
                 break;
             case DINT:
             case BIT_STRING:
                 buf = Buffer.alloc(10);
-                buf.writeInt16LE(4);  //mask length
+                buf.writeInt16LE(4); //mask length
                 buf.writeInt32LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
                 buf.writeInt32LE(value ? -1 : -1 & ~(1 << tag.bitIndex), 6); // and mask
                 break;
             default:
-                throw new Error("Bit Indexes can only be used on SINT, INT, DINT, or BIT_STRING data types.");
+                throw new Error(
+                    "Bit Indexes can only be used on SINT, INT, DINT, or BIT_STRING data types."
+                );
         }
 
         // Build Current Message
@@ -574,7 +584,7 @@ class Tag extends EventEmitter {
         if (typeof tagname !== "string") return false;
 
         // regex components
-        const nameRegex = (captureIndex) => {
+        const nameRegex = captureIndex => {
             return `(_?[a-zA-Z]|_\\d)(?:(?=(_?[a-zA-Z0-9]))\\${captureIndex})*`;
         };
         const multDimArrayRegex = "(\\[\\d+(,\\d+){0,2}])";
@@ -583,31 +593,46 @@ class Tag extends EventEmitter {
 
         // user regex for user tags
         const userRegex = new RegExp(
-            "^(Program:" + nameRegex(3) + "\\.)?"           // optional program name
-            + nameRegex(5) + multDimArrayRegex + "?"        // tag name
-            + "(\\." + nameRegex(10) + arrayRegex + "?)*"   // option member name
-            + bitIndexRegex + "?$");                        // optional bit index
+            "^(Program:" +
+            nameRegex(3) +
+            "\\.)?" + // optional program name
+            nameRegex(5) +
+            multDimArrayRegex +
+            "?" + // tag name
+            "(\\." +
+            nameRegex(10) +
+            arrayRegex +
+            "?)*" + // option member name
+                bitIndexRegex +
+                "?$"
+        ); // optional bit index
         // full user regex
         // ^(Program:(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\3)*\.)?(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\5)*(\[\d+(,\d+){0,2}])?(\.(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\10)*(\[\d+])?)*(\.\d{1,2})?$
-        
+
         // module regex for module tags
         const moduleRegex = new RegExp(
-            "^" + nameRegex(2)                              // module name
-            + "(:\\d{1,2})?"                                // optional slot num (not required for rack optimized connections)
-            + ":[IOC]"                                      // input/output/config
-            + "(\\." + nameRegex(6) + arrayRegex + "?)?"    // optional member with optional array index
-            + bitIndexRegex + "?$");                        // optional bit index
+            "^" +
+            nameRegex(2) + // module name
+            "(:\\d{1,2})?" + // optional slot num (not required for rack optimized connections)
+            ":[IOC]" + // input/output/config
+            "(\\." +
+            nameRegex(6) +
+            arrayRegex +
+            "?)?" + // optional member with optional array index
+                bitIndexRegex +
+                "?$"
+        ); // optional bit index
         // full module regex
         // ^(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\2)*(:\d{1,2})?:[IOC](\.(_?[a-zA-Z]|_\d)(?:(?=(_?[a-zA-Z0-9]))\6)*(\[\d+])?)?(\.\d{1,2})?$
 
         if (!userRegex.test(tagname) && !moduleRegex.test(tagname)) return false;
 
         // check segments
-        if (tagname.split(/[:.[\],]/).filter(segment=>segment.length>40).length > 0) return false; // check that all segments are <= 40 char
+        if (tagname.split(/[:.[\],]/).filter(segment => segment.length > 40).length > 0)
+            return false; // check that all segments are <= 40 char
 
         // passed all tests
         return true;
-
     }
 }
 
