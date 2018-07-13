@@ -75,21 +75,29 @@ class Template{
             // request member template by type
             let memberTemplate = yield type;
 
-            offset = Math.ceil(offset/memberTemplate.alignment)*memberTemplate.alignment;
+            // align offset
+            offset = Math.ceil(offset/memberTemplate.alignment)*memberTemplate.alignment;        
 
-            // set final member keys
-            members[mem] = {
-                length,
-                offset,
-                template: memberTemplate,
-                size: memberTemplate.size * ( length | 1)
-            };
+            // set final member key as member or array of members
+            if (length){
+                members[mem] = [];
+                for(let index = 0; index < length; index++){
+                    members[mem].push({
+                        offset,
+                        template: memberTemplate,
+                    });  
+                    offset += memberTemplate.size;
+                }
+            } else {
+                members[mem] = {
+                    offset,
+                    template: memberTemplate,
+                };  
+                offset += memberTemplate.size;
+            }
 
             // get boundary declaration - ONLY FOR V28? and higher!
             template.defaultBoundary = Math.max(memberTemplate.defaultBoundary, template.defaultBoundary);
-
-            // increase offet
-            offset += members[mem].size;
         }
 
         template.size = Math.ceil(offset/template.defaultBoundary)*template.defaultBoundary;
@@ -111,12 +119,20 @@ class Template{
         const { template: { members }, functions: { serialize } } = this.state;
 
         // base case: has local serialize() function
-        if(serialize)
+        if (serialize)
             return serialize(value, data, offset);
 
-        // recusive case: aggregate serialize() on all member templates
-        return Object.keys(value).reduce((workingData,member)=>
-            members[member].template.serialize(value[member], workingData, offset + members[member].offset),
+        // recursive case: aggregate serialize() on all member templates
+        return Object.keys(value).reduce((templateData,member)=>
+            // is member array?
+            Array.isArray(value[member]) ?
+                // array - reduce elements
+                value[member].reduce((elementData,element,index)=>
+                    // array - serailize element
+                    members[member][index].template.serialize(element, elementData, offset + members[member][index].offset),
+                templateData):
+                // not array - serialize template
+                members[member].template.serialize(value[member], templateData, offset + members[member].offset),
         data);
     }
 
@@ -124,12 +140,23 @@ class Template{
         const { template: { members }, functions: { deserialize } } = this.state;
         
         // base case: has deserialize() function
-        if(deserialize)
+        if (deserialize)
             return deserialize(data, offset);
         
         // recursive case: aggregate deserialize on all member templates
         return Object.keys(members).reduce((value,member)=>{
-            value[member] = members[member].template.deserialize(data,offset + members[member].offset);
+            // is memeber array?
+            if (Array.isArray(members[member])){
+                // array - reduce elements
+                value[member] = members[member].reduce((workingValue,element)=>{
+                    // array - deserialize element
+                    workingValue.push(element.template.deserialize(data,offset + element.offset));
+                    return workingValue;
+                },[]);
+            } else {
+                // not array - deserialize template
+                value[member] = members[member].template.deserialize(data,offset + members[member].offset);
+            }
             return value;
         },{});
     }

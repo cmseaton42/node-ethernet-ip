@@ -18,14 +18,14 @@ const udt1 = {
         mem1: Types.SINT,
         mem2: Types.SINT,
         mem3: Types.SINT,
-        mem4: Types.DINT,
+        mem4: { type: Types.DINT, length: 2 }
     }
 };
 
 const udt2 = {
     name: "testUdt2",
     objectDefinition:{
-        mem1: "testUdt",
+        mem1: { type: "testUdt", length: 2 },
         mem2: Types.DINT,
     }
 };
@@ -105,39 +105,97 @@ console.log(data);
 
 //**************************************************************
 // sample udt2 data in plc
-data = Buffer.alloc(12);
+data = Buffer.alloc(28);
 data.writeInt8(1,0);
 data.writeInt8(-6,1);
 data.writeInt8(100,2);
 data.writeInt32LE(12345,4);
-data.writeInt32LE(-456789,8);
+data.writeInt32LE(-999,8);
+data.writeInt8(-34,12);
+data.writeInt8(121,13);
+data.writeInt8(-1,14);
+data.writeInt32LE(4242,16);
+data.writeInt32LE(987432,20);
+data.writeInt32LE(-9873423,24);
 
 console.log(data);
-// <Buffer 01 fa 64 00 39 30 00 00 ab 07 f9 ff>
+// <Buffer 01 fa 64 00 39 30 00 00 19 fc ff ff de 79 ff 00 92 10 00 00 28 11 0f 00 f1 57 69 ff>
 
 // tag read causes deserialize
 tagValue = TemplateMap[udt2.name].deserialize(data);
 
-console.log(tagValue);
-// { mem1: { mem1: 1, mem2: -6, mem3: 100, mem4: 12345 },
-// mem2: -456789 }
+console.log(JSON.stringify(tagValue,null,4));
+/*
+{
+    "mem1": [
+        {
+            "mem1": 1,
+            "mem2": -6,
+            "mem3": 100,
+            "mem4": [
+                12345,
+                -999
+            ]
+        },
+        {
+            "mem1": -34,
+            "mem2": 121,
+            "mem3": -1,
+            "mem4": [
+                4242,
+                987432
+            ]
+        }
+    ],
+    "mem2": -9873423
+}
+*/
 
 // user edits data
-tagValue.mem1.mem1++;
-tagValue.mem1.mem2++;
-tagValue.mem1.mem3++;
-tagValue.mem1.mem4++;
+tagValue.mem1[0].mem1++;
+tagValue.mem1[0].mem2++;
+tagValue.mem1[0].mem3++;
+tagValue.mem1[0].mem4[0]++;
+tagValue.mem1[0].mem4[1]++;
+tagValue.mem1[1].mem1++;
+tagValue.mem1[1].mem2++;
+tagValue.mem1[1].mem3++;
+tagValue.mem1[1].mem4[0]++;
+tagValue.mem1[1].mem4[1]++;
 tagValue.mem2++;
 
 // user writes data
 data = TemplateMap[udt2.name].serialize(tagValue);
 
 console.log(data);
-// <Buffer 02 fb 65 00 3a 30 00 00 ac 07 f9 ff>
+// <Buffer 02 fb 65 00 3a 30 00 00 1a fc ff ff df 7a 00 00 93 10 00 00 29 11 0f 00 f2 57 69 ff>
 
 // user reads data (no change in PLC)
 tagValue = TemplateMap[udt2.name].deserialize(data);
 
-console.log(tagValue);
-// { mem1: { mem1: 2, mem2: -5, mem3: 101, mem4: 12346 },
-// mem2: -456788 }
+console.log(JSON.stringify(tagValue,null,4));
+/*
+{
+    "mem1": [
+        {
+            "mem1": 2,
+            "mem2": -5,
+            "mem3": 101,
+            "mem4": [
+                12346,
+                -998
+            ]
+        },
+        {
+            "mem1": -33,
+            "mem2": 122,
+            "mem3": 0,
+            "mem4": [
+                4243,
+                987433
+            ]
+        }
+    ],
+    "mem2": -9873422
+}
+*/

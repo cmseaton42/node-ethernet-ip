@@ -3,7 +3,7 @@ const { Template } = require("../../template");
 
 // here, atomic refers to types that can be resolved direcly to data
 // this mostly corresponds to strict atomic types in the PLC, but it's not 1:1
-// because some non-atomic plc types can be resolved direcly to data (e.g string and bit_string)
+// because some non-atomic plc types can be resolved direcly to data (e.g string)
 const AtomicTemplates = {
     [BOOL]: new Template({
         name: "BOOL",
