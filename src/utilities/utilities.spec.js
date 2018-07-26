@@ -23,6 +23,22 @@ describe("Utilites", () => {
             await expect(fn(50, "hello")).resolves.toBe("hello");
             await expect(fn(50, { a: 5, b: 6 })).resolves.toMatchObject({ a: 5, b: 6 });
         });
+
+        it("Has Default Message", async () => {
+            const fn = (ms, arg) => {
+                return promiseTimeout(
+                    new Promise(resolve => {
+                        setTimeout(() => {
+                            if (arg) resolve(arg);
+                            resolve();
+                        }, ms);
+                    }),
+                    100
+                );
+            };
+            
+            await expect(fn(200)).rejects.toEqual(new Error("ASYNC Function Call Timed Out!!!"));
+        });
     });
 
     describe("Delay Utility", () => {

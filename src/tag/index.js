@@ -13,8 +13,8 @@ class Tag extends EventEmitter {
         super();
 
         if (!Tag.isValidTagname(tagname)) throw new Error("Tagname Must be of Type <string>");
-        if (!isValidTypeCode(datatype) && datatype !== null)
-            throw new Error("Datatype must be a Valid Type Code <number>");
+        if (!isValidTypeCode(datatype) && datatype !== null && typeof datatype !== "string")
+            throw new Error("Datatype must be a Valid Type Code <number> or <string>");
         if (typeof keepAlive !== "number")
             throw new Error(
                 `Tag expected keepAlive of type <number> instead got type <${typeof keepAlive}>`
@@ -43,7 +43,7 @@ class Tag extends EventEmitter {
 
         // Tag can not be both a bit index and BIT_STRING
         if (isBitString && isBitIndex)
-            throw "Tag cannot be defined as a BIT_STRING and have a bit index";
+            throw new Error("Tag cannot be defined as a BIT_STRING and have a bit index");
 
         if (isBitString) {
             // BIT_STRING need to be converted to array with bit index
@@ -84,13 +84,14 @@ class Tag extends EventEmitter {
 
         this.state = {
             tag: {
+                bitIndex,
+                program,
                 name: tagname,
                 type: datatype,
-                bitIndex: bitIndex,
                 value: null,
+                controller: null,
                 controllerValue: null,
                 path: pathBuf,
-                program: program,
                 stage_write: false
             },
             read_size: 0x01,
@@ -160,7 +161,19 @@ class Tag extends EventEmitter {
      * @returns {string} datatype
      */
     get type() {
-        return getTypeCodeString(this.state.tag.type);
+        const { type } = this.state.tag;
+        return getTypeCodeString(type) || type;
+    }
+
+    /**
+     * Sets Tag Datatype if Valid
+     *
+     * @memberof Tag
+     * @property {number} Valid Datatype Code
+     */
+    set type(type) {
+        if (!isValidTypeCode(type) && typeof type !== "string") throw new Error("Datatype must be a Valid Type Code <number> or <string>");
+        this.state.tag.type = type;
     }
 
     /**
@@ -172,17 +185,6 @@ class Tag extends EventEmitter {
      */
     get bitIndex() {
         return this.state.tag.bitIndex;
-    }
-
-    /**
-     * Sets Tag Datatype if Valid
-     *
-     * @memberof Tag
-     * @property {number} Valid Datatype Code
-     */
-    set type(type) {
-        if (!isValidTypeCode(type)) throw new Error("Datatype must be a Valid Type Code <number>");
-        this.state.tag.type = type;
     }
 
     /**
@@ -202,7 +204,7 @@ class Tag extends EventEmitter {
      * @property {number} read size
      */
     set read_size(size) {
-        if (typeof type !== "number")
+        if (typeof size !== "number")
             throw new Error("Read Size must be a Valid Type Code <number>");
         this.state.read_size = size;
     }
@@ -230,13 +232,34 @@ class Tag extends EventEmitter {
     }
 
     /**
+     * Gets Tag parent Controller
+     * - Returns null if no value has been read
+     *
+     * @memberof Tag
+     * @returns {object} controller
+     */
+    get controller() {
+        return this.state.tag.controller;
+    }
+
+    /**
+     * Sets Tag parent Controller
+     *
+     * @memberof Tag
+     * @property {object} new controller
+     */
+    set controller(controller) {
+        this.state.tag.controller = controller;
+    }
+
+    /**
      * Sets Controller Tag Value and Emits Changed Event
      *
      * @memberof Tag
      * @property {number|string|boolean|object} new value
      */
     set controller_value(newValue) {
-        if (newValue !== this.state.tag.controllerValue) {
+        if (JSON.stringify(newValue) !== JSON.stringify(this.state.tag.controllerValue)) {
             const lastValue = this.state.tag.controllerValue;
             this.state.tag.controllerValue = newValue;
 
@@ -356,81 +379,48 @@ class Tag extends EventEmitter {
      * @memberof Tag
      */
     parseReadMessageResponse(data) {
-        // Set Type of Tag Read
-        const type = data.readUInt16LE(0);
-        this.state.tag.type = type;
-
-        if (this.state.tag.bitIndex !== null) this.parseReadMessageResponseValueForBitIndex(data);
-        else this.parseReadMessageResponseValueForAtomic(data);
-    }
-
-    /**
-     *  Parses Good Read Request Messages Using A Mask For A Specified Bit Index
-     *
-     * @param {buffer} Data Returned from Successful Read Tag Request
-     * @memberof Tag
-     */
-    parseReadMessageResponseValueForBitIndex(data) {
         const { tag } = this.state;
-        const { SINT, INT, DINT, BIT_STRING } = Types;
+        const { SINT, INT, DINT, BIT_STRING, STRUCT } = Types;
 
-        // Read Tag Value
-        /* eslint-disable indent */
-        switch (this.state.tag.type) {
-            case SINT:
-                this.controller_value =
-                    (data.readInt8(2) & (1 << tag.bitIndex)) == 0 ? false : true;
-                break;
-            case INT:
-                this.controller_value =
-                    (data.readInt16LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
-                break;
-            case DINT:
-            case BIT_STRING:
-                this.controller_value =
-                    (data.readInt32LE(2) & (1 << tag.bitIndex)) == 0 ? false : true;
-                break;
-            default:
-                throw new Error(
-                    "Data Type other than SINT, INT, DINT, or BIT_STRING returned when a Bit Index was requested"
-                );
+        const type = data.readUInt16LE(0);
+        if (!tag.type) tag.type = type;
+        else {
+            if (tag.type !== type && ( typeof tag.type !== "string" || type !== Types.STRUCT)) 
+                throw new Error(`Type Read Mismatch - tag: ${tag.type} vs read: ${type}`);
         }
-        /* eslint-enable indent */
-    }
 
-    /**
-     *  Parses Good Read Request Messages For Atomic Data Types
-     *
-     * @param {buffer} Data Returned from Successful Read Tag Request
-     * @memberof Tag
-     */
-    parseReadMessageResponseValueForAtomic(data) {
-        const { SINT, INT, DINT, REAL, BOOL } = Types;
-
-        // Read Tag Value
-        /* eslint-disable indent */
-        switch (this.state.tag.type) {
-            case SINT:
-                this.controller_value = data.readInt8(2);
-                break;
-            case INT:
-                this.controller_value = data.readInt16LE(2);
-                break;
-            case DINT:
-                this.controller_value = data.readInt32LE(2);
-                break;
-            case REAL:
-                this.controller_value = data.readFloatLE(2);
-                break;
-            case BOOL:
-                this.controller_value = data.readUInt8(2) === 0xff ? true : false;
-                break;
-            default:
-                throw new Error(
-                    `Unrecognized Type Passed Read from Controller: ${this.state.tag.type}`
-                );
+        // bit index local deserialization
+        if (tag.bitIndex !== null)
+            /* eslint-disable indent */
+            switch (tag.type) {
+                case SINT:
+                    this.controller_value =
+                        (data.readInt8(2) & (1 << tag.bitIndex)) === 0 ? false : true;
+                    break;
+                case INT:
+                    this.controller_value =
+                        (data.readInt16LE(2) & (1 << tag.bitIndex)) === 0 ? false : true;
+                    break;
+                case DINT:
+                case BIT_STRING:
+                    this.controller_value =
+                        (data.readInt32LE(2) & (1 << tag.bitIndex)) === 0 ? false : true;
+                    break;
+                default:
+                    throw new Error(
+                        "Data Type other than SINT, INT, DINT, or BIT_STRING returned when a Bit Index was requested"
+                    );
+            }
+            /* eslint-enable indent */
+        // not a bit index - template deserialization
+        else{
+            const template = this._getTemplate();
+            if (type === STRUCT) {
+                template.structure_handle = data.readUInt16LE(2);
+                this.controller_value = template.deserialize(data.slice(4));
+            }
+            else this.controller_value = template.deserialize(data.slice(2));
         }
-        /* eslint-enable indent */
     }
 
     /**
@@ -442,123 +432,67 @@ class Tag extends EventEmitter {
      * @memberof Tag
      */
     generateWriteMessageRequest(value = null, size = 0x01) {
-        if (value !== null) this.state.tag.value = value;
-
         const { tag } = this.state;
+        const { SINT, INT, DINT, BIT_STRING } = Types;
 
-        if (tag.type === null)
+        if (value !== null) tag.value = value;
+
+        if (tag.type === null )
             throw new Error(
                 `Tag ${
                     tag.name
                 } has not been initialized. Try reading the tag from the controller first or manually providing a valid CIP datatype.`
             );
 
-        if (tag.bitIndex !== null) return this.generateWriteMessageRequestForBitIndex(tag.value);
-        else return this.generateWriteMessageRequestForAtomic(tag.value, size);
-    }
-
-    /**
-     * Generates Write Tag Message For A Bit Index
-     *
-     * @param {number|boolean|object|string} value
-     * @param {number} size
-     * @returns {buffer} - Write Tag Message Service
-     * @memberof Tag
-     */
-    generateWriteMessageRequestForBitIndex(value) {
-        const { tag } = this.state;
-        const { SINT, INT, DINT, BIT_STRING } = Types;
-
-        // Build Message Router to Embed in UCMM
         let buf = null;
 
-        /* eslint-disable indent */
-        switch (tag.type) {
-            case SINT:
-                buf = Buffer.alloc(4);
-                buf.writeInt16LE(1); //mask length
-                buf.writeUInt8(value ? 1 << tag.bitIndex : 0, 2); // or mask
-                buf.writeUInt8(value ? 255 : 255 & ~(1 << tag.bitIndex), 3); // and mask
-                break;
-            case INT:
-                buf = Buffer.alloc(6);
-                buf.writeInt16LE(2); //mask length
-                buf.writeUInt16LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
-                buf.writeUInt16LE(value ? 65535 : 65535 & ~(1 << tag.bitIndex), 4); // and mask
-                break;
-            case DINT:
-            case BIT_STRING:
-                buf = Buffer.alloc(10);
-                buf.writeInt16LE(4); //mask length
-                buf.writeInt32LE(value ? 1 << tag.bitIndex : 0, 2); // or mask
-                buf.writeInt32LE(value ? -1 : -1 & ~(1 << tag.bitIndex), 6); // and mask
-                break;
-            default:
-                throw new Error(
-                    "Bit Indexes can only be used on SINT, INT, DINT, or BIT_STRING data types."
-                );
+        // bit index = local serialization
+        if (tag.bitIndex !== null){
+            /* eslint-disable indent */
+            switch (tag.type) {
+                case SINT:
+                    buf = Buffer.alloc(4);
+                    buf.writeInt16LE(1); //mask length
+                    buf.writeUInt8(tag.value ? 1 << tag.bitIndex : 0, 2); // or mask
+                    buf.writeUInt8(tag.value ? 255 : 255 & ~(1 << tag.bitIndex), 3); // and mask
+                    break;
+                case INT:
+                    buf = Buffer.alloc(6);
+                    buf.writeInt16LE(2); //mask length
+                    buf.writeUInt16LE(tag.value ? 1 << tag.bitIndex : 0, 2); // or mask
+                    buf.writeUInt16LE(tag.value ? 65535 : 65535 & ~(1 << tag.bitIndex), 4); // and mask
+                    break;
+                case DINT:
+                case BIT_STRING:
+                    buf = Buffer.alloc(10);
+                    buf.writeInt16LE(4); //mask length
+                    buf.writeInt32LE(tag.value ? 1 << tag.bitIndex : 0, 2); // or mask
+                    buf.writeInt32LE(tag.value ? -1 : -1 & ~(1 << tag.bitIndex), 6); // and mask
+                    break;
+                default:
+                    throw new Error(
+                        "Bit Indexes can only be used on SINT, INT, DINT, or BIT_STRING data types."
+                    );
+            }
+
+            // Build Current Message
+            return MessageRouter.build(READ_MODIFY_WRITE_TAG, tag.path, buf);
         }
 
-        // Build Current Message
-        return MessageRouter.build(READ_MODIFY_WRITE_TAG, tag.path, buf);
-    }
+        const template = this._getTemplate();
 
-    /**
-     * Generates Write Tag Message For Atomic Types
-     *
-     * @param {number|boolean|object|string} value
-     * @param {number} size
-     * @returns {buffer} - Write Tag Message Service
-     * @memberof Tag
-     */
-    generateWriteMessageRequestForAtomic(value, size) {
-        const { tag } = this.state;
-        const { SINT, INT, DINT, REAL, BOOL } = Types;
-        // Build Message Router to Embed in UCMM
-        let buf = Buffer.alloc(4);
-        let valBuf = null;
-        buf.writeUInt16LE(tag.type, 0);
-        buf.writeUInt16LE(size, 2);
-
-        /* eslint-disable indent */
-        switch (tag.type) {
-            case SINT:
-                valBuf = Buffer.alloc(1);
-                valBuf.writeInt8(tag.value);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            case INT:
-                valBuf = Buffer.alloc(2);
-                valBuf.writeInt16LE(tag.value);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            case DINT:
-                valBuf = Buffer.alloc(4);
-                valBuf.writeInt32LE(tag.value);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            case REAL:
-                valBuf = Buffer.alloc(4);
-                valBuf.writeFloatLE(tag.value);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            case BOOL:
-                valBuf = Buffer.alloc(1);
-                if (!tag.value) valBuf.writeInt8(0x00);
-                else valBuf.writeInt8(0x01);
-
-                buf = Buffer.concat([buf, valBuf]);
-                break;
-            default:
-                throw new Error(`Unrecognized Type to Write to Controller: ${tag.type}`);
+        // default - template serialization
+        if (typeof tag.type === "string"){
+            buf = Buffer.alloc(6);
+            buf.writeUInt16LE(Types.STRUCT, 0);
+            buf.writeUInt16LE(template.structure_handle, 2);
+            buf.writeUInt16LE(size, 4);
+        } else {
+            buf = Buffer.alloc(4);
+            buf.writeUInt16LE(tag.type, 0);
+            buf.writeUInt16LE(size, 2);
         }
-
-        // Build Current Message
-        return MessageRouter.build(WRITE_TAG, tag.path, buf);
+        return MessageRouter.build(WRITE_TAG, tag.path, Buffer.concat([buf,template.serialize(tag.value)]));
     }
 
     /**
@@ -567,8 +501,30 @@ class Tag extends EventEmitter {
      * @memberof Tag
      */
     unstageWriteRequest() {
-        this.state.tag.stage_write = false;
-        this.state.tag.value = this.state.controllerValue;
+        const { tag } = this.state;
+        tag.stage_write = false;
+        tag.value = tag.controllerValue;
+    }
+    // endregion
+
+    // region Private Methods
+    /**
+     * Gets Tag Template
+     *
+     * @memberof Tag
+     */
+    _getTemplate() {
+        const { tag } = this.state;
+        
+        if (!tag.controller) throw new Error("Template read error - tag controller property not set");
+        if (!tag.controller.templates) throw new Error("Template read error - tag controller templates property not set");
+        if (!tag.type) throw new Error("Template read error - tag type property not set");
+        
+        const template = tag.controller.templates[tag.type];
+        
+        if (!template)  throw new Error(`Template read error - cannot find template for type: ${tag.type}`);
+        
+        return template;
     }
     // endregion
 

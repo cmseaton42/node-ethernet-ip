@@ -21,20 +21,20 @@ const build = (data, ANSI = true) => {
         throw new Error("Data Segment Data Must be a String or Buffer");
 
     // Build Element Segment If Int
-    if (data % 1 === 0) return elementBuild(parseInt(data));
+    if (data % 1 === 0) return _elementBuild(parseInt(data));
 
     // Build symbolic segment by default
-    return symbolicBuild(data, ANSI);
+    return _symbolicBuild(data, ANSI);
 };
 
 /**
  * Builds EPATH Symbolic Segment
  *
  * @param {string|buffer} data
- * @param {boolean} [ANSI=true] Declare if ANSI Extended or Simple
+ * @param {boolean} ANSI Declare if ANSI Extended or Simple
  * @returns {buffer}
  */
-const symbolicBuild = (data, ANSI = true) => {
+const _symbolicBuild = (data, ANSI) => {
     // Initialize Buffer
     let buf = Buffer.alloc(2);
 
@@ -59,7 +59,7 @@ const symbolicBuild = (data, ANSI = true) => {
  * @param {string} data
  * @returns {buffer}
  */
-const elementBuild = data => {
+const _elementBuild = data => {
     // Get Element Length - Data Access 2 - IOI Segments - Element Segments
     let type;
     let dataBuf;
