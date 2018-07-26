@@ -2,7 +2,7 @@ const { Types: { BOOL, SINT, INT, DINT, LINT, REAL } } = require("../../enip/cip
 const Template = require("../../template");
 
 module.exports = () => { 
-    return {
+    const templates =  {
         [BOOL]: new Template({
             size: 1,
             alignment: 8, 
@@ -69,9 +69,10 @@ module.exports = () => {
                 return data;
             },
             deserialize: (data=Buffer.alloc(4),offset=0) => data.readFloatLE(offset/8)
-        }),
-        ["STRING"]: new Template({
-            string_length: 82
         })
     };
+
+    new Template({name: "STRING",string_length: 82}).addToTemplates(templates);
+
+    return templates;
 };
