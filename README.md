@@ -155,8 +155,8 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 Writing Tags `Individually`...
 ```javascript
-const { Controller, Tag, CIP } = require("ethernet-ip");
-const { DINT, BOOL } = CIP.DataTypes.Types;
+const { Controller, Tag, EthernetIP } = require("ethernet-ip");
+const { DINT, BOOL } = EthernetIP.CIP.DataTypes.Types;
 
 const PLC = new Controller();
 
@@ -180,8 +180,8 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 Writing Tags as a `Group`...
 ```javascript
-const { Controller, Tag, TagGroup, CIP } = require("ethernet-ip");
-const { DINT, BOOL } = CIP.DataTypes.Types;
+const { Controller, Tag, TagGroup, EthernetIP } = require("ethernet-ip");
+const { DINT, BOOL } = EthernetIP.CIP.DataTypes.Types;
 
 const PLC = new Controller();
 const group = new TagGroup();
