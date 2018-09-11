@@ -283,6 +283,11 @@ PLC.forEach(tag => {
 
 * **Canaan Seaton** - *Owner* - [GitHub Profile](https://github.com/cmseaton42) - [Personal Website](http://www.canaanseaton.com/)
 * **Patrick McDonagh** - *Collaborator* - [GitHub Profile](https://github.com/patrickjmcd)
+* **Jeremy Henson** - *Collaborator* - [Github Profile](https://github.com/jhenson29)
+  
+## Related Projects
+
+* [Node Red](https://github.com/netsmarttech/node-red-contrib-cip-ethernet-ip#readme)
 
 Wanna *become* a contributor? [Here's](https://github.com/cmseaton42/node-ethernet-ip/blob/master/CONTRIBUTING.md) how!
 
