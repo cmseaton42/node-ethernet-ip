@@ -423,7 +423,7 @@ class Tag extends EventEmitter {
                 this.controller_value = data.readFloatLE(2);
                 break;
             case BOOL:
-                this.controller_value = data.readUInt8(2) === 0xff ? true : false;
+                this.controller_value = data.readUInt8(2) !== 0;
                 break;
             default:
                 throw new Error(
