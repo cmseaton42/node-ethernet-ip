@@ -54,7 +54,7 @@ const generateEncodedTimeout = timeout => {
 const build = (message_request, path, timeout = 2000) => {
     if (!Buffer.isBuffer(message_request))
         throw new Error("Message Request Must be of Type Buffer");
-    if (!Buffer.isBuffer(path)) throw new Error("Message Request Must be of Type Buffer");
+    if (!Buffer.isBuffer(path)) throw new Error("Path Must be of Type Buffer");
     if (typeof timeout !== "number" || timeout < 100) timeout = 1000;
 
     // Get Encoded Timeout

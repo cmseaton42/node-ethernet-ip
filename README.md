@@ -152,8 +152,8 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 Writing Tags `Individually`...
 ```javascript
-const { Controller, Tag, CIP } = require("ethernet-ip");
-const { DINT, BOOL } = CIP.DataTypes.Types;
+const { Controller, Tag, EthernetIP } = require("ethernet-ip");
+const { DINT, BOOL } = EthernetIP.CIP.DataTypes.Types;
 
 const PLC = new Controller();
 
@@ -177,8 +177,8 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 Writing Tags as a `Group`...
 ```javascript
-const { Controller, Tag, TagGroup, CIP } = require("ethernet-ip");
-const { DINT, BOOL } = CIP.DataTypes.Types;
+const { Controller, Tag, TagGroup, EthernetIP } = require("ethernet-ip");
+const { DINT, BOOL } = EthernetIP.CIP.DataTypes.Types;
 
 const PLC = new Controller();
 const group = new TagGroup();
@@ -462,6 +462,11 @@ PLC.forEach(tag => {
 
 * **Canaan Seaton** - *Owner* - [GitHub Profile](https://github.com/cmseaton42) - [Personal Website](http://www.canaanseaton.com/)
 * **Patrick McDonagh** - *Collaborator* - [GitHub Profile](https://github.com/patrickjmcd)
+* **Jeremy Henson** - *Collaborator* - [Github Profile](https://github.com/jhenson29)
+  
+## Related Projects
+
+* [Node Red](https://github.com/netsmarttech/node-red-contrib-cip-ethernet-ip#readme)
 
 Wanna *become* a contributor? [Here's](https://github.com/cmseaton42/node-ethernet-ip/blob/master/CONTRIBUTING.md) how!
 
