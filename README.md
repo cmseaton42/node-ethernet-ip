@@ -6,6 +6,7 @@
   <a href="https://github.com/cmseaton42/node-ethernet-ip/blob/master/LICENSE"><img src="https://img.shields.io/github/license/cmseaton42/node-ethernet-ip.svg?style=flat-square" alt="license" /></a>
   <img src="https://img.shields.io/travis/cmseaton42/node-ethernet-ip.svg?style=flat-square" alt="Travis" />
   <img src="https://img.shields.io/coveralls/github/cmseaton42/node-ethernet-ip.svg?style=flat-square" alt="Coveralls github" />
+  <img src="https://snyk.io/test/github/cmseaton42/node-ethernet-ip/badge.svg?targetFile=package.json" alt="Known Vulnerabilities" data-canonical-src="https://snyk.io/test/github/cmseaton42/node-ethernet-ip?targetFile=package.json" style="max-width:100%;">
   <a href="https://github.com/cmseaton42/node-ethernet-ip"><img src="https://img.shields.io/github/stars/cmseaton42/node-ethernet-ip.svg?&amp;style=social&amp;logo=github&amp;label=Stars" alt="GitHub stars" /></a></p>
 </div>
 
@@ -187,8 +188,11 @@ const PLC = new Controller();
 const group = new TagGroup();
 
 // Create Tag Instances
-group.add(new Tag("contTag", null, DINT)); // Controller Scope Tag
-group.add(new Tag("progTag", "prog", BOOL)); // Program Scope Tag in PLC Program "prog"
+const fooTag = new Tag("contTag", null, DINT); // Controller Scope Tag
+const barTag = new Tag("progTag", "prog", BOOL); // Program Scope Tag in PLC Program "prog"
+
+group.add(fooTag); // Controller Scope Tag
+group.add(barTag); // Program Scope Tag in PLC Program "prog"
 
 PLC.connect("192.168.1.1", 0).then(async () => {
     // Set new values
