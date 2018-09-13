@@ -187,8 +187,11 @@ const PLC = new Controller();
 const group = new TagGroup();
 
 // Create Tag Instances
-group.add(new Tag("contTag", null, DINT)); // Controller Scope Tag
-group.add(new Tag("progTag", "prog", BOOL)); // Program Scope Tag in PLC Program "prog"
+const fooTag = new Tag("contTag", null, DINT); // Controller Scope Tag
+const barTag = new Tag("progTag", "prog", BOOL); // Program Scope Tag in PLC Program "prog"
+
+group.add(fooTag); // Controller Scope Tag
+group.add(barTag); // Program Scope Tag in PLC Program "prog"
 
 PLC.connect("192.168.1.1", 0).then(async () => {
     // Set new values
