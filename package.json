@@ -32,11 +32,11 @@
         "task-easy": "^0.2.0"
     },
     "devDependencies": {
-        "colors": "^1.3.0",
-        "coveralls": "^3.0.1",
-        "eslint": "^4.18.2",
-        "eslint-plugin-jest": "^21.17.0",
-        "jest": "^23.2.0"
+        "colors": "^1.3.2",
+        "coveralls": "^3.0.2",
+        "eslint": "^4.19.1",
+        "eslint-plugin-jest": "^21.22.0",
+        "jest": "^23.6.0"
     },
     "author": "Canaan Seaton",
     "license": "MIT",
