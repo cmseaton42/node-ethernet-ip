@@ -28,7 +28,7 @@ class TagGroup extends EventEmitter {
      * @memberof TagGroup
      */
     get length() {
-        return Object.keys(this.tags).length;
+        return Object.keys(this.state.tags).length;
     }
     // endregion
 
@@ -238,6 +238,16 @@ class TagGroup extends EventEmitter {
         for (let id of ids) {
             this.state.tags[id].unstageWriteRequest();
         }
+    }
+
+    /**
+     * Set all Tag Controllers
+     *
+     * @param {object} controller
+     * @memberof TagGroup
+     */
+    setController(controller) {
+        this.forEach(tag => tag.controller = controller);
     }
     // endregion
 

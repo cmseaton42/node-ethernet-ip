@@ -1,6 +1,8 @@
 const { ENIP, CIP } = require("../enip");
 const dateFormat = require("dateformat");
 const TagGroup = require("../tag-group");
+const Template = require("../template");
+const TemplateMap = require("../template/atomics");
 const { delay, promiseTimeout } = require("../utilities");
 const Queue = require("task-easy");
 
@@ -33,7 +35,8 @@ class Controller extends ENIP {
             },
             subs: new TagGroup(compare),
             scanning: false,
-            scan_rate: 200 //ms
+            scan_rate: 200, //ms
+            templates: TemplateMap()
         };
 
         this.workers = {
@@ -83,6 +86,17 @@ class Controller extends ENIP {
      */
     get properties() {
         return this.state.controller;
+    }
+
+    /**
+     * Gets the Controller Templates Object
+     *
+     * @readonly
+     * @memberof Controller
+     * @returns {object}
+     */
+    get templates() {
+        return this.state.templates;
     }
 
     /**
@@ -453,6 +467,16 @@ class Controller extends ENIP {
     forEach(callback) {
         this.state.subs.forEach(callback);
     }
+
+    /**
+     * Adds new Template to Controller Templates
+     *
+     * @param {object} template
+     * @memberof Controller
+     */
+    addTemplate(template){
+        new Template(template).addToTemplates(this.state.templates);
+    }
     // endregion
 
     // region Private Methods
@@ -474,12 +498,13 @@ class Controller extends ENIP {
      * @memberof Controller
      */
     async _readTag(tag, size = null) {
+        tag.controller = this;
+
         const MR = tag.generateReadMessageRequest(size);
 
         this.write_cip(MR);
 
         const readTagErr = new Error(`TIMEOUT occurred while writing Reading Tag: ${tag.name}.`);
-
         // Wait for Response
         const data = await promiseTimeout(
             new Promise((resolve, reject) => {
@@ -507,6 +532,8 @@ class Controller extends ENIP {
      * @memberof Controller
      */
     async _writeTag(tag, value = null, size = 0x01) {
+        tag.controller = this;
+
         const MR = tag.generateWriteMessageRequest(value, size);
 
         this.write_cip(MR);
@@ -522,6 +549,7 @@ class Controller extends ENIP {
                     if (err) reject(err);
 
                     tag.unstageWriteRequest();
+                    
                     resolve(data);
                 });
 
@@ -549,6 +577,8 @@ class Controller extends ENIP {
      * @memberof Controller
      */
     async _readTagGroup(group) {
+        group.setController(this);
+
         const messages = group.generateReadMessageRequests();
 
         const readTagGroupErr = new Error("TIMEOUT occurred while writing Reading Tag Group.");
@@ -585,6 +615,8 @@ class Controller extends ENIP {
      * @memberof Controller
      */
     async _writeTagGroup(group) {
+        group.setController(this);
+
         const messages = group.generateWriteMessageRequests();
 
         const writeTagGroupErr = new Error("TIMEOUT occurred while writing Reading Tag Group.");

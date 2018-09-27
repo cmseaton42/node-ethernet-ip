@@ -50,4 +50,17 @@ describe("Controller Class", () => {
             expect(plc.time).toMatchSnapshot();
         });
     });
+
+    describe("Add Templates Method", () => {
+        it("Should add templates", () => {
+            const plc = new Controller();
+
+            expect(plc.templates).not.toHaveProperty("udt");
+
+            plc.addTemplate({name: "udt"});
+
+            expect(plc.templates).toHaveProperty("udt");
+
+        });
+    });
 });

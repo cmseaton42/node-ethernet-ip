@@ -1,0 +1,557 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Atomic Templates Check Serialization and Deserialization should deserialize all atomic types correctly 1`] = `
+Object {
+  "high": 0,
+  "low": 0,
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should deserialize all atomic types correctly 2`] = `
+Object {
+  "high": 0,
+  "low": 0,
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should deserialize all atomic types correctly 3`] = `
+Object {
+  "high": 0,
+  "low": 1,
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should deserialize all atomic types correctly 4`] = `
+Object {
+  "high": -1,
+  "low": -1,
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should deserialize all atomic types correctly 5`] = `
+Object {
+  "high": 0,
+  "low": 123,
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should deserialize all atomic types correctly 6`] = `
+Object {
+  "DATA": Array [
+    110,
+    101,
+    119,
+    32,
+    116,
+    101,
+    120,
+    116,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "LEN": 8,
+  "getString": [Function],
+  "setString": [Function],
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 1`] = `
+Object {
+  "data": Array [
+    1,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 2`] = `
+Object {
+  "data": Array [
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 3`] = `
+Object {
+  "data": Array [
+    128,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 4`] = `
+Object {
+  "data": Array [
+    127,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 5`] = `
+Object {
+  "data": Array [
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 6`] = `
+Object {
+  "data": Array [
+    1,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 7`] = `
+Object {
+  "data": Array [
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 8`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+    123,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 9`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 10`] = `
+Object {
+  "data": Array [
+    1,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 11`] = `
+Object {
+  "data": Array [
+    255,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 12`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+    123,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 13`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 14`] = `
+Object {
+  "data": Array [
+    1,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 15`] = `
+Object {
+  "data": Array [
+    255,
+    255,
+    255,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 16`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+    123,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 17`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 18`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 19`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 20`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 21`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 22`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    128,
+    63,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 23`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    128,
+    191,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 24`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    246,
+    66,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Atomic Templates Check Serialization and Deserialization should serialize all atomic types correctly 25`] = `
+Object {
+  "data": Array [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;

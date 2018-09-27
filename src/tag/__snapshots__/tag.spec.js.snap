@@ -1,5 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Tag Class Path property should return valid path 1`] = `
+Object {
+  "data": Array [
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
 exports[`Tag Class Read Message Generator Method Generates Appropriate Buffer 1`] = `
 Object {
   "data": Array [
@@ -164,6 +178,44 @@ Object {
     40,
     0,
     40,
+    0,
+    40,
+    0,
+    1,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Read Message Generator Method Generates Appropriate Buffer 10`] = `
+Object {
+  "data": Array [
+    76,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    1,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Read Message Generator Method Generates Appropriate Buffer 11`] = `
+Object {
+  "data": Array [
+    76,
+    4,
+    145,
+    3,
+    116,
+    97,
+    103,
     0,
     40,
     0,
@@ -388,6 +440,224 @@ Object {
     1,
     0,
     99,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 10`] = `
+Object {
+  "data": Array [
+    78,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    1,
+    0,
+    1,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 11`] = `
+Object {
+  "data": Array [
+    78,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    2,
+    0,
+    1,
+    0,
+    255,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 12`] = `
+Object {
+  "data": Array [
+    78,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    4,
+    0,
+    1,
+    0,
+    0,
+    0,
+    255,
+    255,
+    255,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 13`] = `
+Object {
+  "data": Array [
+    78,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    1,
+    0,
+    0,
+    254,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 14`] = `
+Object {
+  "data": Array [
+    78,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    2,
+    0,
+    0,
+    0,
+    254,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 15`] = `
+Object {
+  "data": Array [
+    78,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    4,
+    0,
+    0,
+    0,
+    0,
+    0,
+    254,
+    255,
+    255,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 16`] = `
+Object {
+  "data": Array [
+    78,
+    4,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    40,
+    0,
+    4,
+    0,
+    1,
+    0,
+    0,
+    0,
+    255,
+    255,
+    255,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 17`] = `
+Object {
+  "data": Array [
+    78,
+    4,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    40,
+    0,
+    4,
+    0,
+    0,
+    0,
+    0,
+    0,
+    254,
+    255,
+    255,
+    255,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Tag Class Write Message Generator Method Generates Appropriate Buffer 18`] = `
+Object {
+  "data": Array [
+    77,
+    3,
+    145,
+    3,
+    116,
+    97,
+    103,
+    0,
+    160,
+    2,
+    0,
+    0,
+    1,
+    0,
+    0,
     0,
     0,
     0,

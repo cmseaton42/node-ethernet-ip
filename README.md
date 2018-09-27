@@ -98,8 +98,6 @@ PLC.connect("192.168.1.1", 0).then(async () => {
 
 #### Reading Tags
 
-**NOTE:** Currently, the `Tag` Class only supports *Atomic* datatypes (SINT, INT, DINT, REAL, BOOL). Not to worry, support for STRING, ARRAY, and UDTs are in the plans and coming soon! =]
-
 Reading Tags `Individually`...
 ```javascript
 const { Controller, Tag } = require("ethernet-ip");
@@ -126,7 +124,6 @@ const barTag = new Tag("arrayTag[0]"); // Array Element
 const bazTag = new Tag("arrayTag[0,1,2]"); // Multi Dim Array Element
 const quxTag = new Tag("integerTag.0"); // SINT, INT, or DINT Bit
 const quuxTag = new Tag("udtTag.Member1"); // UDT Tag Atomic Member
-const quuzTag = new Tag("boolArray[0]", null, BIT_STRING); // bool array tag MUST have the data type "BIT_STRING" passed in
 ```
 
 Reading Tags as a `Group`...
@@ -238,6 +235,188 @@ PLC.forEach(tag => {
     tag.on("Changed", (tag, oldValue) => {
         console.log("Changed:", tag.value);
     });
+});
+```
+
+### User Defined Types
+
+User Defined Types must have a Template. Templates are managed by the controller.
+Create a new template and add it to the controller. The template's name can be passed in as the type when creating a Tag.
+```javascript
+const { Controller, Tag, Template, CIP } = require("ethernet-ip");
+const { Types} = CIP.DataTypes;
+
+const PLC = new Controller();
+
+// add template to controller with name and type definition
+// the type definition is an object where the key is the member name
+// and the value is the member type
+PLC.addTemplate({
+    name: "udt1",
+    definition: {
+        member1: Types.DINT;
+        member2: Types.DINT;
+    }
+});
+
+// create
+const fooTag = new Tag("tag", null, "udt1");
+
+PLC.connect("192.168.1.1", 0).then(async () => {
+
+    // udt tags must be read before use
+    await PLC.readTag(fooTag);
+
+    console.log(fooTag.value.member1);
+    console.log(fooTag.value.member2);
+
+    fooTag.value.member1 = 5;
+    fooTag.value.member2 = 10;
+
+    await PLC.writeTag(fooTag);
+
+});
+```
+
+Specify arrays by setting a member to an object with a `type` and `length`.
+```javascript
+const { Controller, Tag, Template, CIP } = require("ethernet-ip");
+const { Types} = CIP.DataTypes;
+
+const PLC = new Controller();
+
+// member 2 is an array of DINT with length 2
+PLC.addTemplate({
+    name: "udt1",
+    definition: {
+        member1: Types.DINT;
+        member2: { type: Types.DINT, length: 2 };
+    }
+});
+
+const fooTag = new Tag("tag", null, "udt1");
+
+PLC.connect("192.168.1.1", 0).then(async () => {
+
+    // udt tags must be read before use
+    await PLC.readTag(fooTag);
+
+    console.log(fooTag.value.member1);
+    console.log(fooTag.value.member2[0]);
+    console.log(fooTag.value.member2[1]);
+
+    fooTag.value.member1 = 5;
+    fooTag.value.member2[0] = 10;
+    fooTag.value.member2[1] = 20;
+
+    await PLC.writeTag(fooTag);
+});
+```
+
+Nest UDTs by specifying a UDT name as a type. The child UDT template *MUST* be added before the parent UDT template.
+```javascript
+const { Controller, Tag, Template, CIP } = require("ethernet-ip");
+const { Types} = CIP.DataTypes;
+
+const PLC = new Controller();
+
+// this template MUST be added first
+PLC.addTemplate({
+    name: "udt1",
+    definition: {
+        member1: Types.DINT;
+        member2: { type: Types.DINT, length: 2 };
+    }
+});
+
+// this template references "udt1" and must be added AFTER "udt1"
+PLC.addTemplate({
+    name: "udt2",
+    definition: {
+        nestedUdt: "udt1";
+        anotherMember: Types.REAL;
+    }
+});
+
+const fooTag = new Tag("tag", null, "udt2");
+
+PLC.connect("192.168.1.1", 0).then(async () => {
+
+    // udt tags must be read before use
+    await PLC.readTag(fooTag);
+
+    console.log(fooTag.value.nestedUdt.member1);
+    console.log(fooTag.value.nestedUdt.member2[0]);
+    console.log(fooTag.value.nestedUdt.member2[1]);
+    console.log(fooTag.value.anotherMember);
+
+    fooTag.value.nestedUdt.member1 = 5;
+    fooTag.value.nestedUdt.member2[0] = 10;
+    fooTag.value.nestedUdt.member2[1] = 20;
+    fooTag.value.anotherMember = 40;
+
+    await PLC.writeTag(fooTag);
+});
+```
+
+### Strings
+
+Strings can either be specified with their LEN and DATA members or by passing in a "string_length" value.
+All templates with a STRING signature will have `getString()` and `setString(value)` functions on the 
+string member to allow for converstion between strings and the `LEN` and `DATA` members.
+```javascript
+const { Controller, Tag, Template, CIP } = require("ethernet-ip");
+const { Types} = CIP.DataTypes;
+
+const PLC = new Controller();
+
+// create a string with LEN and DATA members
+PLC.addTemplate({
+    name: "String10",
+    definition: {
+        LEN: Types.DINT;
+        DATA: { type: Types.DINT, length: 10 };
+    }
+});
+
+// create a string by passing in string_length
+PLC.addTemplate({
+    name: "AnotherString",
+    string_length: 12
+});
+
+const fooTag = new Tag("tag1", null, "STRING"); // predefined 82 char string
+const barTag = new Tag("tag2", null, "String10"); // user defined 10 char string
+const bazTag = new Tag("tag3", null, "AnotherString"); // user defined 12 char string
+
+PLC.connect("192.168.1.1", 0).then(async () => {
+
+    // udt tags must be read before use
+    await PLC.readTag(fooTag);
+    await PLC.readTag(barTag);
+    await PLC.readTag(baxTag);
+
+    // access LEN, DATA, or getString()
+    console.log(fooTag.value.LEN, fooTag.value.DATA, fooTag.value.getString());
+    console.log(barTag.value.LEN, barTag.value.DATA, barTag.value.getString());
+    console.log(bazTag.value.LEN, bazTag.value.DATA, bazTag.value.getString());
+
+    // set LEN and DATA
+    fooTag.value.LEN = 8;
+    fooTag.value.DATA[0] = 110;
+    fooTag.value.DATA[1] = 101;
+    fooTag.value.DATA[2] = 119;
+    fooTag.value.DATA[3] = 32;
+    fooTag.value.DATA[4] = 116;
+    fooTag.value.DATA[5] = 101;
+    fooTag.value.DATA[6] = 120;
+    fooTag.value.DATA[7] = 116;
+
+    // or use the setString(value) function
+    barTag.value.setString("new text");
+
+    await PLC.writeTag(fooTag);
+    await PLC.writeTag(barTag);
 });
 ```
 
