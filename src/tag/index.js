@@ -569,7 +569,7 @@ class Tag extends EventEmitter {
     unstageWriteRequest() {
         const { tag } = this.state;
         tag.stage_write = false;
-        tag.value = tag.controllerValue;
+        tag.controllerValue = tag.value;
     }
     // endregion
 
