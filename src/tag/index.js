@@ -562,7 +562,9 @@ class Tag extends EventEmitter {
     }
 
     /**
-     * Unstages Value Edit
+     * Unstages Value Edit by Updating controllerValue
+     * after the Successful Completion of 
+     * a Tag Write
      *
      * @memberof Tag
      */
