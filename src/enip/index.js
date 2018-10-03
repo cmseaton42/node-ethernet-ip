@@ -83,13 +83,15 @@ class ENIP extends Socket {
      *
      * @override
      * @param {string} IP_ADDR - IPv4 Address (can also accept a FQDN, provided port forwarding is configured correctly.)
+     * @param {number} PORT - Port For TCP/IP Connection (defaults to stand Ethernet/IP Port)
      * @returns {Promise}
      * @memberof ENIP
      */
-    async connect(IP_ADDR) {
+    async connect(IP_ADDR, PORT = EIP_PORT) {
         if (!IP_ADDR) {
             throw new Error("Controller <class> requires IP_ADDR <string>!!!");
         }
+
         await new Promise((resolve, reject) => {
             lookup(IP_ADDR, (err, addr) => {
                 if (err) reject(new Error("DNS Lookup failed for IP_ADDR " + IP_ADDR));
@@ -114,7 +116,7 @@ class ENIP extends Socket {
         await promiseTimeout(
             new Promise(resolve => {
                 super.connect(
-                    EIP_PORT,
+                    PORT,
                     IP_ADDR,
                     () => {
                         this.state.TCP.establishing = false;
