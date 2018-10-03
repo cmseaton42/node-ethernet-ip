@@ -87,7 +87,7 @@ class ENIP extends Socket {
      * @returns {Promise}
      * @memberof ENIP
      */
-    async connect(IP_ADDR, PORT = EIP_PORT) {
+    async connect(IP_ADDR, TCP_PORT = EIP_PORT) {
         if (!IP_ADDR) {
             throw new Error("Controller <class> requires IP_ADDR <string>!!!");
         }
@@ -116,7 +116,7 @@ class ENIP extends Socket {
         await promiseTimeout(
             new Promise(resolve => {
                 super.connect(
-                    PORT,
+                    TCP_PORT,
                     IP_ADDR,
                     () => {
                         this.state.TCP.establishing = false;
