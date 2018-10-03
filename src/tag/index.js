@@ -562,13 +562,16 @@ class Tag extends EventEmitter {
     }
 
     /**
-     * Unstages Value Edit
+     * Unstages Value Edit by Updating controllerValue
+     * after the Successful Completion of 
+     * a Tag Write
      *
      * @memberof Tag
      */
     unstageWriteRequest() {
-        this.state.tag.stage_write = false;
-        this.state.tag.value = this.state.controllerValue;
+        const { tag } = this.state;
+        tag.stage_write = false;
+        tag.controllerValue = tag.value;
     }
     // endregion
 
