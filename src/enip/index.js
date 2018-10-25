@@ -73,6 +73,60 @@ class ENIP extends Socket {
     get session_id() {
         return this.state.session.id;
     }
+
+    /**
+     * Various setters for Connection parameters
+     *
+     * @memberof ENIP
+     */
+    set establishing_conn(newEstablish) {
+        if (typeof(newEstablish) !== "boolean") {
+            throw new Error("Wrong type passed when setting connection: establishing parameter");
+        }
+        this.state.connection.establishing = newEstablish;
+    }
+
+    set established_conn(newEstablished) {
+        if (typeof(newEstablished) !== "boolean") {
+            throw new Error("Wrong type passed when setting connection: established parameter");
+        }
+        this.state.connection.established = newEstablished;
+    }
+
+    set id_conn(newID) {
+        if (typeof(newID) !== "number") {
+            throw new Error("Wrong type passed when setting connection: id parameter");
+        }
+        this.state.connection.id = newID;
+    }
+
+    set seq_conn(newSeq) {
+        if (typeof(newSeq) !== "number") {
+            throw new Error("Wrong type passed when setting connection: seq_numparameter");
+        }
+        this.state.connection.seq_num = newSeq;
+    }
+
+    /**
+     * Various getters for Connection parameters
+     *
+     * @memberof ENIP
+     */
+    get establishing_conn() {
+        return this.state.connection.establishing;
+    }
+
+    get established_conn() {
+        return this.state.connection.established;
+    }
+
+    get id_conn() {
+        return this.state.connection.id;
+    }
+
+    get seq_conn() {
+        return this.state.connection.seq_num;
+    }
     // endregion
 
     // region Public Method Definitions
@@ -177,6 +231,7 @@ class ENIP extends Socket {
         const { session, connection } = this.state;
 
         if (session.established) {
+            if(connected == true) {connection.seq_num += 1;}
             const packet = connected
                 ? sendUnitData(session.id, data, connection.id, connection.seq_num)
                 : sendRRData(session.id, data, timeout);
