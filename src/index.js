@@ -5,7 +5,7 @@ const EthernetIP = require("./enip");
 const util = require("./utilities");
 
 const mynip = new EthernetIP.ENIP();
-mynip.listIdentities("192.168.1.11").then(data =>{
+mynip.listServices("192.168.1.11").then(data =>{
     if(data) {
         console.log(data);
     }

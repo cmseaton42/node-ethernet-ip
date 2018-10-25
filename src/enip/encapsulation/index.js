@@ -298,6 +298,19 @@ const listIdentity = () => {
 };
 
 /**
+ * Returns a ListServices String
+ *
+ * @returns {string} ListServices string
+ */
+const listServices = () => {
+    const { ListServices} = commands;
+    const { build } = header;
+
+    // Build ListServices Buffer
+    return build(ListServices, 0x00);
+};
+
+/**
  * Returns a UCMM Encapsulated Packet String
  *
  * @param {number} session - Encapsulation Session ID
@@ -375,5 +388,6 @@ module.exports = {
     unregisterSession,
     sendRRData,
     sendUnitData,
-    listIdentity
+    listIdentity,
+    listServices
 };
