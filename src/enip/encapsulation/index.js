@@ -285,6 +285,19 @@ const unregisterSession = session => {
 };
 
 /**
+ * Returns a ListIdentity String
+ *
+ * @returns {string} listIdentity string
+ */
+const listIdentity = () => {
+    const { ListIdentity } = commands;
+    const { build } = header;
+
+    // Build ListIdentity Buffer
+    return build(ListIdentity, 0x00);
+};
+
+/**
  * Returns a UCMM Encapsulated Packet String
  *
  * @param {number} session - Encapsulation Session ID
@@ -361,5 +374,6 @@ module.exports = {
     registerSession,
     unregisterSession,
     sendRRData,
-    sendUnitData
+    sendUnitData,
+    listIdentity
 };
