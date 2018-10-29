@@ -10,6 +10,8 @@ PLC.connect("192.168.1.11",0).then(async () => {
     console.log(x);
     x = await PLC.readGenericSingle(0xF5,0x01,0x06);
     console.log(x);
+    x = await PLC.readGenericAll(0xF5,0x01);
+    console.log(x);
 });
 
 module.exports = { Controller, Tag, TagGroup, EthernetIP, util };

@@ -157,7 +157,53 @@ class Controller extends ENIP {
     }
 
     /**
-     * Reads from a generic CIP object
+     * Reads a all entities (class/instance/attribute) from a generic CIP object
+     *
+     * @param {number} classID - The ClassID of the requested object
+     * @param {number} instanceID - The InstanceID of the requested object
+     * @param {number} attributeID - The AttributeID of the requested object
+     * @memberof Controller
+     * @returns {Promise}
+     */
+    async readGenericAll(classID, instanceID, attributeID) {
+        if (classID <= 0 || typeof classID !== "number") throw new Error("ClassID needs to be positive and a number");
+        if (instanceID != undefined && (instanceID <= 0 || typeof instanceID !== "number")) throw new Error("InstanceID needs to be positive and a number");
+        if (attributeID != undefined && (attributeID <= 0 || typeof instanceID !== "number")) throw new Error("AttributeID needs to be positive and a number");
+
+        const { GET_ATTRIBUTE_ALL } = CIP.MessageRouter.services;
+        const { LOGICAL } = CIP.EPATH.segments;
+
+        // Build Identity Object Logical Path Buffer
+        let identityPath = LOGICAL.build(LOGICAL.types.ClassID, classID); // Object
+        if (instanceID) identityPath = Buffer.concat([identityPath, LOGICAL.build(LOGICAL.types.InstanceID, instanceID)]); // Instance 
+        if (attributeID) identityPath = Buffer.concat([identityPath, LOGICAL.build(LOGICAL.types.AttributeID, attributeID)]); // Attribute
+
+        // Message Router to Embed in UCMM
+        const MR = CIP.MessageRouter.build(GET_ATTRIBUTE_ALL, identityPath, []);
+
+        this.write_cip_generic(MR);
+
+        const readPropsErr = new Error("TIMEOUT occurred while reading Controller Props.");
+
+        // Wait for Response
+        const data = await promiseTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Get Attribute All", (err, data) => {
+                    if (err) reject(err);
+                    resolve(data);
+                });
+            }),
+            10000,
+            readPropsErr
+        );
+
+        this.removeAllListeners("Get Attribute All");
+
+        return data;
+    }
+
+    /**
+     * Reads a single entity (class/instance/attribute) from a generic CIP object
      *
      * @param {number} classID - The ClassID of the requested object
      * @param {number} instanceID - The InstanceID of the requested object
