@@ -17,7 +17,6 @@ const services = {
     READ_MODIFY_WRITE_TAG: 0x4e,
     FORWARD_OPEN: 0x54,
     FORWARD_CLOSE: 0x4E
-
 };
 
 /**

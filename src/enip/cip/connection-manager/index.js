@@ -33,21 +33,63 @@ const timeOutMultiplier = {
 };
 
 /**
+ * @typedef UCMMSendTimeout
+ * @type {Object}
+ * @property {number} time_ticks
+ * @property {number} ticks
+ */
+
+/**
+ * Gets the Best Available Timeout Values
+ *
+ * @param {number} timeout - Desired Timeout in ms
+ * @returns {UCMMSendTimeout}
+ */
+const generateEncodedTimeout = timeout => {
+    if (timeout <= 0 || typeof timeout !== "number")
+        throw new Error("Timeouts Must be Positive Integers");
+
+    let diff = Infinity; // let difference be very large
+    let time_tick = 0;
+    let ticks = 0;
+
+    // Search for Best Timeout Encoding Values
+    for (let i = 0; i < 16; i++) {
+        for (let j = 1; j < 256; j++) {
+            const newDiff = Math.abs(timeout - Math.pow(2, i) * j);
+            if (newDiff <= diff) {
+                diff = newDiff;
+                time_tick = i;
+                ticks = j;
+            }
+        }
+    }
+
+    return { time_tick, ticks };
+};
+
+/**
  * Builds the data portion of a forwardOpen packet
  *
- * @param {number} timeOutTicks - How many ticks until a timeout is thrown
- * @param {number} timeOutMult - A multiplier used for the Timeout 
- * @param {number} vendorOrig - Originator vendorID (Vendor of the PLC)
- * @param {number} serialOrig - Originator Serial Number (SerNo of the PLC)
+ * @param {number} [timeOutMs=500] - How many ticks until a timeout is thrown
+ * @param {number} [timeOutMult=32] - A multiplier used for the Timeout 
+ * @param {number} [vendorOrig=0x3333] - Originator vendorID (Vendor of the PLC)
+ * @param {number} [serialOrig=0x1337] - Originator Serial Number (SerNo of the PLC)
  * @returns {Buffer} data portion of the forwardOpen packet
  */
-const build_forwardOpen = (timeOutTicks = 15 , timeOutMult = timeOutMultiplier[32] , vendorOrig = 0x3333, serialOrig = 0x1337) => {
-    const connectionParams = Buffer.alloc(35);
+const build_forwardOpen = (timeOutMs = 501 , timeOutMult = 32 , vendorOrig = 0x3333, serialOrig = 0x1337) => {
+    if (timeOutMs <= 500 || typeof timeOutMs !== "number") throw new Error("Timeouts Must be Positive Integers and above 500");
+    if (!(timeOutMult in timeOutMultiplier) || typeof timeOutMult !== "number") throw new Error("Timeout Multiplier must be a number and a multiple of 4");
+    if (vendorOrig <= 0 || typeof vendorOrig !== "number") throw new Error("VendorOrig Must be Positive Integers");
+    if (serialOrig <= 0 || typeof serialOrig !== "number") throw new Error("SerialOrig Must be Positive Integers");
 
+    const actualMultiplier = timeOutMultiplier[timeOutMult];
+    const connectionParams = Buffer.alloc(35); // Normal forward open request
+    const timeout = generateEncodedTimeout(timeOutMs);
     let ptr = 0;
-    connectionParams.writeUInt8(priority.Scheduled,ptr); // Priority / TimePerTick
+    connectionParams.writeUInt8(timeout.time_tick,ptr); // Priority / TimePerTick
     ptr+=1;
-    connectionParams.writeUInt8(timeOutTicks,ptr); // Timeout Ticks
+    connectionParams.writeUInt8(timeout.ticks,ptr); // Timeout Ticks
     ptr+=1;
     connectionParams.writeUInt32LE(0x11111111,ptr); // O->T Connection ID
     ptr+=4;
@@ -59,7 +101,7 @@ const build_forwardOpen = (timeOutTicks = 15 , timeOutMult = timeOutMultiplier[3
     ptr+=2;
     connectionParams.writeUInt32LE(serialOrig,ptr); // Originator Serial Number
     ptr+=4;
-    connectionParams.writeUInt32LE(timeOutMult,ptr); // TimeOut Multiplier
+    connectionParams.writeUInt32LE(actualMultiplier,ptr); // TimeOut Multiplier
     ptr+=4;
     connectionParams.writeUInt32LE(8000,ptr); // O->T RPI
     ptr+=4;
@@ -77,18 +119,22 @@ const build_forwardOpen = (timeOutTicks = 15 , timeOutMult = timeOutMultiplier[3
 /**
  * Builds the data portion of a forwardClose packet
  *
- * @param {number} timeOutTicks - How many ticks until a timeout is thrown
- * @param {number} vendorOrig - Originator vendorID (Vendor of the PLC)
- * @param {number} serialOrig - Originator Serial Number (SerNo of the PLC)
+ * @param {number} [timeOutMs=501] - How many ms until a timeout is thrown
+ * @param {number} [vendorOrig=0x3333] - Originator vendorID (Vendor of the PLC)
+ * @param {number} [serialOrig=0x1337] - Originator Serial Number (SerNo of the PLC)
  * @returns {Buffer} data portion of the forwardClose packet
  */
-const build_forwardClose = (timeOutTicks = 15 , vendorOrig = 0x3333, serialOrig = 0x1337) => {
-    const connectionParams = Buffer.alloc(10);
+const build_forwardClose = (timeOutMs = 501 , vendorOrig = 0x3333, serialOrig = 0x1337) => {
+    if (timeOutMs <= 500 || typeof timeOutMs !== "number") throw new Error("Timeouts Must be Positive Integers and at least 500");
+    if (vendorOrig <= 0 || typeof vendorOrig !== "number") throw new Error("VendorOrig Must be Positive Integers");
+    if (serialOrig <= 0 || typeof serialOrig !== "number") throw new Error("SerialOrig Must be Positive Integers");
 
+    const connectionParams = Buffer.alloc(10);
+    const timeout = generateEncodedTimeout(timeOutMs);
     let ptr = 0;
-    connectionParams.writeUInt8(priority.Scheduled,ptr); //Priority / TimePerTick
+    connectionParams.writeUInt8(timeout.time_tick,ptr); // Priority / TimePerTick
     ptr+=1;
-    connectionParams.writeUInt8(timeOutTicks,ptr); //Timeout Ticks
+    connectionParams.writeUInt8(timeout.ticks,ptr); // Timeout Ticks
     ptr+=1;
     connectionParams.writeUInt16LE(0x4242,ptr); // Connection Serial Number TODO: Make this unique
     ptr+=2;
