@@ -2,6 +2,9 @@
 # Ignore Node Modules
 /node_modules
 
+# Ignore Editor Settings
+/.vscode/*
+
 # Ignore Jest Coverage Reports
 /coverage
 
