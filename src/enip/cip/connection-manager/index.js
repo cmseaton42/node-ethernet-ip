@@ -77,8 +77,8 @@ const generateEncodedTimeout = timeout => {
  * @param {number} [serialOrig=0x1337] - Originator Serial Number (SerNo of the PLC)
  * @returns {Buffer} data portion of the forwardOpen packet
  */
-const build_forwardOpen = (timeOutMs = 501 , timeOutMult = 32 , vendorOrig = 0x3333, serialOrig = 0x1337) => {
-    if (timeOutMs <= 500 || typeof timeOutMs !== "number") throw new Error("Timeouts Must be Positive Integers and above 500");
+const build_forwardOpen = (timeOutMs = 1000 , timeOutMult = 32 , vendorOrig = 0x3333, serialOrig = 0x1337) => {
+    if (timeOutMs <= 900 || typeof timeOutMs !== "number") throw new Error("Timeouts Must be Positive Integers and above 500");
     if (!(timeOutMult in timeOutMultiplier) || typeof timeOutMult !== "number") throw new Error("Timeout Multiplier must be a number and a multiple of 4");
     if (vendorOrig <= 0 || typeof vendorOrig !== "number") throw new Error("VendorOrig Must be Positive Integers");
     if (serialOrig <= 0 || typeof serialOrig !== "number") throw new Error("SerialOrig Must be Positive Integers");
@@ -124,8 +124,8 @@ const build_forwardOpen = (timeOutMs = 501 , timeOutMult = 32 , vendorOrig = 0x3
  * @param {number} [serialOrig=0x1337] - Originator Serial Number (SerNo of the PLC)
  * @returns {Buffer} data portion of the forwardClose packet
  */
-const build_forwardClose = (timeOutMs = 501 , vendorOrig = 0x3333, serialOrig = 0x1337) => {
-    if (timeOutMs <= 500 || typeof timeOutMs !== "number") throw new Error("Timeouts Must be Positive Integers and at least 500");
+const build_forwardClose = (timeOutMs = 1000 , vendorOrig = 0x3333, serialOrig = 0x1337) => {
+    if (timeOutMs <= 900 || typeof timeOutMs !== "number") throw new Error("Timeouts Must be Positive Integers and at least 500");
     if (vendorOrig <= 0 || typeof vendorOrig !== "number") throw new Error("VendorOrig Must be Positive Integers");
     if (serialOrig <= 0 || typeof serialOrig !== "number") throw new Error("SerialOrig Must be Positive Integers");
 
