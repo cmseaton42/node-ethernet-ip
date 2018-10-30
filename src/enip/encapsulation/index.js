@@ -340,7 +340,7 @@ const sendUnitData = (session, data, ConnectionID, SequnceNumber) => {
 
     let buf = CPF.build([
         {
-            TypeID: CPF.ItemIDs.SequencedAddrItem,
+            TypeID: CPF.ItemIDs.ConnectionBased,
             data: seqAddrBuf
         },
         {
