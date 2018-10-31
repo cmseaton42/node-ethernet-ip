@@ -38,8 +38,8 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
  */
 function discover(cb,IPv4Interface = undefined) {
     const ENIPList = new Array();
+    const IPv4List = new Array();
     if(IPv4Interface == undefined) {
-        const IPv4List = new Array();
         const interfaceList = os.networkInterfaces();
         const iFaceListKeys = Object.keys(interfaceList);
         const iFaceListLen = iFaceListKeys.length;
@@ -51,37 +51,15 @@ function discover(cb,IPv4Interface = undefined) {
                 }
             }
         }
-        for (const addresses of IPv4List) {
-            let dsock = dgram.createSocket("udp4");
-            dsock.bind(0,addresses["address"], () => {
-                dsock.setBroadcast(true);
-                const { listIdentity } = encapsulation;
-                dsock.send(listIdentity(),44818,"255.255.255.255", (err) => {
-                    if (err) throw new Error ("Error when sending via UDP: "+err);
-                });
-            });
-
-            dsock.on("error", function(err) {
-                console.log("UDP Error caught: " + err.stack);
-            });
-
-            dsock.on("message", function(msg) {
-                if(msg.readUInt16LE(0) == 0x0063) { //Got em! Caught an Ethernet/IP response.
-                    const enipPort = msg.readUInt16BE(34);
-                    const ipString = msg.readUInt8(36).toString()+
-                    "."+msg.readUInt8(37).toString()+
-                    "."+msg.readUInt8(38).toString()+
-                    "."+msg.readUInt8(39).toString(); 
-                    ENIPList.push({port:enipPort,ip:ipString});
-                }
-            });
-        }
     }
     else {
         const IPv4RegEx = new RegExp("^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
         if (!IPv4RegEx.test(IPv4Interface)) throw new Error("Interface must match IPv4 format!");
+        IPv4List.push({address: IPv4Interface});    
+    }
+    for (const addresses of IPv4List) {
         let dsock = dgram.createSocket("udp4");
-        dsock.bind(0,IPv4Interface, () => {
+        dsock.bind(0,addresses["address"], () => {
             dsock.setBroadcast(true);
             const { listIdentity } = encapsulation;
             dsock.send(listIdentity(),44818,"255.255.255.255", (err) => {
@@ -104,8 +82,7 @@ function discover(cb,IPv4Interface = undefined) {
             }
         });
     }
-      
-    setTimeout(cb, 1500, ENIPList);
+    setTimeout(cb, 100, ENIPList);
 }
 
 module.exports = { promiseTimeout, delay, discover };
