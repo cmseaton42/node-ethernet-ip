@@ -8,6 +8,23 @@ const priority = {
     Urgent: 11
 };
 
+const owner = {
+    Exclusive: 0,
+    Multiple: 1
+};
+
+const connectionType = {
+    Null: 0,
+    Multicast: 1,
+    PointToPoint: 2,
+    Reserved: 3
+};
+
+const fixedVar = {
+    Fixed: 0,
+    Variable: 1
+};
+
 /**
  * lookup table for Time Tick Value (Vol.1 - Table 3-5.11)
  */
@@ -17,6 +34,13 @@ const timePerTick = {
 };
 
 const connSerial = 0x1337;
+
+/**
+ * Build for Object specific connection parameters (Vol.1 - Table 3-5.8)
+ */
+const build_connectionParameters = (owner, type, priority, fixedVar, size) => {
+    return owner << 15 | type << 13 | priority << 10 | fixedVar << 9 | size;
+};
 
 /**
  * lookup table for Timeout multiplier (Vol.1 - 3-5.4.1.4)
@@ -73,15 +97,15 @@ const generateEncodedTimeout = timeout => {
  *
  * @param {number} [timeOutMs=500] - How many ticks until a timeout is thrown
  * @param {number} [timeOutMult=32] - A multiplier used for the Timeout 
- * @param {number} [vendorOrig=0x3333] - Originator vendorID (Vendor of the PLC)
+ * @param {number} [otRPI=8000] - O->T Request packet interval in milliseconds.
  * @param {number} [serialOrig=0x1337] - Originator Serial Number (SerNo of the PLC)
  * @returns {Buffer} data portion of the forwardOpen packet
  */
-const build_forwardOpen = (timeOutMs = 1000 , timeOutMult = 32 , vendorOrig = 0x3333, serialOrig = 0x1337) => {
+const build_forwardOpen = (otRPI = 8000, netConnParams = 0x43f4, timeOutMs = 1000 , timeOutMult = 32) => {
     if (timeOutMs <= 900 || typeof timeOutMs !== "number") throw new Error("Timeouts Must be Positive Integers and above 500");
     if (!(timeOutMult in timeOutMultiplier) || typeof timeOutMult !== "number") throw new Error("Timeout Multiplier must be a number and a multiple of 4");
-    if (vendorOrig <= 0 || typeof vendorOrig !== "number") throw new Error("VendorOrig Must be Positive Integers");
-    if (serialOrig <= 0 || typeof serialOrig !== "number") throw new Error("SerialOrig Must be Positive Integers");
+    if (otRPI <= 8000 || typeof otRPI !== "number") throw new Error("otRPI should be at least 8000 (8ms)");
+    if (typeof netConnParams !== "number") throw new Error("ConnectionParams should be created by the builder and result in a number!");
 
     const actualMultiplier = timeOutMultiplier[timeOutMult];
     const connectionParams = Buffer.alloc(35); // Normal forward open request
@@ -97,19 +121,19 @@ const build_forwardOpen = (timeOutMs = 1000 , timeOutMult = 32 , vendorOrig = 0x
     ptr+=4;
     connectionParams.writeUInt16LE(0x4242,ptr); // Connection Serial Number TODO: Make this unique
     ptr+=2;
-    connectionParams.writeUInt16LE(vendorOrig,ptr); // Originator VendorID
+    connectionParams.writeUInt16LE(0x3333,ptr); // Originator VendorID
     ptr+=2;
-    connectionParams.writeUInt32LE(serialOrig,ptr); // Originator Serial Number
+    connectionParams.writeUInt32LE(0x1337,ptr); // Originator Serial Number
     ptr+=4;
     connectionParams.writeUInt32LE(actualMultiplier,ptr); // TimeOut Multiplier
     ptr+=4;
-    connectionParams.writeUInt32LE(8000,ptr); // O->T RPI
+    connectionParams.writeUInt32LE(otRPI,ptr); // O->T RPI
     ptr+=4;
-    connectionParams.writeUInt16LE(0x43f4,ptr); // O->T Network Connection Params TODO: Create a custom parser
+    connectionParams.writeUInt16LE(netConnParams,ptr); // O->T Network Connection Params
     ptr+=2;
-    connectionParams.writeUInt32LE(8000,ptr); // T->O RPI
+    connectionParams.writeUInt32LE(otRPI,ptr); // T->O RPI
     ptr+=4;
-    connectionParams.writeUInt16LE(0x43f4,ptr); // T->O Network Connection Params TODO: Create a custom parser
+    connectionParams.writeUInt16LE(netConnParams,ptr); // T->O Network Connection Params
     ptr+=2;
     connectionParams.writeUInt8(0xA3,ptr); // TransportClass_Trigger (Vol.1 - 3-4.4.3) -> Target is a Server, Application object of Transport Class 3.
 
@@ -145,4 +169,4 @@ const build_forwardClose = (timeOutMs = 1000 , vendorOrig = 0x3333, serialOrig =
     return connectionParams;
 };
 
-module.exports = { build_forwardOpen, build_forwardClose, connSerial, timePerTick, timeOutMultiplier };
+module.exports = { build_forwardOpen, build_forwardClose, build_connectionParameters, connSerial, timePerTick, timeOutMultiplier, priority, owner, connectionType, fixedVar };

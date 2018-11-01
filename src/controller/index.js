@@ -154,6 +154,7 @@ class Controller extends ENIP {
     async forwardOpen() {
         const { FORWARD_OPEN } = CIP.MessageRouter.services;
         const { LOGICAL } = CIP.EPATH.segments;
+        const { owner, connectionType, fixedVar, priority} = CIP.ConnectionManager;
 
         // Build Connection Manager Object Logical Path Buffer
         const cmPath = Buffer.concat([
@@ -164,7 +165,10 @@ class Controller extends ENIP {
         // Message Router to Embed in UCMM
         const MR = CIP.MessageRouter.build(FORWARD_OPEN, cmPath, []);
 
-        const forwardOpenData = CIP.ConnectionManager.build_forwardOpen();
+        // Create connection parameters
+        const params = CIP.ConnectionManager.build_connectionParameters(owner["Exclusive"], connectionType["PointToPoint"],priority["Low"],fixedVar["Variable"],500);
+
+        const forwardOpenData = CIP.ConnectionManager.build_forwardOpen(10000,params);
 
         // Build MR Path in order to send the message to the CPU
         const mrPath = Buffer.concat([
