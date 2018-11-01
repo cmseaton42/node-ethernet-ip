@@ -231,7 +231,14 @@ class ENIP extends Socket {
         const { session, connection } = this.state;
 
         if (session.established) {
-            if(connected == true) {connection.seq_num += 1;}
+            if(connected == true) {
+                if (connection.established == true) {
+                    connection.seq_num += 1;
+                }
+                else {
+                    throw new Error ("Connected message request, but no connection established. Forgot forwardOpen?");
+                }
+            }
             const packet = connected
                 ? sendUnitData(session.id, data, connection.id, connection.seq_num)
                 : sendRRData(session.id, data, timeout);
