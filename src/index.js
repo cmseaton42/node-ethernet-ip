@@ -10,7 +10,12 @@ mynip.listServices("192.168.1.11").then(data => {
         console.log(data);
     }
 });*/
-util.discover((enipList) => {
-    console.log(enipList);
-});
+util.discoverProm()
+    .then((ret) =>{
+        console.log(ret);
+    })
+    .catch((err) =>{
+        console.log(err);
+    });
+
 module.exports = { Controller, Tag, TagGroup, EthernetIP, util };
