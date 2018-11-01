@@ -1,0 +1,64 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Connection Manager Building Produces the Correct Output Buffer for ForwardClose Request 1`] = `
+Object {
+  "data": Array [
+    3,
+    125,
+    66,
+    66,
+    51,
+    51,
+    55,
+    19,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Connection Manager Building Produces the Correct Output Buffer for ForwardOpen Request 1`] = `
+Object {
+  "data": Array [
+    3,
+    125,
+    17,
+    17,
+    17,
+    17,
+    34,
+    34,
+    34,
+    34,
+    66,
+    66,
+    51,
+    51,
+    55,
+    19,
+    0,
+    0,
+    3,
+    0,
+    0,
+    0,
+    16,
+    39,
+    0,
+    0,
+    244,
+    67,
+    16,
+    39,
+    0,
+    0,
+    244,
+    67,
+    163,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Connection Manager Connection Parameters Produces the Correct Output number for connection parameters 1`] = `17396`;
