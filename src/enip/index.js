@@ -28,7 +28,7 @@ class ENIP extends Socket {
             error: { code: null, msg: null }
         };
 
-        this.properties = { 
+        this.plcProperties = { 
             vendorID: null,
             deviceType: null,
             productCode: null,
@@ -237,25 +237,25 @@ class ENIP extends Socket {
         );
 
         let ptr = 24; // Other data is not relevant.
-        this.properties.vendorID = listData.readUInt16LE(ptr);
+        this.plcProperties.vendorID = listData.readUInt16LE(ptr);
         ptr+=2;
-        this.properties.deviceType = listData.readUInt16LE(ptr);
+        this.plcProperties.deviceType = listData.readUInt16LE(ptr);
         ptr+=2;
-        this.properties.productCode = listData.readUInt16LE(ptr);
+        this.plcProperties.productCode = listData.readUInt16LE(ptr);
         ptr+=2;
-        this.properties.majorRevision = listData.readUInt8(ptr);
+        this.plcProperties.majorRevision = listData.readUInt8(ptr);
         ptr+=1;
-        this.properties.minorRevision = listData.readUInt8(ptr);
+        this.plcProperties.minorRevision = listData.readUInt8(ptr);
         ptr+=1;
-        this.properties.status = listData.readUInt16LE(ptr);
+        this.plcProperties.status = listData.readUInt16LE(ptr);
         ptr+=2;
-        this.properties.serialNumber = listData.readUInt32LE(ptr);
+        this.plcProperties.serialNumber = listData.readUInt32LE(ptr);
         ptr+=4;
-        this.properties.productNameLength = listData.readUInt8(ptr);
+        this.plcProperties.productNameLength = listData.readUInt8(ptr);
         ptr+=1;
-        this.properties.productName = listData.toString("ascii",ptr,listData.length-1);
-        ptr+=this.properties.productNameLength;
-        this.properties.state = listData.readUInt8(ptr);
+        this.plcProperties.productName = listData.toString("ascii",ptr,listData.length-1);
+        ptr+=this.plcProperties.productNameLength;
+        this.plcProperties.state = listData.readUInt8(ptr);
 
         // Clean Up Local Listeners
         this.removeAllListeners("ListIdentity Received");
@@ -266,7 +266,7 @@ class ENIP extends Socket {
         this.state.TCP.establishing = false;
         this.state.TCP.established = false;
 
-        return this.properties;
+        return this.plcProperties;
     }
 
     /**
