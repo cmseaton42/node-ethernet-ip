@@ -587,7 +587,7 @@ class Controller extends ENIP {
     async _writeTagGroup(group) {
         const messages = group.generateWriteMessageRequests();
 
-        const writeTagGroupErr = new Error("TIMEOUT occurred while writing Reading Tag Group.");
+        const writeTagGroupErr = new Error("TIMEOUT occurred while writing Writing Tag Group.");
 
         // Send Each Multi Service Message
         for (let msg of messages) {
