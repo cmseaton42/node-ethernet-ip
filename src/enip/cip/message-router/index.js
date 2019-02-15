@@ -8,6 +8,7 @@ const services = {
     DELETE: 0x09,
     MULTIPLE_SERVICE_PACKET: 0x0a,
     APPLY_ATTRIBUTES: 0x0d,
+    SET_ATTRIBUTE_ALL: 0x02,
     SET_ATTRIBUTE_SINGLE: 0x10,
     FIND_NEXT: 0x11,
     READ_TAG: 0x4c,

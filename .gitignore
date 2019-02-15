@@ -10,3 +10,6 @@
 
 # Ignore Local Script Folder
 /scripts
+
+# Ignore local test
+/src/maintest.js 
