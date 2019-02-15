@@ -222,7 +222,7 @@ class ENIP extends Socket {
      *
      * @param {buffer} data - Data Buffer to be Encapsulated
      * @param {boolean} [connected=false]
-     * @param {number} [timeout=10] - Timeoue (sec)
+     * @param {number} [timeout=10] - Timeout (sec)
      * @param {function} [cb=null] - Callback to be Passed to Parent.Write()
      * @memberof ENIP
      */
@@ -231,8 +231,8 @@ class ENIP extends Socket {
         const { session, connection } = this.state;
 
         if (session.established) {
-            if(connected == true) {
-                if (connection.established == true) {
+            if(connected === true) {
+                if (connection.established === true) {
                     connection.seq_num += 1;
                 }
                 else {

@@ -39,6 +39,10 @@ describe("ENIP Class", () => {
 
             enip.establishing_conn = false;
             expect(enip.state.connection.establishing).toBe(false);
+
+            expect(() => {
+                enip.establishing_conn = "establishing";
+            }).toThrow();
         });
 
         
@@ -51,6 +55,10 @@ describe("ENIP Class", () => {
 
             enip.established_conn = false;
             expect(enip.state.connection.established).toBe(false);
+
+            expect(() => {
+                enip.established_conn = "established";
+            }).toThrow();
         });
         
         it("id_conn", () => {
@@ -62,6 +70,10 @@ describe("ENIP Class", () => {
 
             enip.id_conn = 0x00;
             expect(enip.state.connection.id).toBe(0x00);
+
+            expect(() => {
+                enip.id_conn = "myTestID";
+            }).toThrow();
         });
 
         it("seq_conn", () => {
@@ -73,6 +85,10 @@ describe("ENIP Class", () => {
 
             enip.seq_conn = 0x02;
             expect(enip.state.connection.seq_num).toBe(0x02);
+
+            expect(() => {
+                enip.seq_conn = "mySeqNo";
+            }).toThrow();
         });
     });
 });

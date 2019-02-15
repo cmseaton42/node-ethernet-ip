@@ -11,7 +11,7 @@ const compare = (obj1, obj2) => {
 };
 
 class Controller extends ENIP {
-    constructor() {
+    constructor(connectedMessaging = false) {
         super();
 
         this.state = {
@@ -33,7 +33,8 @@ class Controller extends ENIP {
             },
             subs: new TagGroup(compare),
             scanning: false,
-            scan_rate: 200 //ms
+            scan_rate: 200, //ms,
+            connectedMessaging: connectedMessaging,
         };
 
         this.workers = {
@@ -72,6 +73,26 @@ class Controller extends ENIP {
      */
     get scanning() {
         return this.state.scanning;
+    }
+
+    /**
+     * Returns the connected / unconnected messaging mode
+     *
+     * @memberof Controller
+     * @returns {boolean} true, if connected messaging; false, if unconnected messaging
+     */
+    get connectedMessaging() {
+        return this.state.connectedMessaging;
+    }
+
+    /**
+     * Sets the Mode to connected / unconnected messaging
+     *
+     * @memberof Controller
+     */
+    set connectedMessaging(conn) {
+        if (typeof conn !== "boolean") throw new Error("connectedMessaging must be of type <boolean>");
+        this.state.connectedMessaging= conn;
     }
 
     /**
@@ -120,8 +141,10 @@ class Controller extends ENIP {
         
         this._initializeControllerEventHandlers(); // Connect sendRRData Event
 
-        const connid = await this.forwardOpen();
-        if(!connid) throw new Error("Failed to Forward Open with Controller");
+        if (this.state.connectedMessaging === true) {
+            const connid = await this.forwardOpen();
+            if(!connid) throw new Error("Failed to Forward Open with Controller");
+        }
 
         // Fetch Controller Properties and Wall Clock
         await this.readControllerProps();
@@ -136,10 +159,12 @@ class Controller extends ENIP {
      * @returns {Promise}
      */
     async disconnect() {
-        const closeid = await this.forwardClose();
-        if(!closeid) throw new Error("Failed to Forward Open with Controller");
+        if (super.established_conn === true) {
+            const closeid = await this.forwardClose();
+            if(!closeid) throw new Error("Failed to Forward Open with Controller");
+        }
 
-        super.destroy("Trying to close connection gracefully");
+        super.destroy();
 
         this._removeControllerEventHandlers();
         return "disconnected";
@@ -303,14 +328,15 @@ class Controller extends ENIP {
      * @override
      * @param {buffer} data - Message Router Packet Buffer
      * @param {boolean} [connected=false]
-     * @param {number} [timeout=10] - Timeoue (sec)
+     * @param {number} [timeout=10] - Timeout (sec)
      * @param {function} [cb=null] - Callback to be Passed to Parent.Write()
      * @memberof ENIP
      */
-    write_cip(data, connected = false, timeout = 10, cb = null) {
+    write_cip(data, timeout = 10, cb = null) {
         const { UnconnectedSend } = CIP;
         let msg;
-        if (connected == false) {
+        const connected = super.established_conn;
+        if (connected === false) {
             msg = UnconnectedSend.build(data, this.state.controller.path);
         } else {
             msg = data;

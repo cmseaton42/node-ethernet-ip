@@ -38,6 +38,26 @@ describe("Controller Class", () => {
             expect(plc.scanning).toBeFalsy();
         });
 
+        it("Connected Messaging", () => {
+            const plc = new Controller();
+            expect(plc.connectedMessaging).toBeFalsy();
+
+            plc.connectedMessaging = true;
+            expect(plc.connectedMessaging).toBeTruthy();
+
+            expect(() => {
+                plc.connectedMessaging = 3;
+            }).toThrow();
+
+            expect(() => {
+                plc.connectedMessaging = "connected";
+            }).toThrow();
+
+            expect(() => {
+                plc.connectedMessaging = null;
+            }).toThrow();
+        });
+
         it("Controller Properties", () => {
             const plc = new Controller();
             expect(plc.properties).toMatchSnapshot();
