@@ -40,10 +40,10 @@ describe("Controller Class", () => {
 
         it("Connected Messaging", () => {
             const plc = new Controller();
-            expect(plc.connectedMessaging).toBeFalsy();
-
-            plc.connectedMessaging = true;
             expect(plc.connectedMessaging).toBeTruthy();
+
+            plc.connectedMessaging = false;
+            expect(plc.connectedMessaging).toBeFalsy();
 
             expect(() => {
                 plc.connectedMessaging = 3;
