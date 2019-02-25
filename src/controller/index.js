@@ -11,7 +11,7 @@ const compare = (obj1, obj2) => {
 };
 
 class Controller extends ENIP {
-    constructor(connectedMessaging = false) {
+    constructor(connectedMessaging = true) {
         super();
 
         this.state = {
