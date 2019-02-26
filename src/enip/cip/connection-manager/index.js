@@ -184,7 +184,8 @@ const build_forwardClose = (timeOutMs = 1000 , vendorOrig = 0x3333, serialOrig =
     return connectionParams;
 };
 
-module.exports = { build_forwardOpen,
+module.exports = { 
+    build_forwardOpen,
     build_forwardClose,
     build_connectionParameters,
     connSerial,
