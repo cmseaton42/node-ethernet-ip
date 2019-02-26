@@ -92,7 +92,7 @@ class Controller extends ENIP {
      */
     set connectedMessaging(conn) {
         if (typeof conn !== "boolean") throw new Error("connectedMessaging must be of type <boolean>");
-        this.state.connectedMessaging = conn;
+        this.state.connectedMessaging= conn;
     }
 
     /**
@@ -132,7 +132,7 @@ class Controller extends ENIP {
     async connect(IP_ADDR, SLOT = 0) {
         const { PORT } = CIP.EPATH.segments;
         const BACKPLANE = 1;
-        let result = `Connected to: ${IP_ADDR} at Slot: ${SLOT}`;
+
         this.state.controller.slot = SLOT;
         this.state.controller.path = PORT.build(BACKPLANE, SLOT);
 
@@ -142,19 +142,12 @@ class Controller extends ENIP {
         this._initializeControllerEventHandlers(); // Connect sendRRData Event
 
         if (this.state.connectedMessaging === true) {
-            try {
-                await this.forwardOpen();
-            } catch (err) {
-                result = "Falling back to UCMM due to failed Forward Open attempt";
-                super.establishing_conn = false;
-                super.established_conn = false;
-                this.state.connectedMessaging = false;
-            }
+            const connid = await this.forwardOpen();
+            if(!connid) throw new Error("Failed to Forward Open with Controller");
         }
 
         // Fetch Controller Properties and Wall Clock
         await this.readControllerProps();
-        return result;
     }
 
     /**
@@ -168,7 +161,7 @@ class Controller extends ENIP {
     async disconnect() {
         if (super.established_conn === true) {
             const closeid = await this.forwardClose();
-            if(!closeid) throw new Error("Failed to End Connected EIP Session with Forward Close Request");
+            if(!closeid) throw new Error("Failed to Forward Open with Controller");
         }
 
         super.destroy();
@@ -209,7 +202,6 @@ class Controller extends ENIP {
         ]);
 
         // Concatenate path to CPU and how to reach the message router
-        // TODO: In all Path-related sections, we should look at a way to make the controller-path optional
         const portPath = Buffer.concat([
             this.state.controller.path,
             mrPath
