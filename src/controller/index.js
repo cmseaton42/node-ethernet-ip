@@ -34,7 +34,7 @@ class Controller extends ENIP {
             subs: new TagGroup(compare),
             scanning: false,
             scan_rate: 200, //ms,
-            connectedMessaging: connectedMessaging,
+            connectedMessaging,
         };
 
         this.workers = {
