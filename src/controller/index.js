@@ -143,7 +143,7 @@ class Controller extends ENIP {
 
         if (this.state.connectedMessaging === true) {
             const connid = await this.forwardOpen();
-            if(!connid) throw new Error("Failed to Forward Open with Controller");
+            if(!connid) throw new Error("Failed to Establish Forward Open Connection with Controller");
         }
 
         // Fetch Controller Properties and Wall Clock
@@ -161,7 +161,7 @@ class Controller extends ENIP {
     async disconnect() {
         if (super.established_conn === true) {
             const closeid = await this.forwardClose();
-            if(!closeid) throw new Error("Failed to Forward Open with Controller");
+            if(!closeid) throw new Error("Failed to End Connected EIP Session with Forward Close Request");
         }
 
         super.destroy();
