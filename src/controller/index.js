@@ -879,6 +879,7 @@ class Controller extends ENIP {
         switch (service - 0x80) {
             case FORWARD_CLOSE:
                 this.emit("Forward Close", error, data);
+                this.emit("Read Modify Write Tag", error, data);
                 break;
             case FORWARD_OPEN:
                 this.emit("Forward Open", error, data);
@@ -906,6 +907,7 @@ class Controller extends ENIP {
                 break;            
             case READ_MODIFY_WRITE_TAG:
                 this.emit("Read Modify Write Tag", error, data);
+                this.emit("Forward Close", error, data);
                 break;
             case MULTIPLE_SERVICE_PACKET: {
                 // If service errored then propogate error
@@ -1000,6 +1002,7 @@ class Controller extends ENIP {
         switch (service - 0x80) {
             case FORWARD_CLOSE:
                 this.emit("Forward Close", error, data);
+                this.emit("Read Modify Write Tag", error, data);
                 break;
             case FORWARD_OPEN:
                 this.emit("Forward Open", error, data);
@@ -1030,6 +1033,7 @@ class Controller extends ENIP {
                 break;            
             case READ_MODIFY_WRITE_TAG:
                 this.emit("Read Modify Write Tag", error, data);
+                this.emit("Forward Close", error, data);
                 break;
             case MULTIPLE_SERVICE_PACKET: {
                 // If service errored then propogate error
