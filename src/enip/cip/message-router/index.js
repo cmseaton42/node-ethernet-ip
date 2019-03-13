@@ -14,7 +14,9 @@ const services = {
     WRITE_TAG: 0x4d,
     READ_TAG_FRAGMENTED: 0x52,
     WRITE_TAG_FRAGMENTED: 0x53,
-    READ_MODIFY_WRITE_TAG: 0x4e
+    READ_MODIFY_WRITE_TAG: 0x4e,
+    FORWARD_OPEN: 0x54,
+    FORWARD_CLOSE: 0x4E
 };
 
 /**

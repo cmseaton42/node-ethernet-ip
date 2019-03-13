@@ -11,7 +11,7 @@ const compare = (obj1, obj2) => {
 };
 
 class Controller extends ENIP {
-    constructor() {
+    constructor(connectedMessaging = true) {
         super();
 
         this.state = {
@@ -33,7 +33,8 @@ class Controller extends ENIP {
             },
             subs: new TagGroup(compare),
             scanning: false,
-            scan_rate: 200 //ms
+            scan_rate: 200, //ms,
+            connectedMessaging,
         };
 
         this.workers = {
@@ -72,6 +73,26 @@ class Controller extends ENIP {
      */
     get scanning() {
         return this.state.scanning;
+    }
+
+    /**
+     * Returns the connected / unconnected messaging mode
+     *
+     * @memberof Controller
+     * @returns {boolean} true, if connected messaging; false, if unconnected messaging
+     */
+    get connectedMessaging() {
+        return this.state.connectedMessaging;
+    }
+
+    /**
+     * Sets the Mode to connected / unconnected messaging
+     *
+     * @memberof Controller
+     */
+    set connectedMessaging(conn) {
+        if (typeof conn !== "boolean") throw new Error("connectedMessaging must be of type <boolean>");
+        this.state.connectedMessaging= conn;
     }
 
     /**
@@ -116,13 +137,184 @@ class Controller extends ENIP {
         this.state.controller.path = PORT.build(BACKPLANE, SLOT);
 
         const sessid = await super.connect(IP_ADDR);
-
         if (!sessid) throw new Error("Failed to Register Session with Controller");
+        
+        this._initializeControllerEventHandlers(); // Connect sendRRData Event
 
-        this._initializeControllerEventHandlers();
+        if (this.state.connectedMessaging === true) {
+            const connid = await this.forwardOpen();
+            if(!connid) throw new Error("Failed to Establish Forward Open Connection with Controller");
+        }
 
         // Fetch Controller Properties and Wall Clock
         await this.readControllerProps();
+    }
+
+    /**
+     * Disconnects the PLC instance gracefully by issuing forwardClose, UnregisterSession
+     * and then destroying the socket
+     * and Returns a Promise indicating a success or failure or the disconnection
+     *
+     * @memberof Controller
+     * @returns {Promise}
+     */
+    async disconnect() {
+        if (super.established_conn === true) {
+            const closeid = await this.forwardClose();
+            if(!closeid) throw new Error("Failed to End Connected EIP Session with Forward Close Request");
+        }
+
+        super.destroy();
+
+        this._removeControllerEventHandlers();
+        return "disconnected";
+    }
+
+    /**
+     * Writes a forwardOpen Request and retrieves the connection ID used for
+     * connected messages.
+     * @memberof Controller
+     * @returns {Promise}
+     */
+    async forwardOpen() {
+        const { FORWARD_OPEN } = CIP.MessageRouter.services;
+        const { LOGICAL } = CIP.EPATH.segments;
+        const { owner, connectionType, fixedVar, priority} = CIP.ConnectionManager;
+
+        // Build Connection Manager Object Logical Path Buffer
+        const cmPath = Buffer.concat([
+            LOGICAL.build(LOGICAL.types.ClassID, 0x06), // Connection Manager Object (0x01)
+            LOGICAL.build(LOGICAL.types.InstanceID, 0x01) // Instance ID (0x01)
+        ]);
+
+        // Message Router to Embed in UCMM
+        const MR = CIP.MessageRouter.build(FORWARD_OPEN, cmPath, []);
+
+        // Create connection parameters
+        const params = CIP.ConnectionManager.build_connectionParameters(owner["Exclusive"], connectionType["PointToPoint"],priority["Low"],fixedVar["Variable"],500);
+
+        const forwardOpenData = CIP.ConnectionManager.build_forwardOpen(10000,params);
+
+        // Build MR Path in order to send the message to the CPU
+        const mrPath = Buffer.concat([
+            LOGICAL.build(LOGICAL.types.ClassID, 0x02), // Message Router Object (0x02)
+            LOGICAL.build(LOGICAL.types.InstanceID, 0x01) // Instance ID (0x01)
+        ]);
+
+        // Concatenate path to CPU and how to reach the message router
+        const portPath = Buffer.concat([
+            this.state.controller.path,
+            mrPath
+        ]);
+
+        // This is the Connection Path data unit (Vol.1 Table 3-5.21)
+        const connectionPath = Buffer.concat([
+            Buffer.from([Math.ceil(portPath.length/2)]), //Path size in WORDS
+            portPath
+        ]);
+
+        const forwardOpenPacket = Buffer.concat([
+            MR,
+            forwardOpenData,
+            connectionPath
+        ]);
+
+        super.establishing_conn = true;
+        super.established_conn = false;
+
+        super.write_cip(forwardOpenPacket); // We need to bypass unconnected send for now
+
+        const readPropsErr = new Error("TIMEOUT occurred while trying forwardOpen Request.");
+
+        // Wait for Response
+        const data = await promiseTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Forward Open", (err, data) => {
+                    if (err) reject(err);
+                    resolve(data);
+                });
+            }),
+            10000,
+            readPropsErr
+        );
+
+        this.removeAllListeners("Forward Open");
+        
+        const OTconnID = data.readUInt32LE(0); // first 4 Bytes are O->T connection ID 
+        super.id_conn = OTconnID;
+        super.established_conn = true;
+        super.establishing_conn = false;
+        return OTconnID;
+    }
+
+    /**
+     * Writes a forwardClose Request and retrieves the connection ID used for
+     * connected messages.
+     */
+    async forwardClose() {
+        const { FORWARD_CLOSE } = CIP.MessageRouter.services;
+        const { LOGICAL } = CIP.EPATH.segments;
+
+        // Build Connection Manager Object Logical Path Buffer
+        const cmPath = Buffer.concat([
+            LOGICAL.build(LOGICAL.types.ClassID, 0x06), // Connection Manager Object (0x01)
+            LOGICAL.build(LOGICAL.types.InstanceID, 0x01) // Instance ID (0x01)
+        ]);
+
+        // Message Router to Embed in UCMM
+        const MR = CIP.MessageRouter.build(FORWARD_CLOSE, cmPath, []);
+
+        const forwardCloseData = CIP.ConnectionManager.build_forwardClose();
+
+        // Build MR Path in order to send the message to the CPU
+        const mrPath = Buffer.concat([
+            LOGICAL.build(LOGICAL.types.ClassID, 0x02), // Message Router Object (0x02)
+            LOGICAL.build(LOGICAL.types.InstanceID, 0x01) // Instance ID (0x01)
+        ]);
+
+        // Concatenate path to CPU and how to reach the message router
+        const portPath = Buffer.concat([
+            this.state.controller.path,
+            mrPath
+        ]);
+
+        // This is the Connection Path data unit (Vol.1 Table 3-5.21)
+        const connectionPath = Buffer.concat([
+            Buffer.from([Math.ceil(portPath.length/2)]), //Path size in WORDS
+            Buffer.from([0x00]), // Padding
+            portPath
+        ]);
+
+        // Fully assembled packet
+        const forwardClosePacket = Buffer.concat([
+            MR,
+            forwardCloseData,
+            connectionPath
+        ]);
+
+        super.write_cip(forwardClosePacket); // We need to bypass unconnected send for now
+
+        const readPropsErr = new Error("TIMEOUT occurred while trying forwardClose Request.");
+
+        // Wait for Response
+        const data = await promiseTimeout(
+            new Promise((resolve, reject) => {
+                this.on("Forward Close", (err, data) => {
+                    if (err) reject(err);
+                    resolve(data);
+                });
+            }),
+            10000,
+            readPropsErr
+        );
+
+        this.removeAllListeners("Forward Close");
+        
+        const OTconnID = data.readUInt32LE(0); // first 4 Bytes are O->T connection ID 
+        super.id_conn = OTconnID;
+        super.established_conn = false;
+        super.establishing_conn = true;
+        return OTconnID;
     }
 
     /**
@@ -136,16 +328,19 @@ class Controller extends ENIP {
      * @override
      * @param {buffer} data - Message Router Packet Buffer
      * @param {boolean} [connected=false]
-     * @param {number} [timeout=10] - Timeoue (sec)
+     * @param {number} [timeout=10] - Timeout (sec)
      * @param {function} [cb=null] - Callback to be Passed to Parent.Write()
      * @memberof ENIP
      */
-    write_cip(data, connected = false, timeout = 10, cb = null) {
+    write_cip(data, timeout = 10, cb = null) {
         const { UnconnectedSend } = CIP;
-
-        const msg = UnconnectedSend.build(data, this.state.controller.path);
-
-        //TODO: Implement Connected Version
+        let msg;
+        const connected = super.established_conn;
+        if (connected === false) {
+            msg = UnconnectedSend.build(data, this.state.controller.path);
+        } else {
+            msg = data;
+        }
         super.write_cip(msg, connected, timeout, cb);
     }
 
@@ -463,6 +658,18 @@ class Controller extends ENIP {
      */
     _initializeControllerEventHandlers() {
         this.on("SendRRData Received", this._handleSendRRDataReceived);
+        this.on("SendUnitData Received", this._handleSendUnitDataReceived);
+    }
+
+    // region Private Methods
+    /**
+     * Remove Controller Specific Event Handlers
+     *
+     * @memberof Controller
+     */
+    _removeControllerEventHandlers() {
+        this.removeAllListeners("SendRRData Received");
+        this.removeAllListeners("SendUnitData Received");
     }
 
     /**
@@ -660,7 +867,9 @@ class Controller extends ENIP {
             WRITE_TAG,
             WRITE_TAG_FRAGMENTED,
             READ_MODIFY_WRITE_TAG,
-            MULTIPLE_SERVICE_PACKET
+            MULTIPLE_SERVICE_PACKET,
+            FORWARD_OPEN,
+            FORWARD_CLOSE
         } = CIP.MessageRouter.services;
 
         let error = generalStatusCode !== 0 ? { generalStatusCode, extendedStatus } : null;
@@ -668,6 +877,13 @@ class Controller extends ENIP {
         // Route Incoming Message Responses
         /* eslint-disable indent */
         switch (service - 0x80) {
+            case FORWARD_CLOSE:
+                this.emit("Forward Close", error, data);
+                this.emit("Read Modify Write Tag", error, data);
+                break;
+            case FORWARD_OPEN:
+                this.emit("Forward Open", error, data);
+                break;
             case GET_ATTRIBUTE_SINGLE:
                 this.emit("Get Attribute Single", error, data);
                 break;
@@ -691,6 +907,7 @@ class Controller extends ENIP {
                 break;            
             case READ_MODIFY_WRITE_TAG:
                 this.emit("Read Modify Write Tag", error, data);
+                this.emit("Forward Close", error, data);
                 break;
             case MULTIPLE_SERVICE_PACKET: {
                 // If service errored then propogate error
@@ -756,9 +973,131 @@ class Controller extends ENIP {
         /* eslint-enable indent */
     }
 
-    // _handleSendUnitDataReceived(data) {
-    //     // TODO: Implement when ready for Connected Messaging
-    // }
+    _handleSendUnitDataReceived(sud) {
+        let sudnew = sud[1].data.slice(2); // First 2 bytes are Connection sequence number
+        const { service, generalStatusCode, extendedStatus, data } = CIP.MessageRouter.parse(
+            sudnew
+        );
+
+        const {
+            GET_ATTRIBUTE_SINGLE,
+            GET_ATTRIBUTE_ALL,
+            GET_INSTANCE_ATTRIBUTE_LIST,
+            SET_ATTRIBUTE_SINGLE,
+            READ_TAG,
+            READ_TAG_FRAGMENTED,
+            WRITE_TAG,
+            WRITE_TAG_FRAGMENTED,
+            READ_MODIFY_WRITE_TAG,
+            MULTIPLE_SERVICE_PACKET,
+            FORWARD_OPEN,
+            FORWARD_CLOSE
+
+        } = CIP.MessageRouter.services;
+
+        let error = generalStatusCode !== 0 ? { generalStatusCode, extendedStatus } : null;
+
+        // Route Incoming Message Responses
+        /* eslint-disable indent */
+        switch (service - 0x80) {
+            case FORWARD_CLOSE:
+                this.emit("Forward Close", error, data);
+                this.emit("Read Modify Write Tag", error, data);
+                break;
+            case FORWARD_OPEN:
+                this.emit("Forward Open", error, data);
+                break;
+            case GET_ATTRIBUTE_SINGLE:
+                this.emit("Get Attribute Single", error, data);
+                break;
+            case GET_ATTRIBUTE_ALL:
+                this.emit("Get Attribute All", error, data);
+                break;
+            case SET_ATTRIBUTE_SINGLE:
+                this.emit("Set Attribute Single", error, data);
+                break;
+            case GET_INSTANCE_ATTRIBUTE_LIST:
+                this.emit("Get Instance Attribute List", error, data);
+                break;
+            case READ_TAG:
+                this.emit("Read Tag", error, data);
+                break;
+            case READ_TAG_FRAGMENTED:
+                this.emit("Read Tag Fragmented", error, data);
+                break;
+            case WRITE_TAG:
+                this.emit("Write Tag", error, data);
+                break;
+            case WRITE_TAG_FRAGMENTED:
+                this.emit("Write Tag Fragmented", error, data);
+                break;            
+            case READ_MODIFY_WRITE_TAG:
+                this.emit("Read Modify Write Tag", error, data);
+                this.emit("Forward Close", error, data);
+                break;
+            case MULTIPLE_SERVICE_PACKET: {
+                // If service errored then propogate error
+                if (error) {
+                    this.emit("Multiple Service Packet", error, data);
+                    break;
+                }
+
+                // Get Number of Services to be Enclosed
+                let services = data.readUInt16LE(0);
+                let offsets = [];
+                let responses = [];
+
+                // Build Array of Buffer Offsets
+                for (let i = 0; i < services; i++) {
+                    offsets.push(data.readUInt16LE(i * 2 + 2));
+                }
+
+                // Gather Messages within Buffer
+                for (let i = 0; i < offsets.length - 1; i++) {
+                    const length = offsets[i + 1] - offsets[i];
+
+                    let buf = Buffer.alloc(length);
+                    data.copy(buf, 0, offsets[i], offsets[i + 1]);
+
+                    // Parse Message Data
+                    const msgData = CIP.MessageRouter.parse(buf);
+
+                    if (msgData.generalStatusCode !== 0) {
+                        error = {
+                            generalStatusCode: msgData.generalStatusCode,
+                            extendedStatus: msgData.extendedStatus
+                        };
+                    }
+
+                    responses.push(msgData);
+                }
+
+                // Handle Final Message
+                const length = data.length - offsets[offsets.length - 1];
+
+                let buf = Buffer.alloc(length);
+                data.copy(buf, 0, offsets[offsets.length - 1]);
+
+                const msgData = CIP.MessageRouter.parse(buf);
+
+                if (msgData.generalStatusCode !== 0) {
+                    error = {
+                        generalStatusCode: msgData.generalStatusCode,
+                        extendedStatus: msgData.extendedStatus
+                    };
+                }
+
+                responses.push(msgData);
+
+                this.emit("Multiple Service Packet", error, responses);
+                break;
+            }
+            default:
+                this.emit("Unknown Reply", { generalStatusCode: 0x99, extendedStatus: [] }, data);
+                break;
+        }
+        /* eslint-enable indent */        
+    }
 
     // _handleSessionRegistrationFailed(error) {
     //     // TODO: Implement Handler if Necessary

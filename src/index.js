@@ -5,3 +5,4 @@ const EthernetIP = require("./enip");
 const util = require("./utilities");
 
 module.exports = { Controller, Tag, TagGroup, EthernetIP, util };
+
