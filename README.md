@@ -285,8 +285,8 @@ const PLC = new Controller();
 PLC.addTemplate({
     name: "udt1",
     definition: {
-        member1: Types.DINT;
-        member2: { type: Types.DINT, length: 2 };
+        member1: Types.DINT,
+        member2: { type: Types.DINT, length: 2 },
     }
 });
 
@@ -320,8 +320,8 @@ const PLC = new Controller();
 PLC.addTemplate({
     name: "udt1",
     definition: {
-        member1: Types.DINT;
-        member2: { type: Types.DINT, length: 2 };
+        member1: Types.DINT,
+        member2: { type: Types.DINT, length: 2 },
     }
 });
 
@@ -329,8 +329,8 @@ PLC.addTemplate({
 PLC.addTemplate({
     name: "udt2",
     definition: {
-        nestedUdt: "udt1";
-        anotherMember: Types.REAL;
+        nestedUdt: "udt1",
+        anotherMember: Types.REAL,
     }
 });
 
