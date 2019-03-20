@@ -217,6 +217,70 @@ Array [
 ]
 `;
 
+exports[`Encapsulation Test Encapsulation Generator Functions ListIdentity Returns Correct Encapsulation String 1`] = `
+Object {
+  "data": Array [
+    99,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
+exports[`Encapsulation Test Encapsulation Generator Functions ListServices Returns Correct Encapsulation String 1`] = `
+Object {
+  "data": Array [
+    4,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+  ],
+  "type": "Buffer",
+}
+`;
+
 exports[`Encapsulation Test Encapsulation Generator Functions Register Session Returns Correct Encapsulation String 1`] = `
 Object {
   "data": Array [
