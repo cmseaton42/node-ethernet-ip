@@ -236,7 +236,21 @@ class ENIP extends Socket {
             listIdentityErr
         );
 
-        let ptr = 24; // Other data is not relevant.
+        let ptr = 8; // Starting with Socket Address
+        this.plcProperties.socketAddress = {};
+        this.plcProperties.socketAddress.sin_family = listData.readUInt16BE(ptr);
+        ptr+=2;
+        this.plcProperties.socketAddress.sin_port = listData.readUInt16BE(ptr);
+        ptr+=2;
+        this.plcProperties.socketAddress.sin_addr = listData.readUInt8(ptr).toString()+
+        "."+listData.readUInt8(ptr+1).toString()+
+        "."+listData.readUInt8(ptr+2).toString()+
+        "."+listData.readUInt8(ptr+3).toString(); 
+        ptr+=4;
+        this.plcProperties.socketAddress.sin_zero = 0;
+        ptr+=8;
+
+        // Now follows the asset data
         this.plcProperties.vendorID = listData.readUInt16LE(ptr);
         ptr+=2;
         this.plcProperties.deviceType = listData.readUInt16LE(ptr);

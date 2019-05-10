@@ -28,73 +28,13 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Sends a broadcast to a specified IPv4 Interface in order to discover all present EthernetIP
- * devices. If no interface is specified, checks all available interfaces and sends a broadcast to them.
- *
- * @param {string} IPv4Interface - The interface we want to check the PLCs of, if not specified, all interfaces will be checked
- * @param {function} cb - The callback that is to be executed after the search is finished
- * @memberof Utilities
- */
-function discover(cb,IPv4Interface = undefined) {
-    const ENIPList = new Array();
-    const IPv4List = new Array();
-    /* No specified interface means we need to discover them on our own */
-    if(IPv4Interface == undefined) {
-        const interfaceList = os.networkInterfaces();
-        const iFaceListKeys = Object.keys(interfaceList);
-        const iFaceListLen = iFaceListKeys.length;
-        for (let i = 0; i < iFaceListLen; i += 1) {
-            let interfaces = interfaceList[iFaceListKeys[i]];
-            for (const addresses of interfaces) {
-                if(addresses["family"] == "IPv4") {
-                    IPv4List.push(addresses);
-                }
-            }
-        }
-    }
-    /* An interface has been specified! */
-    else {
-        const IPv4RegEx = new RegExp("^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
-        if (!IPv4RegEx.test(IPv4Interface)) throw new Error("Interface must match IPv4 format!");
-        IPv4List.push({address: IPv4Interface});    
-    }
-    /* For each interface, we send a broadcast with a listIdentity command */
-    for (const addresses of IPv4List) {
-        let dsock = dgram.createSocket("udp4");
-        dsock.bind(0,addresses["address"], () => {
-            dsock.setBroadcast(true);
-            const { listIdentity } = encapsulation;
-            dsock.send(listIdentity(),44818,"255.255.255.255", (err) => {
-                if (err) throw new Error ("Error when sending via UDP: "+err);
-            });
-        });
-
-        dsock.on("error", function(err) {
-            console.log("UDP Error caught: " + err.stack);
-        });
-
-        dsock.on("message", function(msg) {
-            if(msg.readUInt16LE(0) == 0x0063) { //Got em! Caught a listIdentity response.
-                const enipPort = msg.readUInt16BE(34);
-                const ipString = msg.readUInt8(36).toString()+
-                "."+msg.readUInt8(37).toString()+
-                "."+msg.readUInt8(38).toString()+
-                "."+msg.readUInt8(39).toString(); 
-                ENIPList.push({port:enipPort,ip:ipString});
-            }
-        });
-    }
-    setTimeout(cb, 100, ENIPList);
-}
-
-/**
- * Sends a broadcast to a specified IPv4 Interface in order to discover all present EthernetIP
  * devices.
  *
  * @param {string} ipInterface - The interface the broadcast is sent to
  * @returns {Promise}
  * @memberof Utilities
  */
-function getENIPDevicesProm(ipInterface){
+function _getENIPDevicesProm(ipInterface){
     return new Promise((resolve,reject)=>{
         const ENIPList = new Array();
         let dsock = dgram.createSocket("udp4");
@@ -123,13 +63,44 @@ function getENIPDevicesProm(ipInterface){
         });
 
         dsock.on("message", function(msg) {
-            if(msg.readUInt16LE(0) == 0x0063) { //Got em! Caught a listIdentity response.
-                const enipPort = msg.readUInt16BE(34);
-                const ipString = msg.readUInt8(36).toString()+
-                "."+msg.readUInt8(37).toString()+
-                "."+msg.readUInt8(38).toString()+
-                "."+msg.readUInt8(39).toString(); 
-                ENIPList.push({port:enipPort,ip:ipString});
+            if(msg.readUInt16LE(0) === 0x0063) { //Got em! Caught a listIdentity response.
+                const plcProperties = {};
+                let ptr = 32; // Starting with Socket Address
+                plcProperties.socketAddress = {};
+                plcProperties.socketAddress.sin_family = msg.readUInt16BE(ptr);
+                ptr+=2;
+                plcProperties.socketAddress.sin_port = msg.readUInt16BE(ptr);
+                ptr+=2;
+                plcProperties.socketAddress.sin_addr = msg.readUInt8(ptr).toString()+
+                "."+msg.readUInt8(ptr+1).toString()+
+                "."+msg.readUInt8(ptr+2).toString()+
+                "."+msg.readUInt8(ptr+3).toString(); 
+                ptr+=4;
+                plcProperties.socketAddress.sin_zero = 0;
+                ptr+=8;
+        
+                // Now follows the asset data
+                plcProperties.vendorID = msg.readUInt16LE(ptr);
+                ptr+=2;
+                plcProperties.deviceType = msg.readUInt16LE(ptr);
+                ptr+=2;
+                plcProperties.productCode = msg.readUInt16LE(ptr);
+                ptr+=2;
+                plcProperties.majorRevision = msg.readUInt8(ptr);
+                ptr+=1;
+                plcProperties.minorRevision = msg.readUInt8(ptr);
+                ptr+=1;
+                plcProperties.status = msg.readUInt16LE(ptr);
+                ptr+=2;
+                plcProperties.serialNumber = msg.readUInt32LE(ptr);
+                ptr+=4;
+                plcProperties.productNameLength = msg.readUInt8(ptr);
+                ptr+=1;
+                plcProperties.productName = msg.toString("ascii",ptr,msg.length-1);
+                ptr+=plcProperties.productNameLength;
+                plcProperties.state = msg.readUInt8(ptr);
+
+                ENIPList.push(plcProperties);
             }
         });
         dsock.on("close", function() {
@@ -147,22 +118,22 @@ function getENIPDevicesProm(ipInterface){
  * devices. If no interface is specified, checks all available interfaces and sends a broadcast to them.
  *
  * @param {string} IPv4Interface - The interface we want to check the PLCs of, if not specified, all interfaces will be checked
- * @returns {Promise} 
+ * @returns {Promise} - an object with a key: interface - value: list of attaches devices pair.
  * @memberof Utilities
  */
-async function discoverProm(IPv4Interface = undefined) {
-    const ENIPDeviceList = new Array();
+async function discover(IPv4Interface = null) {
+    const ENIPDevice = {};
     const IPv4List = new Array();
 
     /* No specified interface means we need to discover them on our own */
-    if(IPv4Interface == undefined) {
+    if(IPv4Interface === null) {
         const interfaceList = os.networkInterfaces();
         const iFaceListKeys = Object.keys(interfaceList);
         const iFaceListLen = iFaceListKeys.length;
         for (let i = 0; i < iFaceListLen; i += 1) {
             let interfaces = interfaceList[iFaceListKeys[i]];
             for (const addresses of interfaces) {
-                if(addresses["family"] == "IPv4") {
+                if(addresses["family"] === "IPv4") {
                     IPv4List.push(addresses);
                 }
             }
@@ -177,15 +148,15 @@ async function discoverProm(IPv4Interface = undefined) {
 
     /* For each interface, we send a broadcast with a listIdentity command */
     for (const addresses of IPv4List) {
-        const ENIPDevices = await getENIPDevicesProm(addresses); // Wait for an Interface to get all Devices
+        const ENIPDevices = await _getENIPDevicesProm(addresses); // Wait for an Interface to get all Devices
         if (!Array.isArray(ENIPDevices) || !ENIPDevices.length) {
             // No Devices returned
         }
         else {
-            ENIPDeviceList.push(ENIPDevices);
+            ENIPDevice[addresses.address] = ENIPDevices;
         }
     }
-    return ENIPDeviceList;
+    return ENIPDevice;
 }
 
-module.exports = { promiseTimeout, delay, discover, discoverProm };
+module.exports = { promiseTimeout, delay, discover };
