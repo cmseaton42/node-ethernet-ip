@@ -1,9 +1,17 @@
 const { Socket, isIPv4 } = require("net");
 const { EIP_PORT } = require("../config");
+const Queue = require("task-easy");
 const encapsulation = require("./encapsulation");
 const CIP = require("./cip");
 const { promiseTimeout } = require("../utilities");
 const { lookup } = require("dns");
+
+const compare = (obj1, obj2) => {
+    if (obj1.priority > obj2.priority) return true;
+    else if (obj1.priority < obj2.priority) return false;
+    else return obj1.timestamp.getTime() < obj2.timestamp.getTime();
+};
+
 
 /**
  * Low Level Ethernet/IP
@@ -39,6 +47,8 @@ class ENIP extends Socket {
             productNameLength: null,
             productName: null,
         };
+
+        this.commandWorker = new Queue(compare);
 
         // Initialize Event Handlers for Underlying Socket Class
         this._initializeEventHandlers();
@@ -88,6 +98,34 @@ class ENIP extends Socket {
     // endregion
 
     // region Public Method Definitions
+
+    /**
+     * Executes the private command functions sequentially. Avoiding the queue and calling them too quickly in succession
+     * will throw a connection error, this is why we resort to using a wrapper.
+     * @param {string} IP_ADDR 
+     * @param {string} command 
+     * @returns {Promise}
+     */
+    executeCommand(IP_ADDR, command) {
+        // Handling IP_ADDR Errors happens in the commmand-handlers.
+        if(typeof command === "undefined" || typeof command !== "string") throw new Error("Provide a command as a string!");
+        /* eslint-disable indent */
+        switch (command) {
+            case "listIdentity":
+                    return this.commandWorker.schedule(this._listIdentity.bind(this), [IP_ADDR], {
+                        priority: 1,
+                        timestamp: new Date()
+                    });
+
+            case "listServices":
+                    return this.commandWorker.schedule(this._listServices.bind(this), [IP_ADDR], {
+                        priority: 1,
+                        timestamp: new Date()
+                    });
+            default:
+                throw new Error("No compatible EtherNet/IP command recognized");
+        }
+    }
 
     /**
      * Initializes Session with Desired IP Address or FQDN
@@ -179,7 +217,7 @@ class ENIP extends Socket {
      * @returns {Promise}
      * @memberof ENIP
      */
-    async listIdentity(IP_ADDR) {
+    async _listIdentity(IP_ADDR) {
         if (!IP_ADDR) {
             throw new Error("Controller <class> requires IP_ADDR <string>!!!");
         }
@@ -292,7 +330,7 @@ class ENIP extends Socket {
      * @returns {Promise}
      * @memberof ENIP
      */
-    async listServices(IP_ADDR) {
+    async _listServices(IP_ADDR) {
         if (!IP_ADDR) {
             throw new Error("Controller <class> requires IP_ADDR <string>!!!");
         }
