@@ -70,7 +70,7 @@ describe("Encapsulation", () => {
     });
 
     describe("Test Encapsulation Generator Functions", () => {
-        const { registerSession, unregisterSession, sendRRData, sendUnitData } = encapsulation;
+        const { registerSession, unregisterSession, sendRRData, sendUnitData, listIdentity, listServices } = encapsulation;
 
         it("Register Session Returns Correct Encapsulation String", () => {
             const data = registerSession();
@@ -92,6 +92,18 @@ describe("Encapsulation", () => {
 
         it("SendUnitData Returns Correct Encapsulation String", () => {
             const data = sendUnitData(98705, Buffer.from("hello world"), 32145, 456);
+
+            expect(data).toMatchSnapshot();
+        });
+
+        it("ListIdentity Returns Correct Encapsulation String", () => {
+            const data = listIdentity();
+
+            expect(data).toMatchSnapshot();
+        });
+
+        it("ListServices Returns Correct Encapsulation String", () => {
+            const data = listServices();
 
             expect(data).toMatchSnapshot();
         });

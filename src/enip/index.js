@@ -1,9 +1,17 @@
 const { Socket, isIPv4 } = require("net");
 const { EIP_PORT } = require("../config");
+const Queue = require("task-easy");
 const encapsulation = require("./encapsulation");
 const CIP = require("./cip");
 const { promiseTimeout } = require("../utilities");
 const { lookup } = require("dns");
+
+const compare = (obj1, obj2) => {
+    if (obj1.priority > obj2.priority) return true;
+    else if (obj1.priority < obj2.priority) return false;
+    else return obj1.timestamp.getTime() < obj2.timestamp.getTime();
+};
+
 
 /**
  * Low Level Ethernet/IP
@@ -27,6 +35,20 @@ class ENIP extends Socket {
             connection: { id: null, establishing: false, established: false, seq_num: 0 },
             error: { code: null, msg: null }
         };
+
+        this.plcProperties = { 
+            vendorID: null,
+            deviceType: null,
+            productCode: null,
+            majorRevision: null,
+            minorRevision: null,
+            status: null,
+            serialNumber: null,
+            productNameLength: null,
+            productName: null,
+        };
+
+        this.commandWorker = new Queue(compare);
 
         // Initialize Event Handlers for Underlying Socket Class
         this._initializeEventHandlers();
@@ -132,6 +154,34 @@ class ENIP extends Socket {
     // region Public Method Definitions
 
     /**
+     * Executes the private command functions sequentially. Avoiding the queue and calling them too quickly in succession
+     * will throw a connection error, this is why we resort to using a wrapper.
+     * @param {string} IP_ADDR 
+     * @param {string} command 
+     * @returns {Promise}
+     */
+    executeCommand(IP_ADDR, command) {
+        // Handling IP_ADDR Errors happens in the commmand-handlers.
+        if(typeof command === "undefined" || typeof command !== "string") throw new Error("Provide a command as a string!");
+        /* eslint-disable indent */
+        switch (command) {
+            case "listIdentity":
+                    return this.commandWorker.schedule(this._listIdentity.bind(this), [IP_ADDR], {
+                        priority: 1,
+                        timestamp: new Date()
+                    });
+
+            case "listServices":
+                    return this.commandWorker.schedule(this._listServices.bind(this), [IP_ADDR], {
+                        priority: 1,
+                        timestamp: new Date()
+                    });
+            default:
+                throw new Error("No compatible EtherNet/IP command recognized");
+        }
+    }
+
+    /**
      * Initializes Session with Desired IP Address or FQDN
      * and Returns a Promise with the Established Session ID
      *
@@ -210,6 +260,218 @@ class ENIP extends Socket {
 
         // Return Session ID
         return sessid;
+    }
+
+    /**
+     * Accesses the listIdentity command of EthernetIP
+     * and returns the parsed properties of the EthernetIP device
+     *
+     * @override
+     * @param {string} IP_ADDR - IPv4 Address (can also accept a FQDN, provided port forwarding is configured correctly.)
+     * @returns {Promise}
+     * @memberof ENIP
+     */
+    async _listIdentity(IP_ADDR) {
+        if (!IP_ADDR) {
+            throw new Error("Controller <class> requires IP_ADDR <string>!!!");
+        }
+        await new Promise((resolve, reject) => {
+            lookup(IP_ADDR, (err, addr) => {
+                if (err) reject(new Error("DNS Lookup failed for IP_ADDR " + IP_ADDR));
+
+                if (!isIPv4(addr)) {
+                    reject(new Error("Invalid IP_ADDR <string> passed to Controller <class>"));
+                }
+                resolve();
+            });
+        });
+
+        const { listIdentity } = encapsulation;
+
+        this.state.TCP.establishing = true;
+
+        const connectErr = new Error(
+            "TIMEOUT occurred while attempting to establish TCP connection with Controller."
+        );
+
+        // Connect to Controller and Then Send Register Session Packet
+        await promiseTimeout(
+            new Promise(resolve => {
+                super.connect(
+                    EIP_PORT,
+                    IP_ADDR,
+                    () => {
+                        this.state.TCP.establishing = false;
+                        this.state.TCP.established = true;
+
+                        this.write(listIdentity());
+                        resolve();
+                    }
+                );
+            }),
+            10000,
+            connectErr
+        );
+
+        const listIdentityErr = new Error(
+            "TIMEOUT occurred while attempting to use listIdentity Service of Ethernet/IP with Controller."
+        );
+
+        // Wait for Session to be Registered
+        const listData = await promiseTimeout(
+            new Promise(resolve => {
+                this.on("ListIdentity Received", listData => {
+                    resolve(listData);
+                });
+            }),
+            10000,
+            listIdentityErr
+        );
+
+        let ptr = 8; // Starting with Socket Address
+        this.plcProperties.socketAddress = {};
+        this.plcProperties.socketAddress.sin_family = listData.readUInt16BE(ptr);
+        ptr+=2;
+        this.plcProperties.socketAddress.sin_port = listData.readUInt16BE(ptr);
+        ptr+=2;
+        this.plcProperties.socketAddress.sin_addr = listData.readUInt8(ptr).toString()+
+        "."+listData.readUInt8(ptr+1).toString()+
+        "."+listData.readUInt8(ptr+2).toString()+
+        "."+listData.readUInt8(ptr+3).toString(); 
+        ptr+=4;
+        this.plcProperties.socketAddress.sin_zero = 0;
+        ptr+=8;
+
+        // Now follows the asset data
+        this.plcProperties.vendorID = listData.readUInt16LE(ptr);
+        ptr+=2;
+        this.plcProperties.deviceType = listData.readUInt16LE(ptr);
+        ptr+=2;
+        this.plcProperties.productCode = listData.readUInt16LE(ptr);
+        ptr+=2;
+        this.plcProperties.majorRevision = listData.readUInt8(ptr);
+        ptr+=1;
+        this.plcProperties.minorRevision = listData.readUInt8(ptr);
+        ptr+=1;
+        this.plcProperties.status = listData.readUInt16LE(ptr);
+        ptr+=2;
+        this.plcProperties.serialNumber = listData.readUInt32LE(ptr);
+        ptr+=4;
+        this.plcProperties.productNameLength = listData.readUInt8(ptr);
+        ptr+=1;
+        this.plcProperties.productName = listData.toString("ascii",ptr,listData.length-1);
+        ptr+=this.plcProperties.productNameLength;
+        this.plcProperties.state = listData.readUInt8(ptr);
+
+        // Clean Up Local Listeners
+        this.removeAllListeners("ListIdentity Received");
+
+        super.destroy();
+
+        // We destroyed the socket
+        this.state.TCP.establishing = false;
+        this.state.TCP.established = false;
+
+        return this.plcProperties;
+    }
+
+    /**
+     * Accesses the listServices command of EthernetIP
+     * and returns the parsed properties of the services
+     *
+     * @override
+     * @param {string} IP_ADDR - IPv4 Address (can also accept a FQDN, provided port forwarding is configured correctly.)
+     * @returns {Promise}
+     * @memberof ENIP
+     */
+    async _listServices(IP_ADDR) {
+        if (!IP_ADDR) {
+            throw new Error("Controller <class> requires IP_ADDR <string>!!!");
+        }
+        await new Promise((resolve, reject) => {
+            lookup(IP_ADDR, (err, addr) => {
+                if (err) reject(new Error("DNS Lookup failed for IP_ADDR " + IP_ADDR));
+
+                if (!isIPv4(addr)) {
+                    reject(new Error("Invalid IP_ADDR <string> passed to Controller <class>"));
+                }
+                resolve();
+            });
+        });
+
+        const { listServices } = encapsulation;
+
+        this.state.TCP.establishing = true;
+
+        const connectErr = new Error(
+            "TIMEOUT occurred while attempting to establish TCP connection with Controller."
+        );
+
+        // Connect to Controller and Then Send Register Session Packet
+        await promiseTimeout(
+            new Promise(resolve => {
+                super.connect(
+                    EIP_PORT,
+                    IP_ADDR,
+                    () => {
+                        this.state.TCP.establishing = false;
+                        this.state.TCP.established = true;
+
+                        this.write(listServices());
+                        resolve();
+                    }
+                );
+            }),
+            10000,
+            connectErr
+        );
+
+        const listServicesErr = new Error(
+            "TIMEOUT occurred while attempting to use listServices Command of Ethernet/IP with Controller."
+        );
+
+        // Create a service object as a container for the parsed data
+        const service = {
+            TypeID: null,
+            ItemLength: null,
+            EncapVer: null,
+            Capabilities: null,
+            Name: null
+        };
+
+        // Wait for Session to be Registered
+        const serviceData = await promiseTimeout(
+            new Promise(resolve => {
+                this.on("ListServices Received", serviceData => {
+                    resolve(serviceData);
+                });
+            }),
+            10000,
+            listServicesErr
+        );
+        
+        let ptr = 2; // Other data is not relevant.
+        service.TypeID = serviceData.readUInt16LE(ptr);
+        ptr+=2;
+        service.ItemLength = serviceData.readUInt16LE(ptr);
+        ptr+=2;
+        service.EncapVer = serviceData.readUInt16LE(ptr);
+        ptr+=2;
+        service.Capabilities = serviceData.readUInt16LE(ptr);
+        ptr+=2;
+        service.Name = serviceData.toString("ascii",ptr,serviceData.length);
+
+        
+        // Clean Up Local Listeners
+        this.removeAllListeners("ListServices Received");
+
+        super.destroy();
+
+        // We destroyed the socket
+        this.state.TCP.establishing = false;
+        this.state.TCP.established = false;
+
+        return service;
     }
 
     /**
@@ -340,6 +602,16 @@ class ENIP extends Socket {
 
                     const sud = CPF.parse(buf2);
                     this.emit("SendUnitData Received", sud);
+                    break;
+                }
+                case commands.ListIdentity: {
+                    const listData = encapsulatedData.data;
+                    this.emit("ListIdentity Received", listData);
+                    break;
+                }
+                case commands.ListServices: {
+                    const serviceData = encapsulatedData.data;
+                    this.emit("ListServices Received", serviceData);
                     break;
                 }
                 default:
