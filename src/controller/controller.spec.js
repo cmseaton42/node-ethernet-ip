@@ -49,5 +49,10 @@ describe("Controller Class", () => {
 
             expect(plc.time).toMatchSnapshot();
         });
+
+        it("Task Easy", () => {
+            const plc = new Controller({ queue_max_size: 200 });
+            expect(plc.workers.read.max).toEqual(200);
+        });
     });
 });
