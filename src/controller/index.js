@@ -2,6 +2,7 @@ const { ENIP, CIP } = require("../enip");
 const dateFormat = require("dateformat");
 const TagGroup = require("../tag-group");
 const { delay, promiseTimeout } = require("../utilities");
+const { EIP_PORT } = require("../config");
 const Queue = require("task-easy");
 
 const compare = (obj1, obj2) => {
@@ -105,17 +106,21 @@ class Controller extends ENIP {
      * @override
      * @param {string} IP_ADDR - IPv4 Address (can also accept a FQDN, provided port forwarding is configured correctly.)
      * @param {number} SLOT - Controller Slot Number (0 if CompactLogix)
+     * @param {number} TCP_PORT - Port For TCP/IP Connection (defaults to stand Ethernet/IP Port)
      * @returns {Promise}
      * @memberof ENIP
      */
-    async connect(IP_ADDR, SLOT = 0) {
+    async connect(IP_ADDR, SLOT = 0, TCP_PORT = EIP_PORT) {
         const { PORT } = CIP.EPATH.segments;
         const BACKPLANE = 1;
 
         this.state.controller.slot = SLOT;
         this.state.controller.path = PORT.build(BACKPLANE, SLOT);
 
-        const sessid = await super.connect(IP_ADDR);
+        const sessid = await super.connect(
+            IP_ADDR,
+            TCP_PORT
+        );
 
         if (!sessid) throw new Error("Failed to Register Session with Controller");
 
@@ -516,7 +521,6 @@ class Controller extends ENIP {
         // Wait for Response
         await promiseTimeout(
             new Promise((resolve, reject) => {
-
                 // Full Tag Writing
                 this.on("Write Tag", (err, data) => {
                     if (err) reject(err);
@@ -688,7 +692,7 @@ class Controller extends ENIP {
                 break;
             case WRITE_TAG_FRAGMENTED:
                 this.emit("Write Tag Fragmented", error, data);
-                break;            
+                break;
             case READ_MODIFY_WRITE_TAG:
                 this.emit("Read Modify Write Tag", error, data);
                 break;
