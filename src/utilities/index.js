@@ -9,8 +9,11 @@
  */
 const promiseTimeout = (promise, ms, error = new Error("ASYNC Function Call Timed Out!!!")) => {
     return new Promise((resolve, reject) => {
-        setTimeout(() => reject(error), ms);
-        promise.then(resolve).catch(reject);
+        const timer = setTimeout(() => reject(error), ms);
+        promise.then(p => {
+            clearTimeout(timer);
+            resolve(p);
+        }).catch(reject);
     });
 };
 
