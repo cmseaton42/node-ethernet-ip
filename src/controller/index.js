@@ -11,6 +11,13 @@ const compare = (obj1, obj2) => {
 };
 
 class Controller extends ENIP {
+
+    /**
+     * 
+     * @param {object} [options] 
+     * @param {number} [options.queue_max_size=100] the maximum size for the command queue length
+     * @param {number} [options.unconnected_send_timeout=2000] the timeout value of messages of type "unconnected send"
+     */
     constructor({ queue_max_size, unconnected_send_timeout = 2000 } = {}) {
         super();
         
