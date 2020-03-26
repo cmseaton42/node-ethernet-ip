@@ -11,7 +11,7 @@ const compare = (obj1, obj2) => {
 };
 
 class Controller extends ENIP {
-    constructor({ queue_max_size } = {}) {
+    constructor({ queue_max_size, unconnected_send_timeout = 2000 } = {}) {
         super();
         
         this.state = {
@@ -41,6 +41,8 @@ class Controller extends ENIP {
             write: new Queue(compare, queue_max_size),
             group: new Queue(compare, queue_max_size)
         };
+
+        this.params = { unconnected_send_timeout };
     }
 
     // region Property Definitions
@@ -143,7 +145,7 @@ class Controller extends ENIP {
     write_cip(data, connected = false, timeout = 10, cb = null) {
         const { UnconnectedSend } = CIP;
 
-        const msg = UnconnectedSend.build(data, this.state.controller.path);
+        const msg = UnconnectedSend.build(data, this.state.controller.path, this.params.unconnected_send_timeout);
 
         //TODO: Implement Connected Version
         super.write_cip(msg, connected, timeout, cb);
