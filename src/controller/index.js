@@ -405,7 +405,7 @@ class Controller extends ENIP {
         this.state.scanning = true;
 
         const timer = setInterval(() => {
-            if (this.state.scanning == false) {
+            if (this.state.scanning === false) {
                 clearInterval(timer)
             }
             this.workers.group
