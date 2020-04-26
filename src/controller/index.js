@@ -404,11 +404,9 @@ class Controller extends ENIP {
     async scan() {
         this.state.scanning = true;
 
-        const timer = setInterval(() => {
-            if (this.state.scanning === false) {
-                clearInterval(timer)
-            }
-            this.workers.group
+        while (this.state.scanning) {
+            var startTime = new Date();
+            await this.workers.group
                 .schedule(this._readTagGroup.bind(this), [this.state.subs], {
                     priority: 10,
                     timestamp: new Date()
@@ -421,7 +419,7 @@ class Controller extends ENIP {
                     }
                 });
 
-            this.workers.group
+            await this.workers.group
                 .schedule(this._writeTagGroup.bind(this), [this.state.subs], {
                     priority: 10,
                     timestamp: new Date()
@@ -433,7 +431,12 @@ class Controller extends ENIP {
                         throw e;
                     }
                 });
-        }, this.state.scan_rate)
+
+            var executionTime = new Date() - startTime;
+            if (this.state.scan_rate > executionTime) {
+                await delay(this.state.scan_rate - executionTime);
+            }
+        }
     }
 
     /**
