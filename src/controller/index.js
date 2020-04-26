@@ -405,6 +405,7 @@ class Controller extends ENIP {
         this.state.scanning = true;
 
         while (this.state.scanning) {
+            var startTime = new Date();
             await this.workers.group
                 .schedule(this._readTagGroup.bind(this), [this.state.subs], {
                     priority: 10,
@@ -431,7 +432,10 @@ class Controller extends ENIP {
                     }
                 });
 
-            await delay(this.state.scan_rate);
+            var executionTime = new Date() - startTime;
+            if (this.state.scan_rate > executionTime) {
+                await delay(this.state.scan_rate - executionTime);
+            }
         }
     }
 
