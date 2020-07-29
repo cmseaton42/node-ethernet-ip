@@ -61,10 +61,10 @@ const build = (type, address, padded = true) => {
         format = 2;
 
         if (padded) {
-            Buffer.alloc(6);
+            buf = Buffer.alloc(6);
             buf.writeUInt32LE(address, 2);
         } else {
-            Buffer.alloc(5);
+            buf = Buffer.alloc(5);
             buf.writeUInt32LE(address, 1);
         }
     }
