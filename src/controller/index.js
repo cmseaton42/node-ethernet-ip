@@ -490,9 +490,7 @@ class Controller extends ENIP {
             }),
             10000,
             readTagErr
-        );
-
-        this.removeAllListeners("Read Tag");
+        ).finally(() => this.removeAllListeners("Read Tag"));
 
         tag.parseReadMessageResponse(data);
     }
@@ -533,10 +531,11 @@ class Controller extends ENIP {
             }),
             10000,
             writeTagErr
-        );
+        ).finally(() => {
+            this.removeAllListeners("Write Tag");
+            this.removeAllListeners("Read Modify Write Tag");
+        });
 
-        this.removeAllListeners("Write Tag");
-        this.removeAllListeners("Read Modify Write Tag");
     }
 
     /**
@@ -566,9 +565,7 @@ class Controller extends ENIP {
                 }),
                 10000,
                 readTagGroupErr
-            );
-
-            this.removeAllListeners("Multiple Service Packet");
+            ).finally(() => this.removeAllListeners("Multiple Service Packet"));
 
             // Parse Messages
             group.parseReadMessageResponses(data, msg.tag_ids);
@@ -602,9 +599,7 @@ class Controller extends ENIP {
                 }),
                 10000,
                 writeTagGroupErr
-            );
-
-            this.removeAllListeners("Multiple Service Packet");
+            ).finally(() => this.removeAllListeners("Multiple Service Packet"));
 
             group.parseWriteMessageRequests(data, msg.tag_ids);
         }
