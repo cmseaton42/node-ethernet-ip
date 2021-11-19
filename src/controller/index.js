@@ -476,7 +476,6 @@ class Controller extends ENIP {
     async _readTag(tag, size = null) {
         const MR = tag.generateReadMessageRequest(size);
 
-        this.write_cip(MR);
 
         const readTagErr = new Error(`TIMEOUT occurred while writing Reading Tag: ${tag.name}.`);
 
@@ -487,6 +486,7 @@ class Controller extends ENIP {
                     if (err) reject(err);
                     resolve(data);
                 });
+                this.write_cip(MR);
             }),
             10000,
             readTagErr
@@ -509,14 +509,11 @@ class Controller extends ENIP {
     async _writeTag(tag, value = null, size = 0x01) {
         const MR = tag.generateWriteMessageRequest(value, size);
 
-        this.write_cip(MR);
-
         const writeTagErr = new Error(`TIMEOUT occurred while writing Writing Tag: ${tag.name}.`);
 
         // Wait for Response
         await promiseTimeout(
             new Promise((resolve, reject) => {
-
                 // Full Tag Writing
                 this.on("Write Tag", (err, data) => {
                     if (err) reject(err);
@@ -532,6 +529,7 @@ class Controller extends ENIP {
                     tag.unstageWriteRequest();
                     resolve(data);
                 });
+                this.write_cip(MR);
             }),
             10000,
             writeTagErr
@@ -555,7 +553,6 @@ class Controller extends ENIP {
 
         // Send Each Multi Service Message
         for (let msg of messages) {
-            this.write_cip(msg.data);
 
             // Wait for Controller to Respond
             const data = await promiseTimeout(
@@ -565,6 +562,7 @@ class Controller extends ENIP {
 
                         resolve(data);
                     });
+                    this.write_cip(msg.data);
                 }),
                 10000,
                 readTagGroupErr
@@ -591,7 +589,6 @@ class Controller extends ENIP {
 
         // Send Each Multi Service Message
         for (let msg of messages) {
-            this.write_cip(msg.data);
 
             // Wait for Controller to Respond
             const data = await promiseTimeout(
@@ -601,6 +598,7 @@ class Controller extends ENIP {
 
                         resolve(data);
                     });
+                    this.write_cip(msg.data);
                 }),
                 10000,
                 writeTagGroupErr
