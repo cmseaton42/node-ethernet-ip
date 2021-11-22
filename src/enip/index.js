@@ -242,7 +242,7 @@ class ENIP extends Socket {
 
         // Handle buffers with multiple responses
         if(data.length > 24 + encapsulatedData.length) {
-            setImmediate(() => this._handleDataEvent(Buffer.subarray(data, 24 + encapsulatedData.length)));
+            setImmediate(() => this._handleDataEvent(data.subarray(24 + encapsulatedData.length)));
         }
 
         if (statusCode !== 0) {
