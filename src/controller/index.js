@@ -37,8 +37,7 @@ class Controller extends ENIP {
         };
 
         this.workers = {
-            read: new Queue(compare, queue_max_size),
-            write: new Queue(compare, queue_max_size),
+            readWrite: new Queue(compare, queue_max_size),
             group: new Queue(compare, queue_max_size)
         };
     }
@@ -336,7 +335,7 @@ class Controller extends ENIP {
      * @memberof Controller
      */
     readTag(tag, size = null) {
-        return this.workers.read.schedule(this._readTag.bind(this), [tag, size], {
+        return this.workers.readWrite.schedule(this._readTag.bind(this), [tag, size], {
             priority: 1,
             timestamp: new Date()
         });
@@ -352,7 +351,7 @@ class Controller extends ENIP {
      * @memberof Controller
      */
     writeTag(tag, value = null, size = 0x01) {
-        return this.workers.write.schedule(this._writeTag.bind(this), [tag, value, size], {
+        return this.workers.readWrite.schedule(this._writeTag.bind(this), [tag, value, size], {
             priority: 1,
             timestamp: new Date()
         });
