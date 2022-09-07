@@ -240,6 +240,11 @@ class ENIP extends Socket {
         const encapsulatedData = header.parse(data);
         const { statusCode, status, commandCode } = encapsulatedData;
 
+        // Handle buffers with multiple responses
+        if(data.length > 24 + encapsulatedData.length) {
+            setImmediate(() => this._handleDataEvent(data.subarray(24 + encapsulatedData.length)));
+        }
+
         if (statusCode !== 0) {
             console.log(`Error <${statusCode}>:`.red, status.red);
 
