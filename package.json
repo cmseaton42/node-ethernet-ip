@@ -36,7 +36,7 @@
         "coveralls": "^3.0.2",
         "eslint": "^4.19.1",
         "eslint-plugin-jest": "^21.22.0",
-        "jest": "^23.6.0"
+        "jest": "^29.3.1"
     },
     "author": "Canaan Seaton",
     "license": "MIT",
