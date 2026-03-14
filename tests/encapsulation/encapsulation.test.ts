@@ -4,7 +4,7 @@ import {
   sendRRData,
   sendUnitData,
 } from '@/encapsulation/encapsulation';
-import { parseHeader, EIP_HEADER_SIZE } from '@/encapsulation/header';
+import { parseHeader } from '@/encapsulation/header';
 import { parseCPF, CPFItemType } from '@/encapsulation/common-packet-format';
 import { EIPCommand } from '@/encapsulation/commands';
 

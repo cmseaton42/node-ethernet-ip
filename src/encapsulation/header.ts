@@ -29,7 +29,7 @@ const OFFSET = {
 } as const;
 
 /** Field sizes in bytes */
-const SIZE = {
+export const SIZE = {
   COMMAND: 2,
   LENGTH: 2,
   SESSION: 4,
