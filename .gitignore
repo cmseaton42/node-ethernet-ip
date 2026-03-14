@@ -9,4 +9,6 @@
 /coverage
 
 # Ignore Local Script Folder
-/scriptsagent-instruction.md
+/scripts
+
+agent-instruction.md
