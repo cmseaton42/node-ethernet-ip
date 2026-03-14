@@ -1,6 +1,7 @@
 import { SessionManager, ConnectionState } from '@/session';
 import { MockTransport } from '@/transport/mock-transport';
 import { EIPCommand } from '@/encapsulation/commands';
+import { ConnectionError } from '@/errors';
 
 /**
  * Build a mock RegisterSession response.
@@ -110,5 +111,50 @@ describe('SessionManager', () => {
     expect(session.state).toBe(ConnectionState.Disconnected);
     expect(session.sessionId).toBe(0);
     expect(session.pipeline).toBeNull();
+  });
+});
+
+// Additional coverage tests in a separate describe block
+describe('SessionManager error paths', () => {
+  let transport: MockTransport;
+  let session: SessionManager;
+
+  beforeEach(() => {
+    transport = new MockTransport();
+    session = new SessionManager(transport);
+  });
+
+  it('throws ConnectionError when TCP connect fails', async () => {
+    transport.connect = () => Promise.reject(new Error('ECONNREFUSED'));
+
+    await expect(session.connect('192.168.1.1')).rejects.toBeInstanceOf(ConnectionError);
+    expect(session.state).toBe(ConnectionState.Disconnected);
+  });
+
+  it('transitions to Disconnected on transport close', async () => {
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+
+    const disconnectedPromise = new Promise<void>((resolve) => {
+      session.on('disconnected', resolve);
+    });
+
+    transport.triggerClose();
+    await disconnectedPromise;
+
+    expect(session.state).toBe(ConnectionState.Disconnected);
+  });
+
+  it('emits error event on transport error', async () => {
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+
+    const errorPromise = new Promise<Error>((resolve) => {
+      session.on('error', resolve);
+    });
+
+    transport.triggerError(new Error('socket error'));
+    const emitted = await errorPromise;
+    expect(emitted.message).toBe('socket error');
   });
 });
