@@ -34,7 +34,7 @@ export interface ReconnectOptions {
 export const DEFAULT_RECONNECT: ReconnectOptions = {
   enabled: false,
   initialDelay: 1000,
-  maxDelay: 30000,
+  maxDelay: 10000,
   multiplier: 2,
   maxRetries: Infinity,
 };
