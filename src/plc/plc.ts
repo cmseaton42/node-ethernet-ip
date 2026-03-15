@@ -86,14 +86,14 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     const cipRequest = buildReadRequest(tagName);
     const cipResponse = await this.sendCIP(cipRequest);
     const mr = MessageRouter.parse(cipResponse);
-    const { type, value } = parseReadResponse(mr.data, tagName);
+    const { type, isStruct, value } = parseReadResponse(mr.data, tagName);
 
-    // Lazy discovery: cache type
+    // Lazy discovery: cache type (struct handle for structs, CIP type code for atomics)
     if (!this._registry.has(tagName)) {
       this._registry.register(tagName, {
         type,
         size: TYPE_SIZES.get(type as CIPDataType) ?? 0,
-        isStruct: !!(type & 0x8000),
+        isStruct,
         arrayDims: 0,
       });
     }
@@ -113,7 +113,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     const cipRequest =
       bitIndex !== null
         ? buildBitWriteRequest(tagName, value as boolean, entry.type)
-        : buildWriteRequest(tagName, value, entry.type);
+        : buildWriteRequest(tagName, value, entry.type, 1, entry.isStruct ? entry.type : undefined);
 
     const cipResponse = await this.sendCIP(cipRequest);
     const mr = MessageRouter.parse(cipResponse);

@@ -8,26 +8,48 @@ import { getCodec, CIPDataType, TYPE_SIZES } from '@/cip/data-types';
 import { TagValue } from './types';
 import { buildTagPath, extractBitIndex } from './tag-path';
 
+/** Struct Tag Type Service Parameter marker bytes: A0 02 */
+const STRUCT_MARKER_BYTE_0 = 0xa0;
+const STRUCT_MARKER_BYTE_1 = 0x02;
+
 /**
  * Build a CIP Write Tag request.
- * Data layout: [typeCode(2), count(2), encodedValue(N)]
+ *
+ * Atomic data layout:  [typeCode(2), count(2), encodedValue(N)]
+ * Struct data layout:  [A0 02(2), structHandle(2), count(2), rawValue(N)]
+ *
+ * @param structHandle - When provided, writes 4-byte struct type param instead of 2-byte atomic
  */
 export function buildWriteRequest(
   tagName: string,
   value: TagValue,
   typeCode: number,
   count = 1,
+  structHandle?: number,
 ): Buffer {
   const path = buildTagPath(tagName);
+
+  if (structHandle !== undefined) {
+    // Struct: value must be a Buffer (raw struct data)
+    const raw = value as Buffer;
+    const HEADER_SIZE = 6; // A0 02(2) + handle(2) + count(2)
+    const data = Buffer.alloc(HEADER_SIZE + raw.length);
+    data.writeUInt8(STRUCT_MARKER_BYTE_0, 0);
+    data.writeUInt8(STRUCT_MARKER_BYTE_1, 1);
+    data.writeUInt16LE(structHandle, 2);
+    data.writeUInt16LE(count, 4);
+    raw.copy(data, HEADER_SIZE);
+    return MessageRouter.build(CIPService.WRITE_TAG, path, data);
+  }
+
+  // Atomic
   const codec = getCodec(typeCode as CIPDataType);
   const encoded = codec.encode(value);
-
   const HEADER_SIZE = 4; // typeCode(2) + count(2)
   const data = Buffer.alloc(HEADER_SIZE + encoded.length);
   data.writeUInt16LE(typeCode, 0);
   data.writeUInt16LE(count, 2);
   encoded.copy(data, HEADER_SIZE);
-
   return MessageRouter.build(CIPService.WRITE_TAG, path, data);
 }
 
