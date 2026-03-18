@@ -13,6 +13,7 @@ import { parseHeader } from '@/encapsulation/header';
 import { parseCPF } from '@/encapsulation/common-packet-format';
 import { extractCIPData } from './cpf-utils';
 import * as MessageRouter from '@/cip/message-router';
+import { buildBatches, BatchRequest, parseMultiServiceResponse } from '@/cip/batch-builder';
 import { TYPE_SIZES, CIPDataType } from '@/cip/data-types';
 import { CIPError } from '@/errors';
 import { PLCEvents, PLCConnectOptions, TagValue, resolveConnectOptions } from './types';
@@ -22,6 +23,9 @@ import { extractBitIndex } from './tag-path';
 
 /** InterfaceHandle(4) + Timeout(2) prefix before CPF data */
 const CPF_PREFIX_SIZE = 6;
+
+/** Max usable packet size for unconnected messaging (UCMM) */
+const UCMM_MAX_SIZE = 508;
 
 export class PLC extends TypedEventEmitter<PLCEvents> {
   private session: SessionManager;
@@ -64,31 +68,36 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
   async read(tags: string[]): Promise<TagValue[]>;
   async read(tagOrTags: string | string[]): Promise<TagValue | TagValue[]> {
     if (Array.isArray(tagOrTags)) {
-      const results: TagValue[] = [];
-      for (const tag of tagOrTags) {
-        results.push(await this.readSingle(tag));
-      }
-      return results;
+      if (tagOrTags.length === 1) return [await this.readSingle(tagOrTags[0])];
+      return this.readBatch(tagOrTags);
     }
     return this.readSingle(tagOrTags);
   }
 
   async write(tag: string, value: TagValue): Promise<void>;
-  async write(tags: [string, TagValue][]): Promise<void>;
-  async write(tagOrTags: string | [string, TagValue][], value?: TagValue): Promise<void> {
-    if (Array.isArray(tagOrTags)) {
-      for (const [tag, val] of tagOrTags) {
-        await this.writeSingle(tag, val);
-      }
+  async write(tags: Record<string, TagValue>): Promise<void>;
+  async write(tagOrTags: string | Record<string, TagValue>, value?: TagValue): Promise<void> {
+    if (typeof tagOrTags === 'string') {
+      await this.writeSingle(tagOrTags, value!);
       return;
     }
-    await this.writeSingle(tagOrTags, value!);
+    const entries = Object.entries(tagOrTags);
+    if (entries.length === 1) {
+      await this.writeSingle(entries[0][0], entries[0][1]);
+      return;
+    }
+    await this.writeBatch(tagOrTags);
   }
 
   private async readSingle(tagName: string): Promise<TagValue> {
     const cipRequest = buildReadRequest(tagName);
     const cipResponse = await this.sendCIP(cipRequest);
     const mr = MessageRouter.parse(cipResponse);
+
+    if (mr.generalStatusCode !== 0) {
+      throw new CIPError(mr.generalStatusCode, mr.extendedStatus);
+    }
+
     const { type, isStruct, value } = parseReadResponse(mr.data, tagName);
 
     // Lazy discovery: cache type (struct handle for structs, CIP type code for atomics)
@@ -102,6 +111,58 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     }
 
     return value;
+  }
+
+  private async readBatch(tags: string[]): Promise<TagValue[]> {
+    // Discover unknown types first (sequential)
+    for (const tag of tags) {
+      if (!this._registry.has(tag)) await this.readSingle(tag);
+    }
+
+    // Build individual read requests with estimated response sizes
+    const requests: BatchRequest[] = tags.map((tag) => {
+      const entry = this._registry.lookup(tag)!;
+      return {
+        serviceData: buildReadRequest(tag),
+        estimatedResponseSize: (entry.size || 88) + 4, // data + type param + MR header
+      };
+    });
+
+    const maxSize = this.session.connectionSize || UCMM_MAX_SIZE;
+    const batches = buildBatches(requests, maxSize);
+
+    // Send each batch and collect results
+    const results: TagValue[] = [];
+    let tagIdx = 0;
+
+    for (const batch of batches) {
+      const cipResponse = await this.sendCIP(batch.data);
+      const mr = MessageRouter.parse(cipResponse);
+
+      if (mr.generalStatusCode !== 0) {
+        throw new CIPError(mr.generalStatusCode, mr.extendedStatus);
+      }
+
+      if (batch.requests.length === 1) {
+        // Single request in batch — already a plain CIP request, no multi-service wrapper
+        const { value } = parseReadResponse(mr.data, tags[tagIdx]);
+        results.push(value);
+        tagIdx++;
+      } else {
+        const replies = parseMultiServiceResponse(mr.data);
+
+        for (const reply of replies) {
+          if (reply.generalStatusCode !== 0) {
+            throw new CIPError(reply.generalStatusCode, reply.extendedStatus);
+          }
+          const { value } = parseReadResponse(reply.data, tags[tagIdx]);
+          results.push(value);
+          tagIdx++;
+        }
+      }
+    }
+
+    return results;
   }
 
   private async writeSingle(tagName: string, value: TagValue): Promise<void> {
@@ -123,6 +184,47 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     if (mr.generalStatusCode !== 0) {
       throw new CIPError(mr.generalStatusCode, mr.extendedStatus);
+    }
+  }
+
+  private async writeBatch(tags: Record<string, TagValue>): Promise<void> {
+    const entries = Object.entries(tags);
+
+    // Discover unknown types first
+    for (const [tag] of entries) {
+      if (!this._registry.has(tag)) await this.readSingle(tag);
+    }
+
+    // Build individual write requests
+    const requests: BatchRequest[] = entries.map(([tag, val]) => {
+      const entry = this._registry.lookup(tag)!;
+      const bitIndex = extractBitIndex(tag);
+      const serviceData =
+        bitIndex !== null
+          ? buildBitWriteRequest(tag, val as boolean, entry.type)
+          : buildWriteRequest(tag, val, entry.type, 1, entry.isStruct ? entry.type : undefined);
+      return { serviceData, estimatedResponseSize: 4 }; // write replies are just status
+    });
+
+    const maxSize = this.session.connectionSize || UCMM_MAX_SIZE;
+    const batches = buildBatches(requests, maxSize);
+
+    for (const batch of batches) {
+      const cipResponse = await this.sendCIP(batch.data);
+      const mr = MessageRouter.parse(cipResponse);
+
+      if (mr.generalStatusCode !== 0) {
+        throw new CIPError(mr.generalStatusCode, mr.extendedStatus);
+      }
+
+      if (batch.requests.length > 1) {
+        const replies = parseMultiServiceResponse(mr.data);
+        for (const reply of replies) {
+          if (reply.generalStatusCode !== 0) {
+            throw new CIPError(reply.generalStatusCode, reply.extendedStatus);
+          }
+        }
+      }
     }
   }
 

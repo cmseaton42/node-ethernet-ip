@@ -126,3 +126,25 @@ function assembleBatch(requests: BatchRequest[]): Batch {
 
   return { requests, data };
 }
+
+/**
+ * Parse a Multi-Service Packet response into individual MR responses.
+ *
+ * Response layout (after MR header is stripped):
+ *   [count(2), offset0(2), offset1(2), ..., reply0, reply1, ...]
+ *
+ * Offsets are relative to the count field.
+ * Each reply is a standard Message Router response.
+ */
+export function parseMultiServiceResponse(data: Buffer): MessageRouter.MessageRouterResponse[] {
+  const count = data.readUInt16LE(0);
+  const replies: MessageRouter.MessageRouterResponse[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const offset = data.readUInt16LE(2 + i * 2);
+    const nextOffset = i + 1 < count ? data.readUInt16LE(2 + (i + 1) * 2) : data.length;
+    replies.push(MessageRouter.parse(data.subarray(offset, nextOffset)));
+  }
+
+  return replies;
+}

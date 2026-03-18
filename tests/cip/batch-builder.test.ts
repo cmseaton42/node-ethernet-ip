@@ -1,4 +1,4 @@
-import { buildBatches, BatchRequest } from '@/cip/batch-builder';
+import { buildBatches, BatchRequest, parseMultiServiceResponse } from '@/cip/batch-builder';
 
 function makeRequest(serviceSize: number, responseSize: number): BatchRequest {
   return {
@@ -101,5 +101,53 @@ describe('buildBatches', () => {
     // base(2) + per(2) + 500 = 504 — exactly 1 per batch
     // Second request triggers split, gets sealed, nothing left
     expect(batches.length).toBe(2);
+  });
+});
+
+describe('parseMultiServiceResponse', () => {
+  it('parses a response with two replies', () => {
+    // Reply 0: service=0xCC, reserved=0, status=0, extLen=0, data=[C4 00 2A 00 00 00]
+    const reply0 = Buffer.from([0xcc, 0x00, 0x00, 0x00, 0xc4, 0x00, 0x2a, 0x00, 0x00, 0x00]);
+    // Reply 1: service=0xCC, reserved=0, status=0, extLen=0, data=[C1 00 FF]
+    const reply1 = Buffer.from([0xcc, 0x00, 0x00, 0x00, 0xc1, 0x00, 0xff]);
+
+    // count(2) + offset0(2) + offset1(2) + reply0 + reply1
+    const headerSize = 2 + 2 * 2; // count + 2 offsets
+    const buf = Buffer.alloc(headerSize + reply0.length + reply1.length);
+    buf.writeUInt16LE(2, 0); // count
+    buf.writeUInt16LE(headerSize, 2); // offset to reply0
+    buf.writeUInt16LE(headerSize + reply0.length, 4); // offset to reply1
+    reply0.copy(buf, headerSize);
+    reply1.copy(buf, headerSize + reply0.length);
+
+    const replies = parseMultiServiceResponse(buf);
+    expect(replies).toHaveLength(2);
+    expect(replies[0].generalStatusCode).toBe(0);
+    expect(replies[0].data.readUInt16LE(0)).toBe(0x00c4); // DINT type
+    expect(replies[1].generalStatusCode).toBe(0);
+    expect(replies[1].data.readUInt8(2)).toBe(0xff); // BOOL true
+  });
+
+  it('parses a single reply', () => {
+    const reply = Buffer.from([0xcc, 0x00, 0x00, 0x00, 0xc3, 0x00, 0x07, 0x00]);
+    const buf = Buffer.alloc(4 + reply.length);
+    buf.writeUInt16LE(1, 0);
+    buf.writeUInt16LE(4, 2); // offset
+    reply.copy(buf, 4);
+
+    const replies = parseMultiServiceResponse(buf);
+    expect(replies).toHaveLength(1);
+    expect(replies[0].generalStatusCode).toBe(0);
+  });
+
+  it('handles reply with non-zero status', () => {
+    const reply = Buffer.from([0xcc, 0x00, 0x05, 0x00]); // status 0x05 = path unknown
+    const buf = Buffer.alloc(4 + reply.length);
+    buf.writeUInt16LE(1, 0);
+    buf.writeUInt16LE(4, 2);
+    reply.copy(buf, 4);
+
+    const replies = parseMultiServiceResponse(buf);
+    expect(replies[0].generalStatusCode).toBe(0x05);
   });
 });

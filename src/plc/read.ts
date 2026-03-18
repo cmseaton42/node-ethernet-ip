@@ -47,6 +47,10 @@ export function parseReadResponse(
   data: Buffer,
   tagName: string,
 ): { type: number; isStruct: boolean; value: TagValue } {
+  if (data.length < ATOMIC_TYPE_SIZE) {
+    throw new Error(`Read response too short (${data.length} bytes) for tag "${tagName}"`);
+  }
+
   const isStruct = isStructTypeParam(data);
   const typeCode = isStruct ? data.readUInt16LE(2) : data.readUInt16LE(0);
   const valueData = data.subarray(isStruct ? STRUCT_TYPE_SIZE : ATOMIC_TYPE_SIZE);

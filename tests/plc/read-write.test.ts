@@ -31,6 +31,18 @@ describe('isStructTypeParam', () => {
 });
 
 describe('parseReadResponse', () => {
+  it('throws on empty buffer', () => {
+    expect(() => parseReadResponse(Buffer.alloc(0), 'MyTag')).toThrow('too short');
+  });
+
+  it('throws on 1-byte buffer', () => {
+    expect(() => parseReadResponse(Buffer.alloc(1), 'MyTag')).toThrow('too short');
+  });
+
+  it('includes tag name in short buffer error', () => {
+    expect(() => parseReadResponse(Buffer.alloc(0), 'SomeTag')).toThrow('SomeTag');
+  });
+
   it('parses DINT value', () => {
     const codec = getCodec(CIPDataType.DINT);
     const encoded = codec.encode(42);
@@ -184,7 +196,7 @@ describe('extractCIPData', () => {
     const cipPayload = Buffer.from([0xcc, 0x00, 0x00, 0x00, 0x2a]);
     const items = [
       { typeId: 0x0000, data: Buffer.alloc(0) }, // Null
-      { typeId: 0x00b2, data: cipPayload },       // UCMM
+      { typeId: 0x00b2, data: cipPayload }, // UCMM
     ];
     expect(extractCIPData(items).equals(cipPayload)).toBe(true);
   });
@@ -195,8 +207,8 @@ describe('extractCIPData', () => {
     withSeq.writeUInt16LE(7, 0); // sequence count
     cipPayload.copy(withSeq, 2);
     const items = [
-      { typeId: 0x00a1, data: Buffer.alloc(4) },  // Connected Address
-      { typeId: 0x00b1, data: withSeq },           // Connected Transport
+      { typeId: 0x00a1, data: Buffer.alloc(4) }, // Connected Address
+      { typeId: 0x00b1, data: withSeq }, // Connected Transport
     ];
     expect(extractCIPData(items).equals(cipPayload)).toBe(true);
   });
