@@ -25,6 +25,7 @@ export const LARGE_CONNECTION_SIZE = 4002;
 const BACKPLANE_PORT = 1;
 
 export interface ForwardOpenResult {
+  connectionId: number;
   connectionSize: number;
   connectionSerial: number;
 }
@@ -132,7 +133,10 @@ async function sendForwardOpen(
     );
   }
 
-  return { connectionSize: size, connectionSerial };
+  // Forward Open response: O→T Connection ID at offset 0 (UINT32LE)
+  const connectionId = mrResponse.data.readUInt32LE(0);
+
+  return { connectionId, connectionSize: size, connectionSerial };
 }
 
 /**

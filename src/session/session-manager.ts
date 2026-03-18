@@ -17,8 +17,10 @@ const EIP_PORT = 44818;
 export class SessionManager extends TypedEventEmitter<SessionEvents> {
   private _state = ConnectionState.Disconnected;
   private _sessionId = 0;
+  private _connectionId = 0;
   private _connectionSize = 0;
   private _connectionSerial = 0;
+  private _sequenceCount = 0;
   private _pipeline: RequestPipeline | null = null;
   private _options = DEFAULT_CONNECT_OPTIONS;
   private _reconnector: Reconnector | null = null;
@@ -34,11 +36,19 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
   get sessionId(): number {
     return this._sessionId;
   }
+  get connectionId(): number {
+    return this._connectionId;
+  }
   get connectionSize(): number {
     return this._connectionSize;
   }
   get pipeline(): RequestPipeline | null {
     return this._pipeline;
+  }
+
+  /** Get and increment the sequence counter for connected messaging. */
+  nextSequence(): number {
+    return this._sequenceCount++ & 0xffff;
   }
 
   async connect(ip: string, options: Partial<ConnectOptions> = {}): Promise<void> {
@@ -58,20 +68,37 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     this.transport.onClose(() => this.handleClose());
     this.transport.onError((err) => this.emit('error', err));
 
-    // Register Session
-    this.setState(ConnectionState.Registering);
-    this._sessionId = await doRegisterSession(this._pipeline, this._options.timeoutMs);
+    try {
+      // Register Session
+      this.setState(ConnectionState.Registering);
+      this._sessionId = await doRegisterSession(this._pipeline, this._options.timeoutMs);
 
-    // Forward Open (Large → Small fallback)
-    this.setState(ConnectionState.ForwardOpening);
-    const result = await doForwardOpen(
-      this._pipeline,
-      this._sessionId,
-      this._options.slot,
-      this._options.timeoutMs,
-    );
-    this._connectionSize = result.connectionSize;
-    this._connectionSerial = result.connectionSerial;
+      // Forward Open (connected messaging)
+      if (this._options.connected) {
+        this.setState(ConnectionState.ForwardOpening);
+        try {
+          const result = await doForwardOpen(
+            this._pipeline,
+            this._sessionId,
+            this._options.slot,
+            this._options.timeoutMs,
+          );
+          this._connectionId = result.connectionId;
+          this._connectionSize = result.connectionSize;
+          this._connectionSerial = result.connectionSerial;
+        } catch (err) {
+          throw new ConnectionError(
+            `Forward Open failed — the PLC rejected both Large and Small connection requests. ` +
+              `Try connecting with { connected: false } to use unconnected messaging. ` +
+              `Original error: ${(err as Error).message}`,
+          );
+        }
+      }
+    } catch (err) {
+      this.cleanup();
+      this.setState(ConnectionState.Disconnected);
+      throw err;
+    }
 
     this.setState(ConnectionState.Connected);
   }
@@ -107,8 +134,10 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     this.transport.close();
     this._pipeline = null;
     this._sessionId = 0;
+    this._connectionId = 0;
     this._connectionSize = 0;
     this._connectionSerial = 0;
+    this._sequenceCount = 0;
   }
 
   private handleClose(): void {
@@ -117,7 +146,9 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     this._pipeline?.flush(new ConnectionError('Transport closed'));
     this._pipeline = null;
     this._sessionId = 0;
+    this._connectionId = 0;
     this._connectionSize = 0;
+    this._sequenceCount = 0;
 
     if (this._options.reconnect.enabled) {
       this.setState(ConnectionState.Reconnecting);

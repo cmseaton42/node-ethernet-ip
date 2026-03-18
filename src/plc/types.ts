@@ -19,6 +19,8 @@ export interface PLCConnectOptions {
   slot?: number;
   discover?: boolean;
   timeout?: number;
+  /** Use connected messaging via Forward Open (default: true). Set false for unconnected (UCMM) only. */
+  connected?: boolean;
   autoReconnect?: boolean | ReconnectOptions;
 }
 
@@ -32,6 +34,7 @@ export function resolveConnectOptions(opts: PLCConnectOptions = {}) {
     slot: opts.slot ?? 0,
     discover: opts.discover ?? false,
     timeoutMs: opts.timeout ?? 10000,
+    connected: opts.connected ?? true,
     reconnect,
   };
 }

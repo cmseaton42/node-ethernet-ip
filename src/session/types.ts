@@ -42,11 +42,13 @@ export const DEFAULT_RECONNECT: ReconnectOptions = {
 export interface ConnectOptions {
   slot: number;
   timeoutMs: number;
+  connected: boolean;
   reconnect: ReconnectOptions;
 }
 
 export const DEFAULT_CONNECT_OPTIONS: ConnectOptions = {
   slot: 0,
   timeoutMs: 10000,
+  connected: true,
   reconnect: DEFAULT_RECONNECT,
 };

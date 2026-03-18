@@ -8,7 +8,7 @@ import { TCPTransport } from '@/transport/tcp-transport';
 import { SessionManager } from '@/session/session-manager';
 import { TagRegistry } from '@/registry/tag-registry';
 import { discoverUserTags } from '@/registry/discovery';
-import { sendRRData } from '@/encapsulation/encapsulation';
+import { sendRRData, sendUnitData } from '@/encapsulation/encapsulation';
 import { parseHeader } from '@/encapsulation/header';
 import * as MessageRouter from '@/cip/message-router';
 import { TYPE_SIZES, CIPDataType } from '@/cip/data-types';
@@ -18,8 +18,17 @@ import { buildReadRequest, parseReadResponse } from './read';
 import { buildWriteRequest, buildBitWriteRequest } from './write';
 import { extractBitIndex } from './tag-path';
 
-/** Offset to CIP data within SendRRData response */
-const CIP_DATA_OFFSET = 16;
+/** Offset to CIP data within SendUnitData response:
+ *  InterfaceHandle(4) + Timeout(2) + ItemCount(2) +
+ *  ConnAddr TypeId(2) + ConnAddr Len(2) + ConnectionId(4) +
+ *  ConnData TypeId(2) + ConnData Len(2) + SequenceCount(2) = 22 */
+const CONNECTED_CIP_OFFSET = 22;
+
+/** Offset to CIP data within SendRRData response:
+ *  InterfaceHandle(4) + Timeout(2) + ItemCount(2) +
+ *  NullAddr TypeId(2) + NullAddr Len(2) +
+ *  UCMM TypeId(2) + UCMM Len(2) = 16 */
+const UNCONNECTED_CIP_OFFSET = 16;
 
 export class PLC extends TypedEventEmitter<PLCEvents> {
   private session: SessionManager;
@@ -45,6 +54,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     await this.session.connect(ip, {
       slot: opts.slot,
       timeoutMs: opts.timeoutMs,
+      connected: opts.connected,
       reconnect: opts.reconnect,
     });
 
@@ -139,9 +149,19 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
   private async sendCIP(cipRequest: Buffer): Promise<Buffer> {
     if (!this.session.pipeline) throw new Error('Not connected');
-    const eipPacket = sendRRData(this.session.sessionId, cipRequest);
+
+    const isConnected = this.session.connectionId !== 0;
+    const eipPacket = isConnected
+      ? sendUnitData(
+          this.session.sessionId,
+          cipRequest,
+          this.session.connectionId,
+          this.session.nextSequence(),
+        )
+      : sendRRData(this.session.sessionId, cipRequest);
+
     const response = await this.session.pipeline.send(eipPacket);
     const parsed = parseHeader(response);
-    return parsed.data.subarray(CIP_DATA_OFFSET);
+    return parsed.data.subarray(isConnected ? CONNECTED_CIP_OFFSET : UNCONNECTED_CIP_OFFSET);
   }
 }
