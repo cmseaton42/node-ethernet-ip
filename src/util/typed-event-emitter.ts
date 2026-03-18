@@ -37,7 +37,11 @@ export class TypedEventEmitter<T extends EventMap> {
   }
 
   removeAllListeners<K extends keyof T & string>(event?: K): this {
-    this.emitter.removeAllListeners(event);
+    if (event) {
+      this.emitter.removeAllListeners(event);
+    } else {
+      this.emitter.removeAllListeners();
+    }
     return this;
   }
 }
