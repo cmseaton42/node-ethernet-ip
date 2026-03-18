@@ -8,7 +8,7 @@ export class MockTransport implements ITransport {
   private closeHandler: ((hadError: boolean) => void) | null = null;
   private errorHandler: ((err: Error) => void) | null = null;
 
-  connect(_host: string, _port: number): Promise<void> {
+  connect(_host: string, _port: number, _timeoutMs?: number): Promise<void> {
     this.connected = true;
     return Promise.resolve();
   }

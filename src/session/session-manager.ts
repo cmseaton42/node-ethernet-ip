@@ -58,7 +58,7 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     // TCP connect
     this.setState(ConnectionState.Connecting);
     try {
-      await this.transport.connect(ip, EIP_PORT);
+      await this.transport.connect(ip, EIP_PORT, this._options.timeoutMs);
     } catch (err) {
       this.setState(ConnectionState.Disconnected);
       throw new ConnectionError(`TCP connect failed: ${(err as Error).message}`);

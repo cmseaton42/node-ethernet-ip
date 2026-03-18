@@ -243,6 +243,31 @@ describe('SessionManager connected option', () => {
   });
 });
 
+
+describe('SessionManager passes timeoutMs to transport', () => {
+  it('calls transport.connect with the configured timeout', async () => {
+    const transport = new MockTransport();
+    const connectSpy = jest.spyOn(transport, 'connect');
+    const session = new SessionManager(transport);
+
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1', { timeoutMs: 3000 });
+
+    expect(connectSpy).toHaveBeenCalledWith('192.168.1.1', 44818, 3000);
+  });
+
+  it('uses default timeout when not specified', async () => {
+    const transport = new MockTransport();
+    const connectSpy = jest.spyOn(transport, 'connect');
+    const session = new SessionManager(transport);
+
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+
+    expect(connectSpy).toHaveBeenCalledWith('192.168.1.1', 44818, 10000);
+  });
+});
+
 describe('SessionManager reconnect on close', () => {
   it('enters Reconnecting state when autoReconnect enabled', async () => {
     const transport = new MockTransport();
@@ -265,6 +290,9 @@ describe('SessionManager reconnect on close', () => {
     // Give reconnector time to schedule
     await new Promise((r) => setTimeout(r, 50));
     expect(session.state).toBe(ConnectionState.Reconnecting);
+
+    // Cancel pending reconnect timer to avoid leaking handles
+    await session.disconnect();
   });
 
   it('resets connectionId and sequenceCount on close', async () => {
@@ -283,5 +311,20 @@ describe('SessionManager reconnect on close', () => {
 
     expect(session.connectionId).toBe(0);
     expect(session.connectionSize).toBe(0);
+  });
+
+  it('falls back to Disconnected when maxRetries is 0', async () => {
+    const transport = new MockTransport();
+    const session = new SessionManager(transport);
+
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1', {
+      reconnect: { enabled: true, initialDelay: 100, maxDelay: 100, multiplier: 1, maxRetries: 0 },
+    });
+
+    transport.triggerClose();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(session.state).toBe(ConnectionState.Disconnected);
   });
 });
