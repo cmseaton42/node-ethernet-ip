@@ -21,6 +21,12 @@ describe('EIPError', () => {
     expect(err.context).toEqual({ foo: 'bar' });
     expect(err).toBeInstanceOf(Error);
   });
+
+  it('defaults code to 0 and context to empty', () => {
+    const err = new EIPError('test');
+    expect(err.code).toBe(0);
+    expect(err.context).toEqual({});
+  });
 });
 
 describe('ConnectionError', () => {
@@ -37,6 +43,11 @@ describe('SessionError', () => {
     expect(err.code).toBe(0x64);
     expect(err).toBeInstanceOf(EIPError);
   });
+
+  it('defaults code to 0', () => {
+    const err = new SessionError('fail');
+    expect(err.code).toBe(0);
+  });
 });
 
 describe('ForwardOpenError', () => {
@@ -45,6 +56,11 @@ describe('ForwardOpenError', () => {
     expect(err.rejectionReason).toBe(0x01);
     expect(err.name).toBe('ForwardOpenError');
     expect(err).toBeInstanceOf(EIPError);
+  });
+
+  it('defaults rejection reason to 0', () => {
+    const err = new ForwardOpenError('fail');
+    expect(err.rejectionReason).toBe(0);
   });
 });
 

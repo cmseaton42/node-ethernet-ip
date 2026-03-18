@@ -116,13 +116,46 @@ describe('buildBitWriteRequest', () => {
     expect(buf[0]).toBe(CIPService.READ_MODIFY_WRITE_TAG);
   });
 
-  it('builds SINT mask (1 byte)', () => {
+  it('builds SINT set mask (1 byte)', () => {
     const buf = buildBitWriteRequest('MySINT.3', true, CIPDataType.SINT);
-    expect(buf[0]).toBe(CIPService.READ_MODIFY_WRITE_TAG);
+    const pathWords = buf[1];
+    const d = buf.subarray(2 + pathWords * 2);
+    expect(d.readUInt16LE(0)).toBe(1); // mask size = 1 byte
+    expect(d.readUInt8(2)).toBe(1 << 3); // OR mask: set bit 3
+    expect(d.readUInt8(3)).toBe(0xff); // AND mask: keep all
   });
 
-  it('builds INT mask (2 bytes)', () => {
+  it('builds SINT clear mask (1 byte)', () => {
+    const buf = buildBitWriteRequest('MySINT.3', false, CIPDataType.SINT);
+    const pathWords = buf[1];
+    const d = buf.subarray(2 + pathWords * 2);
+    expect(d.readUInt8(2)).toBe(0); // OR mask: set nothing
+    expect(d.readUInt8(3)).toBe(0xff & ~(1 << 3)); // AND mask: clear bit 3
+  });
+
+  it('builds INT set mask (2 bytes)', () => {
+    const buf = buildBitWriteRequest('MyINT.7', true, CIPDataType.INT);
+    const pathWords = buf[1];
+    const d = buf.subarray(2 + pathWords * 2);
+    expect(d.readUInt16LE(0)).toBe(2); // mask size = 2 bytes
+    expect(d.readUInt16LE(2)).toBe(1 << 7); // OR mask
+    expect(d.readUInt16LE(4)).toBe(0xffff); // AND mask
+  });
+
+  it('builds INT clear mask (2 bytes)', () => {
     const buf = buildBitWriteRequest('MyINT.7', false, CIPDataType.INT);
-    expect(buf[0]).toBe(CIPService.READ_MODIFY_WRITE_TAG);
+    const pathWords = buf[1];
+    const d = buf.subarray(2 + pathWords * 2);
+    expect(d.readUInt16LE(2)).toBe(0); // OR mask
+    expect(d.readUInt16LE(4)).toBe(0xffff & ~(1 << 7)); // AND mask
+  });
+
+  it('builds DINT clear mask (4 bytes)', () => {
+    const buf = buildBitWriteRequest('MyDINT.5', false, CIPDataType.DINT);
+    const pathWords = buf[1];
+    const d = buf.subarray(2 + pathWords * 2);
+    expect(d.readUInt16LE(0)).toBe(4); // mask size = 4 bytes
+    expect(d.readInt32LE(2)).toBe(0); // OR mask
+    expect(d.readInt32LE(6)).toBe(-1 & ~(1 << 5)); // AND mask
   });
 });

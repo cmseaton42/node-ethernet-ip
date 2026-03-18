@@ -158,3 +158,130 @@ describe('SessionManager error paths', () => {
     expect(emitted.message).toBe('socket error');
   });
 });
+
+describe('SessionManager connected option', () => {
+  let transport: MockTransport;
+  let session: SessionManager;
+
+  beforeEach(() => {
+    transport = new MockTransport();
+    session = new SessionManager(transport);
+  });
+
+  it('skips Forward Open when connected=false', async () => {
+    const states: string[] = [];
+    session.on('connecting', () => states.push('connecting'));
+    session.on('registering', () => states.push('registering'));
+    session.on('forward-opening', () => states.push('forward-opening'));
+    session.on('connected', () => states.push('connected'));
+
+    autoRespond(transport, [buildRegisterSessionResponse(0x42)]);
+
+    await session.connect('192.168.1.1', { connected: false });
+
+    expect(states).toEqual(['connecting', 'registering', 'connected']);
+    expect(session.connectionId).toBe(0);
+    expect(session.connectionSize).toBe(0);
+  });
+
+  it('stores connectionId from Forward Open response', async () => {
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+
+    // buildForwardOpenResponse writes 0x12345678 at offset 4 of CIP reply
+    expect(session.connectionId).toBe(0x12345678);
+  });
+
+  it('increments sequence counter', async () => {
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+
+    expect(session.nextSequence()).toBe(0);
+    expect(session.nextSequence()).toBe(1);
+    expect(session.nextSequence()).toBe(2);
+  });
+
+  it('wraps sequence counter at 16 bits', async () => {
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+
+    // Force counter near overflow
+    for (let i = 0; i < 0xffff; i++) session.nextSequence();
+    expect(session.nextSequence()).toBe(0xffff);
+    expect(session.nextSequence()).toBe(0); // wraps
+  });
+
+  it('cleans up on Forward Open failure', async () => {
+    // Only provide RegisterSession response — Forward Open will timeout/fail
+    const failCipReply = Buffer.alloc(8);
+    failCipReply.writeUInt8(0x54 | 0x80, 0);
+    failCipReply.writeUInt8(0x01, 2); // non-zero status = failure
+
+    const nullItem = Buffer.from([0x00, 0x00, 0x00, 0x00]);
+    const ucmmHeader = Buffer.alloc(4);
+    ucmmHeader.writeUInt16LE(0x00b2, 0);
+    ucmmHeader.writeUInt16LE(failCipReply.length, 2);
+    const prefix = Buffer.alloc(8);
+    prefix.writeUInt16LE(2, 6);
+    const fullPayload = Buffer.concat([prefix, nullItem, ucmmHeader, failCipReply]);
+    const header = Buffer.alloc(24);
+    header.writeUInt16LE(EIPCommand.SendRRData, 0);
+    header.writeUInt16LE(fullPayload.length, 2);
+    header.writeUInt32LE(0x01, 4);
+    const failResponse = Buffer.concat([header, fullPayload]);
+
+    autoRespond(transport, [
+      buildRegisterSessionResponse(0x01),
+      failResponse, // Large Forward Open fails
+      failResponse, // Small Forward Open fails
+    ]);
+
+    await expect(session.connect('192.168.1.1')).rejects.toThrow('Forward Open failed');
+    expect(session.state).toBe(ConnectionState.Disconnected);
+    expect(session.sessionId).toBe(0);
+    expect(session.pipeline).toBeNull();
+  });
+});
+
+describe('SessionManager reconnect on close', () => {
+  it('enters Reconnecting state when autoReconnect enabled', async () => {
+    const transport = new MockTransport();
+    const session = new SessionManager(transport);
+    const states: string[] = [];
+
+    session.on('connected', () => states.push('connected'));
+    session.on('reconnecting', () => states.push('reconnecting'));
+
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1', {
+      reconnect: { enabled: true, initialDelay: 100, maxDelay: 100, multiplier: 1, maxRetries: 1 },
+    });
+
+    expect(states).toContain('connected');
+
+    // Trigger close — should enter reconnecting
+    transport.triggerClose();
+
+    // Give reconnector time to schedule
+    await new Promise((r) => setTimeout(r, 50));
+    expect(session.state).toBe(ConnectionState.Reconnecting);
+  });
+
+  it('resets connectionId and sequenceCount on close', async () => {
+    const transport = new MockTransport();
+    const session = new SessionManager(transport);
+
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+
+    session.nextSequence();
+    session.nextSequence();
+    expect(session.connectionId).not.toBe(0);
+
+    transport.triggerClose();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(session.connectionId).toBe(0);
+    expect(session.connectionSize).toBe(0);
+  });
+});
