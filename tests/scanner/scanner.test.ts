@@ -139,3 +139,67 @@ describe('Scanner', () => {
     scanner.pauseScan();
   });
 });
+
+describe('Scanner mid-scan unsubscribe', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('skips unsubscribed tags on next tick', async () => {
+    let callCount = 0;
+    const readFn = jest.fn().mockImplementation(async (tags: string[]) => {
+      callCount++;
+      return tags.map(() => callCount);
+    });
+
+    const scanner = new Scanner(readFn);
+    const changed = jest.fn();
+
+    scanner.subscribe('TagA', { rate: 100 });
+    scanner.subscribe('TagB', { rate: 100 });
+    scanner.on('tagChanged', changed);
+    scanner.scan();
+
+    // First tick — both initialized
+    jest.advanceTimersByTime(0);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Unsubscribe TagB
+    scanner.unsubscribe('TagB');
+
+    // Second tick — only TagA should be read
+    jest.advanceTimersByTime(100);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // readFn should have been called with only ['TagA'] on second tick
+    const lastCall = readFn.mock.calls[readFn.mock.calls.length - 1];
+    expect(lastCall[0]).toEqual(['TagA']);
+
+    scanner.pauseScan();
+  });
+
+  it('skips tick entirely when all tags unsubscribed', async () => {
+    const readFn = jest.fn().mockResolvedValue([1]);
+    const scanner = new Scanner(readFn);
+
+    scanner.subscribe('OnlyTag', { rate: 100 });
+    scanner.scan();
+
+    // First tick
+    jest.advanceTimersByTime(0);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const callsBefore = readFn.mock.calls.length;
+    scanner.unsubscribe('OnlyTag');
+
+    // Next tick — should not call readFn
+    jest.advanceTimersByTime(100);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(readFn.mock.calls.length).toBe(callsBefore);
+    scanner.pauseScan();
+  });
+});

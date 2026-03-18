@@ -115,11 +115,15 @@ export class Scanner extends TypedEventEmitter<ScanEvents> {
    * - Same value as last read → no event
    */
   private async readAndDetectChanges(subs: Subscription[]): Promise<void> {
-    const tagNames = subs.map((s) => s.tagName);
+    // Filter to only currently subscribed tags (handles mid-scan unsubscribe)
+    const activeSubs = subs.filter((s) => this.subscriptions.has(s.tagName.toLowerCase()));
+    if (activeSubs.length === 0) return;
+
+    const tagNames = activeSubs.map((s) => s.tagName);
     const values = await this.readFn(tagNames);
 
-    for (let i = 0; i < subs.length; i++) {
-      const sub = subs[i];
+    for (let i = 0; i < activeSubs.length; i++) {
+      const sub = activeSubs[i];
       const newValue = values[i];
 
       if (sub.lastValue === undefined) {
