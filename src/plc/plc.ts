@@ -10,6 +10,8 @@ import { TagRegistry } from '@/registry/tag-registry';
 import { discoverUserTags } from '@/registry/discovery';
 import { sendRRData, sendUnitData } from '@/encapsulation/encapsulation';
 import { parseHeader } from '@/encapsulation/header';
+import { parseCPF } from '@/encapsulation/common-packet-format';
+import { extractCIPData } from './cpf-utils';
 import * as MessageRouter from '@/cip/message-router';
 import { TYPE_SIZES, CIPDataType } from '@/cip/data-types';
 import { CIPError } from '@/errors';
@@ -18,17 +20,8 @@ import { buildReadRequest, parseReadResponse } from './read';
 import { buildWriteRequest, buildBitWriteRequest } from './write';
 import { extractBitIndex } from './tag-path';
 
-/** Offset to CIP data within SendUnitData response:
- *  InterfaceHandle(4) + Timeout(2) + ItemCount(2) +
- *  ConnAddr TypeId(2) + ConnAddr Len(2) + ConnectionId(4) +
- *  ConnData TypeId(2) + ConnData Len(2) + SequenceCount(2) = 22 */
-const CONNECTED_CIP_OFFSET = 22;
-
-/** Offset to CIP data within SendRRData response:
- *  InterfaceHandle(4) + Timeout(2) + ItemCount(2) +
- *  NullAddr TypeId(2) + NullAddr Len(2) +
- *  UCMM TypeId(2) + UCMM Len(2) = 16 */
-const UNCONNECTED_CIP_OFFSET = 16;
+/** InterfaceHandle(4) + Timeout(2) prefix before CPF data */
+const CPF_PREFIX_SIZE = 6;
 
 export class PLC extends TypedEventEmitter<PLCEvents> {
   private session: SessionManager;
@@ -162,6 +155,9 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     const response = await this.session.pipeline.send(eipPacket);
     const parsed = parseHeader(response);
-    return parsed.data.subarray(isConnected ? CONNECTED_CIP_OFFSET : UNCONNECTED_CIP_OFFSET);
+
+    // Parse CPF items to find the CIP data (robust to item ordering/extras)
+    const cpf = parseCPF(parsed.data.subarray(CPF_PREFIX_SIZE));
+    return extractCIPData(cpf);
   }
 }

@@ -1,5 +1,6 @@
 import { buildReadRequest, parseReadResponse, isStructTypeParam } from '@/plc/read';
 import { buildWriteRequest, buildBitWriteRequest } from '@/plc/write';
+import { extractCIPData } from '@/plc/cpf-utils';
 import { CIPDataType, getCodec } from '@/cip/data-types';
 import { CIPService } from '@/cip/services';
 
@@ -157,5 +158,35 @@ describe('buildBitWriteRequest', () => {
     expect(d.readUInt16LE(0)).toBe(4); // mask size = 4 bytes
     expect(d.readInt32LE(2)).toBe(0); // OR mask
     expect(d.readInt32LE(6)).toBe(-1 & ~(1 << 5)); // AND mask
+  });
+});
+
+describe('extractCIPData', () => {
+  it('extracts data from UCMM item', () => {
+    const cipPayload = Buffer.from([0xcc, 0x00, 0x00, 0x00, 0x2a]);
+    const items = [
+      { typeId: 0x0000, data: Buffer.alloc(0) }, // Null
+      { typeId: 0x00b2, data: cipPayload },       // UCMM
+    ];
+    expect(extractCIPData(items).equals(cipPayload)).toBe(true);
+  });
+
+  it('extracts data from ConnectedTransportPacket, stripping sequence count', () => {
+    const cipPayload = Buffer.from([0xcc, 0x00, 0x00, 0x00, 0x2a]);
+    const withSeq = Buffer.alloc(2 + cipPayload.length);
+    withSeq.writeUInt16LE(7, 0); // sequence count
+    cipPayload.copy(withSeq, 2);
+    const items = [
+      { typeId: 0x00a1, data: Buffer.alloc(4) },  // Connected Address
+      { typeId: 0x00b1, data: withSeq },           // Connected Transport
+    ];
+    expect(extractCIPData(items).equals(cipPayload)).toBe(true);
+  });
+
+  it('throws when no CIP data item found', () => {
+    const items = [
+      { typeId: 0x0000, data: Buffer.alloc(0) }, // Null only
+    ];
+    expect(() => extractCIPData(items)).toThrow('No CIP data item in response');
   });
 });
