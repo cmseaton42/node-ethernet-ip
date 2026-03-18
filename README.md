@@ -29,7 +29,7 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 - Auto-reconnect with exponential backoff
 - Per-tag scan rates for subscriptions
 - Typed error hierarchy with human-readable CIP status codes
-- 270+ unit tests
+- 280+ unit tests
 
 ## Prerequisites
 
@@ -65,13 +65,13 @@ await plc.connect('192.168.1.1', { autoReconnect: true });
 
 #### Connect Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `slot` | `number` | `0` | Controller slot number (0 for CompactLogix) |
-| `discover` | `boolean` | `false` | Fetch full tag list on connect |
-| `connected` | `boolean` | `true` | Use connected messaging (Forward Open). Set `false` for unconnected (UCMM) only |
-| `timeout` | `number` | `10000` | Connection timeout in milliseconds |
-| `autoReconnect` | `boolean \| ReconnectOptions` | `false` | Enable auto-reconnect on disconnect |
+| Option          | Type                          | Default | Description                                                                     |
+| --------------- | ----------------------------- | ------- | ------------------------------------------------------------------------------- |
+| `slot`          | `number`                      | `0`     | Controller slot number (0 for CompactLogix)                                     |
+| `discover`      | `boolean`                     | `false` | Fetch full tag list on connect                                                  |
+| `connected`     | `boolean`                     | `true`  | Use connected messaging (Forward Open). Set `false` for unconnected (UCMM) only |
+| `timeout`       | `number`                      | `10000` | Connection timeout in milliseconds                                              |
+| `autoReconnect` | `boolean \| ReconnectOptions` | `false` | Enable auto-reconnect on disconnect                                             |
 
 #### ReconnectOptions
 
@@ -138,13 +138,13 @@ const member = await plc.read('MyUDT.Member1');
 
 #### Return Types
 
-| PLC Type | JavaScript Type |
-|----------|----------------|
-| BOOL | `boolean` |
-| SINT, INT, DINT, USINT, UINT, UDINT, REAL, LREAL | `number` |
-| LINT, LWORD | `bigint` |
-| STRING, SHORT_STRING | `string` |
-| STRUCT (unknown template) | `Buffer` |
+| PLC Type                                         | JavaScript Type |
+| ------------------------------------------------ | --------------- |
+| BOOL                                             | `boolean`       |
+| SINT, INT, DINT, USINT, UINT, UDINT, REAL, LREAL | `number`        |
+| LINT, LWORD                                      | `bigint`        |
+| STRING, SHORT_STRING                             | `string`        |
+| STRUCT (unknown template)                        | `Buffer`        |
 
 ### Writing Tags
 
@@ -159,11 +159,11 @@ await plc.write('MachineName', 'Press 2');
 Write multiple tags:
 
 ```typescript
-await plc.write([
-  ['SetPoint', 72.5],
-  ['EnableMotor', true],
-  ['BatchCount', 0],
-]);
+await plc.write({
+  SetPoint: 72.5,
+  EnableMotor: true,
+  BatchCount: 0,
+});
 ```
 
 Write a bit of a word:
@@ -205,8 +205,8 @@ import { Scanner } from 'ethernet-ip';
 const scanner = new Scanner(async (tags) => plc.read(tags));
 
 // Subscribe tags with different scan rates
-scanner.subscribe('Temperature', { rate: 100 });   // Read every 100ms
-scanner.subscribe('BatchCount', { rate: 5000 });    // Read every 5 seconds
+scanner.subscribe('Temperature', { rate: 100 }); // Read every 100ms
+scanner.subscribe('BatchCount', { rate: 5000 }); // Read every 5 seconds
 
 // Listen for changes
 scanner.on('tagInitialized', (tag, value) => {
@@ -319,16 +319,10 @@ const path = new EPathBuilder()
   .build();
 
 // Tag path: "MyTag[3].Member"
-const tagPath = new EPathBuilder()
-  .symbolic('MyTag')
-  .element(3)
-  .symbolic('Member')
-  .build();
+const tagPath = new EPathBuilder().symbolic('MyTag').element(3).symbolic('Member').build();
 
 // Routing: backplane port 1, slot 2
-const routePath = new EPathBuilder()
-  .port(1, 2)
-  .build();
+const routePath = new EPathBuilder().port(1, 2).build();
 ```
 
 ## Architecture
@@ -360,19 +354,19 @@ npm run check         # All checks: lint + format + tsc + tests
 
 ### Breaking Changes
 
-| v1 | v2 |
-|----|-----|
-| JavaScript | TypeScript (strict mode) |
-| `new Controller()` | `new PLC()` |
-| `PLC.connect(ip, slot)` | `plc.connect(ip, { slot })` |
-| `new Tag('name'); PLC.readTag(tag)` | `plc.read('name')` |
-| `tag.value = 42; PLC.writeTag(tag)` | `plc.write('name', 42)` |
-| `PLC.subscribe(tag); PLC.scan()` | `scanner.subscribe('name'); scanner.scan()` |
-| Extends `net.Socket` | Composition with `ITransport` |
-| Event strings (`"Read Tag"`) | Typed events (`'tagChanged'`) |
-| `sendUnitData` uses SequencedAddrItem (0x8002) | Uses ConnectionBased (0xA1) per CIP spec |
-| No connected messaging | Forward Open with Large/Small fallback |
-| Atomic types only | All types including STRING, STRUCT, LINT, LREAL |
+| v1                                             | v2                                              |
+| ---------------------------------------------- | ----------------------------------------------- |
+| JavaScript                                     | TypeScript (strict mode)                        |
+| `new Controller()`                             | `new PLC()`                                     |
+| `PLC.connect(ip, slot)`                        | `plc.connect(ip, { slot })`                     |
+| `new Tag('name'); PLC.readTag(tag)`            | `plc.read('name')`                              |
+| `tag.value = 42; PLC.writeTag(tag)`            | `plc.write('name', 42)`                         |
+| `PLC.subscribe(tag); PLC.scan()`               | `scanner.subscribe('name'); scanner.scan()`     |
+| Extends `net.Socket`                           | Composition with `ITransport`                   |
+| Event strings (`"Read Tag"`)                   | Typed events (`'tagChanged'`)                   |
+| `sendUnitData` uses SequencedAddrItem (0x8002) | Uses ConnectionBased (0xA1) per CIP spec        |
+| No connected messaging                         | Forward Open with Large/Small fallback          |
+| Atomic types only                              | All types including STRING, STRUCT, LINT, LREAL |
 
 ### Before (v1)
 
@@ -406,17 +400,17 @@ await plc.write('MyTag', 42);
 
 ## Contributors
 
-* **Canaan Seaton** — *Owner* — [GitHub](https://github.com/cmseaton42) — [Website](http://www.canaanseaton.com/)
-* **Patrick McDonagh** — *Collaborator* — [GitHub](https://github.com/patrickjmcd)
-* **Jeremy Henson** — *Collaborator* — [GitHub](https://github.com/jhenson29)
+- **Canaan Seaton** — _Owner_ — [GitHub](https://github.com/cmseaton42) — [Website](http://www.canaanseaton.com/)
+- **Patrick McDonagh** — _Collaborator_ — [GitHub](https://github.com/patrickjmcd)
+- **Jeremy Henson** — _Collaborator_ — [GitHub](https://github.com/jhenson29)
 
 ## Related Projects
 
-* [ST-node-ethernet-ip](https://github.com/SerafinTech/ST-node-ethernet-ip) — Fork with connected messaging, structures, and I/O support
-* [pylogix](https://github.com/dmroeder/pylogix) — Python EtherNet/IP client
-* [Node-RED CIP](https://github.com/netsmarttech/node-red-contrib-cip-ethernet-ip) — Node-RED integration
+- [ST-node-ethernet-ip](https://github.com/SerafinTech/ST-node-ethernet-ip) — Fork with connected messaging, structures, and I/O support
+- [pylogix](https://github.com/dmroeder/pylogix) — Python EtherNet/IP client
+- [Node-RED CIP](https://github.com/netsmarttech/node-red-contrib-cip-ethernet-ip) — Node-RED integration
 
-Wanna *become* a contributor? [Here's how!](https://github.com/cmseaton42/node-ethernet-ip/blob/master/CONTRIBUTING.md)
+Wanna _become_ a contributor? [Here's how!](https://github.com/cmseaton42/node-ethernet-ip/blob/master/CONTRIBUTING.md)
 
 ## License
 
