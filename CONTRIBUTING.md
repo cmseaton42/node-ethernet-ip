@@ -4,9 +4,9 @@ Great to have you here! Here are a few ways you can help make this project bette
 
 ## Team
 
-* **Canaan Seaton** — *Owner* — [GitHub](https://github.com/cmseaton42) — [Website](http://www.canaanseaton.com/)
-* **Patrick McDonagh** — *Collaborator* — [GitHub](https://github.com/patrickjmcd)
-* **Jeremy Henson** — *Collaborator* — [GitHub](https://github.com/jhenson29)
+- **Canaan Seaton** — _Owner_ — [GitHub](https://github.com/cmseaton42) — [Website](http://www.canaanseaton.com/)
+- **Patrick McDonagh** — _Collaborator_ — [GitHub](https://github.com/patrickjmcd)
+- **Jeremy Henson** — _Collaborator_ — [GitHub](https://github.com/jhenson29)
 
 New contributors welcome!
 

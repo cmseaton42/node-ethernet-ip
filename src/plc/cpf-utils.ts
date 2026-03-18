@@ -14,8 +14,7 @@ const SEQUENCE_COUNT_SIZE = 2;
  */
 export function extractCIPData(items: CPFItem[]): Buffer {
   const dataItem = items.find(
-    (i) =>
-      i.typeId === CPFItemType.ConnectedTransportPacket || i.typeId === CPFItemType.UCMM,
+    (i) => i.typeId === CPFItemType.ConnectedTransportPacket || i.typeId === CPFItemType.UCMM,
   );
   if (!dataItem) throw new Error('No CIP data item in response');
 

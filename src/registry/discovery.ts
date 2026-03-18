@@ -149,9 +149,7 @@ export function isUserTag(tag: DiscoveredTag): boolean {
  * Note: Program entries typically have bit 12 (reserved) set.
  */
 export function extractProgramNames(tags: DiscoveredTag[]): string[] {
-  return tags
-    .filter((t) => t.name.startsWith('Program:'))
-    .map((t) => t.name.substring(8));
+  return tags.filter((t) => t.name.startsWith('Program:')).map((t) => t.name.substring(8));
 }
 
 /**
