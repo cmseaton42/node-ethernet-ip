@@ -29,7 +29,7 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 - Auto-reconnect with exponential backoff
 - Per-tag scan rates for subscriptions
 - Typed error hierarchy with human-readable CIP status codes
-- 228+ unit tests
+- 265+ unit tests
 
 ## Prerequisites
 
@@ -69,6 +69,7 @@ await plc.connect('192.168.1.1', { autoReconnect: true });
 |--------|------|---------|-------------|
 | `slot` | `number` | `0` | Controller slot number (0 for CompactLogix) |
 | `discover` | `boolean` | `false` | Fetch full tag list on connect |
+| `connected` | `boolean` | `true` | Use connected messaging (Forward Open). Set `false` for unconnected (UCMM) only |
 | `timeout` | `number` | `10000` | Connection timeout in milliseconds |
 | `autoReconnect` | `boolean \| ReconnectOptions` | `false` | Enable auto-reconnect on disconnect |
 
