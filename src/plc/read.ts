@@ -33,6 +33,10 @@ export function isStructTypeParam(data: Buffer): boolean {
   return data[0] === STRUCT_MARKER_BYTE_0 && data[1] === STRUCT_MARKER_BYTE_1;
 }
 
+/** Rockwell built-in STRING struct handle — STRING tags report as struct, not atomic 0xD0.
+ *  Custom string UDTs (e.g. STRING20) will have different handles and need template retrieval. */
+const STRING_STRUCT_HANDLE = 0x0fce;
+
 /**
  * Parse a CIP Read Tag response into a JS value.
  *
@@ -55,7 +59,13 @@ export function parseReadResponse(
     return { type: typeCode, isStruct: false, value: !!(raw & (1 << bitIndex)) };
   }
 
-  // Struct or unknown type — return raw buffer
+  // STRING special case: built-in STRING struct handle 0x0FCE
+  if (isStruct && typeCode === STRING_STRUCT_HANDLE) {
+    const codec = getCodec(CIPDataType.STRING);
+    return { type: typeCode, isStruct: true, value: codec.decode(valueData, 0) as string };
+  }
+
+  // Other struct or unknown type — return raw buffer
   if (isStruct || !isValidType(typeCode)) {
     return { type: typeCode, isStruct, value: Buffer.from(valueData) };
   }

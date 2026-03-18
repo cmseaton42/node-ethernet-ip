@@ -12,6 +12,9 @@ import { buildTagPath, extractBitIndex } from './tag-path';
 const STRUCT_MARKER_BYTE_0 = 0xa0;
 const STRUCT_MARKER_BYTE_1 = 0x02;
 
+/** Rockwell built-in STRING struct handle */
+const STRING_STRUCT_HANDLE = 0x0fce;
+
 /**
  * Build a CIP Write Tag request.
  *
@@ -30,8 +33,11 @@ export function buildWriteRequest(
   const path = buildTagPath(tagName);
 
   if (structHandle !== undefined) {
-    // Struct: value must be a Buffer (raw struct data)
-    const raw = value as Buffer;
+    const raw =
+      structHandle === STRING_STRUCT_HANDLE && typeof value === 'string'
+        ? getCodec(CIPDataType.STRING).encode(value)
+        : (value as Buffer);
+
     const HEADER_SIZE = 6; // A0 02(2) + handle(2) + count(2)
     const data = Buffer.alloc(HEADER_SIZE + raw.length);
     data.writeUInt8(STRUCT_MARKER_BYTE_0, 0);

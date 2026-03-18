@@ -87,6 +87,24 @@ describe('parseReadResponse', () => {
     expect((value as Buffer).length).toBe(structData.length);
     expect((value as Buffer).equals(structData)).toBe(true);
   });
+
+  it('decodes STRING struct handle 0x0FCE as string', () => {
+    // Build a STRING response: A0 02 CE 0F + DINT len + chars + padding
+    const str = 'Hello PLC';
+    const stringCodec = getCodec(CIPDataType.STRING);
+    const encoded = stringCodec.encode(str);
+    const data = Buffer.alloc(4 + encoded.length);
+    data.writeUInt8(0xa0, 0);
+    data.writeUInt8(0x02, 1);
+    data.writeUInt16LE(0x0fce, 2);
+    encoded.copy(data, 4);
+
+    const { type, isStruct, value } = parseReadResponse(data, 'message');
+    expect(isStruct).toBe(true);
+    expect(type).toBe(0x0fce);
+    expect(typeof value).toBe('string');
+    expect(value).toBe('Hello PLC');
+  });
 });
 
 describe('buildWriteRequest', () => {
@@ -188,5 +206,20 @@ describe('extractCIPData', () => {
       { typeId: 0x0000, data: Buffer.alloc(0) }, // Null only
     ];
     expect(() => extractCIPData(items)).toThrow('No CIP data item in response');
+  });
+});
+
+describe('buildWriteRequest STRING', () => {
+  it('writes STRING via struct handle 0x0FCE', () => {
+    const buf = buildWriteRequest('message', 'Test', 0x0fce, 1, 0x0fce);
+    expect(buf[0]).toBe(CIPService.WRITE_TAG);
+    const pathWords = buf[1];
+    const dataStart = 2 + pathWords * 2;
+    expect(buf[dataStart]).toBe(0xa0);
+    expect(buf[dataStart + 1]).toBe(0x02);
+    expect(buf.readUInt16LE(dataStart + 2)).toBe(0x0fce);
+    expect(buf.readUInt16LE(dataStart + 4)).toBe(1); // count
+    // STRING payload: 4-byte len prefix should be 4 ("Test")
+    expect(buf.readInt32LE(dataStart + 6)).toBe(4);
   });
 });

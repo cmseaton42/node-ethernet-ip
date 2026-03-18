@@ -29,7 +29,7 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 - Auto-reconnect with exponential backoff
 - Per-tag scan rates for subscriptions
 - Typed error hierarchy with human-readable CIP status codes
-- 265+ unit tests
+- 270+ unit tests
 
 ## Prerequisites
 
