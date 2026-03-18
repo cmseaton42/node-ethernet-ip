@@ -7,7 +7,7 @@ import { ITransport } from '@/transport/interfaces';
 import { TCPTransport } from '@/transport/tcp-transport';
 import { SessionManager } from '@/session/session-manager';
 import { TagRegistry } from '@/registry/tag-registry';
-import { discoverAll } from '@/registry/discovery';
+import { discoverUserTags } from '@/registry/discovery';
 import { sendRRData } from '@/encapsulation/encapsulation';
 import { parseHeader } from '@/encapsulation/header';
 import * as MessageRouter from '@/cip/message-router';
@@ -125,16 +125,15 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
   private async populateRegistry(timeoutMs: number): Promise<void> {
     if (!this.session.pipeline) return;
-    const tags = await discoverAll(this.session.pipeline, this.session.sessionId, timeoutMs);
+    const tags = await discoverUserTags(this.session.pipeline, this.session.sessionId, timeoutMs);
     for (const tag of tags) {
-      if (!tag.type.isReserved) {
-        this._registry.register(tag.name, {
-          type: tag.type.code,
-          size: TYPE_SIZES.get(tag.type.code as CIPDataType) ?? 0,
-          isStruct: tag.type.isStruct,
-          arrayDims: tag.type.arrayDims,
-        });
-      }
+      const fullName = tag.program ? `Program:${tag.program}.${tag.name}` : tag.name;
+      this._registry.register(fullName, {
+        type: tag.type.code,
+        size: TYPE_SIZES.get(tag.type.code as CIPDataType) ?? 0,
+        isStruct: tag.type.isStruct,
+        arrayDims: tag.type.arrayDims,
+      });
     }
   }
 

@@ -125,6 +125,36 @@ function parseTagListResponse(
 }
 
 /**
+ * Filter rules per Rockwell Data Access manual (1756-PM020D, Step 2):
+ *
+ * 1. Discard tags with bit 12 set (isReserved — system tags)
+ * 2. Discard names starting with "__" (system tags)
+ * 3. Discard names containing ":" UNLESS the prefix is "Program"
+ *    - "Program:X" entries are program scope markers, not readable tags
+ *    - "Map:", "Task:", "Cxn:", module I/O like "Codesys:I" are discarded
+ *
+ * Returns true if the tag should be kept.
+ */
+export function isUserTag(tag: DiscoveredTag): boolean {
+  if (tag.type.isReserved) return false;
+  if (tag.name.startsWith('__')) return false;
+  const colonIdx = tag.name.indexOf(':');
+  if (colonIdx !== -1 && tag.name.substring(0, colonIdx) !== 'Program') return false;
+  return true;
+}
+
+/**
+ * Extract program names from discovered tags.
+ * "Program:MainProgram" → "MainProgram"
+ * Note: Program entries typically have bit 12 (reserved) set.
+ */
+export function extractProgramNames(tags: DiscoveredTag[]): string[] {
+  return tags
+    .filter((t) => t.name.startsWith('Program:'))
+    .map((t) => t.name.substring(8));
+}
+
+/**
  * Discover all tags from the PLC.
  * Paginates automatically when status 0x06 is returned.
  */
@@ -165,4 +195,28 @@ export async function discoverAll(
   }
 
   return allTags;
+}
+
+/**
+ * Discover all user tags, including program-scoped tags.
+ * 1. Discover controller-scope tags
+ * 2. Extract program names from "Program:X" entries
+ * 3. Discover tags within each program
+ * 4. Filter to user-created tags only
+ */
+export async function discoverUserTags(
+  pipeline: RequestPipeline,
+  sessionId: number,
+  timeoutMs: number,
+): Promise<DiscoveredTag[]> {
+  const controllerTags = await discoverAll(pipeline, sessionId, timeoutMs);
+  const programs = extractProgramNames(controllerTags);
+
+  const programTags: DiscoveredTag[] = [];
+  for (const prog of programs) {
+    const tags = await discoverAll(pipeline, sessionId, timeoutMs, prog);
+    programTags.push(...tags);
+  }
+
+  return [...controllerTags, ...programTags].filter(isUserTag);
 }

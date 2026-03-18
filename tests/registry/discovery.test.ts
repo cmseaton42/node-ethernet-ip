@@ -1,4 +1,4 @@
-import { discoverAll } from '@/registry/discovery';
+import { discoverAll, isUserTag, extractProgramNames, DiscoveredTag } from '@/registry/discovery';
 import { MockTransport } from '@/transport/mock-transport';
 import { RequestPipeline } from '@/pipeline/request-pipeline';
 import { EIPCommand } from '@/encapsulation/commands';
@@ -142,5 +142,65 @@ describe('discoverAll', () => {
 
     expect(tags.length).toBe(1);
     expect(tags[0].program).toBe('MainProgram');
+  });
+});
+
+function makeTag(name: string, overrides?: Partial<DiscoveredTag['type']>): DiscoveredTag {
+  return {
+    id: 1,
+    name,
+    type: { code: 0xc4, isStruct: false, isReserved: false, arrayDims: 0, ...overrides },
+    program: null,
+  };
+}
+
+describe('isUserTag', () => {
+  it('keeps normal atomic tags', () => {
+    expect(isUserTag(makeTag('errorCount'))).toBe(true);
+  });
+
+  it('keeps struct tags', () => {
+    expect(isUserTag(makeTag('hmiStatus', { isStruct: true, code: 0x0646 }))).toBe(true);
+  });
+
+  it('discards reserved tags (bit 12)', () => {
+    expect(isUserTag(makeTag('Task:MainTask', { isReserved: true }))).toBe(false);
+  });
+
+  it('discards __ prefix tags', () => {
+    expect(isUserTag(makeTag('__CONTAINER'))).toBe(false);
+  });
+
+  it('discards Map: tags', () => {
+    expect(isUserTag(makeTag('Map:Local'))).toBe(false);
+  });
+
+  it('discards Cxn: tags', () => {
+    expect(isUserTag(makeTag('Cxn:Standard:abc123'))).toBe(false);
+  });
+
+  it('discards module I/O tags', () => {
+    expect(isUserTag(makeTag('Codesys:I', { isStruct: true }))).toBe(false);
+  });
+
+  it('keeps Program: entries (they are filtered elsewhere as scope markers)', () => {
+    expect(isUserTag(makeTag('Program:MainProgram'))).toBe(true);
+  });
+});
+
+describe('extractProgramNames', () => {
+  it('extracts program names from Program: entries', () => {
+    const tags = [
+      makeTag('Program:MainProgram', { isReserved: true }),
+      makeTag('Program:SafetyProgram', { isReserved: true }),
+      makeTag('trigger'),
+      makeTag('Task:MainTask', { isReserved: true }),
+    ];
+    expect(extractProgramNames(tags)).toEqual(['MainProgram', 'SafetyProgram']);
+  });
+
+  it('returns empty for no programs', () => {
+    const tags = [makeTag('trigger'), makeTag('status')];
+    expect(extractProgramNames(tags)).toEqual([]);
   });
 });

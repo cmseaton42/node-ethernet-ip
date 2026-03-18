@@ -10,6 +10,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', 'jest.config.js', 'coverage/'],
+    ignores: ['dist/', 'node_modules/', 'jest.config.js', 'coverage/', 'scripts/'],
   },
 );
