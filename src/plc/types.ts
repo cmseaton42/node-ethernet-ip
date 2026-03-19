@@ -4,7 +4,11 @@
 
 import { ReconnectOptions, DEFAULT_RECONNECT } from '@/session/types';
 
-export type TagValue = number | bigint | boolean | string | Buffer | TagValue[];
+export interface TagRecord {
+  [key: string]: TagValue;
+}
+
+export type TagValue = number | bigint | boolean | string | Buffer | TagRecord | TagValue[];
 
 export type PLCEvents = {
   connected: () => void;
