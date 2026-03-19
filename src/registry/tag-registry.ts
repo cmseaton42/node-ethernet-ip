@@ -46,6 +46,7 @@ export interface TagRegistryEntry {
 export class TagRegistry {
   private entries = new Map<string, TagRegistryEntry>();
   private templates = new Map<number, Template>();
+  private handleToInstance = new Map<number, number>();
 
   /** Look up a tag's type info. Returns undefined if unknown. */
   lookup(tagName: string): TagRegistryEntry | undefined {
@@ -62,14 +63,21 @@ export class TagRegistry {
     this.register(tagName, { type, size, isStruct, arrayDims });
   }
 
-  /** Store a UDT template by type code. */
-  registerTemplate(typeCode: number, template: Template): void {
-    this.templates.set(typeCode, template);
+  /** Store a UDT template by instance ID. Also indexes by struct handle for reverse lookup. */
+  registerTemplate(instanceId: number, template: Template): void {
+    this.templates.set(instanceId, template);
+    this.handleToInstance.set(template.attributes.structureHandle, instanceId);
   }
 
-  /** Look up a UDT template by type code. */
-  lookupTemplate(typeCode: number): Template | undefined {
-    return this.templates.get(typeCode);
+  /** Look up a UDT template by instance ID. */
+  lookupTemplate(instanceId: number): Template | undefined {
+    return this.templates.get(instanceId);
+  }
+
+  /** Look up a UDT template by struct handle (CRC from read response). */
+  lookupTemplateByHandle(handle: number): Template | undefined {
+    const instanceId = this.handleToInstance.get(handle);
+    return instanceId !== undefined ? this.templates.get(instanceId) : undefined;
   }
 
   /** Check if a tag is known. */
@@ -91,6 +99,7 @@ export class TagRegistry {
   clearAll(): void {
     this.entries.clear();
     this.templates.clear();
+    this.handleToInstance.clear();
   }
 
   /** Normalize tag name for case-insensitive lookup. */

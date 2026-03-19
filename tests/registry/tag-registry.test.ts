@@ -148,3 +148,34 @@ describe('parseTagType', () => {
     expect(result.code).toBe(0xff);
   });
 });
+
+describe('template handle lookup', () => {
+  it('lookupTemplateByHandle returns template registered by instance ID', () => {
+    const registry = new TagRegistry();
+    const tmpl = {
+      name: 'Test',
+      attributes: { id: 100, objectDefinitionSize: 1, structureSize: 4, memberCount: 0, structureHandle: 0xabcd },
+      members: [],
+    };
+    registry.registerTemplate(100, tmpl);
+    expect(registry.lookupTemplateByHandle(0xabcd)).toBe(tmpl);
+  });
+
+  it('lookupTemplateByHandle returns undefined for unknown handle', () => {
+    const registry = new TagRegistry();
+    expect(registry.lookupTemplateByHandle(0x9999)).toBeUndefined();
+  });
+
+  it('clearAll clears handle map', () => {
+    const registry = new TagRegistry();
+    const tmpl = {
+      name: 'Test',
+      attributes: { id: 1, objectDefinitionSize: 1, structureSize: 4, memberCount: 0, structureHandle: 0x1234 },
+      members: [],
+    };
+    registry.registerTemplate(1, tmpl);
+    registry.clearAll();
+    expect(registry.lookupTemplateByHandle(0x1234)).toBeUndefined();
+    expect(registry.lookupTemplate(1)).toBeUndefined();
+  });
+});
