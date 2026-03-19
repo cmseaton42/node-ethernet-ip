@@ -37,8 +37,10 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 
 ## Install
 
+> ⚠️ v2 is currently in alpha. Install with the `alpha` tag:
+
 ```
-npm install ethernet-ip
+npm install ethernet-ip@alpha
 ```
 
 ## The API
