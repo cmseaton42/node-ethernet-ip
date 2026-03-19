@@ -6,20 +6,34 @@ import { TypedEventEmitter } from '@/util/typed-event-emitter';
 import { ITransport } from '@/transport/interfaces';
 import { TCPTransport } from '@/transport/tcp-transport';
 import { SessionManager } from '@/session/session-manager';
-import { TagRegistry } from '@/registry/tag-registry';
-import { discoverUserTags } from '@/registry/discovery';
+import { TagRegistry, Template } from '@/registry/tag-registry';
+import { discoverUserTags, DiscoveredTag } from '@/registry/discovery';
 import { sendRRData, sendUnitData } from '@/encapsulation/encapsulation';
 import { parseHeader } from '@/encapsulation/header';
 import { parseCPF } from '@/encapsulation/common-packet-format';
 import { extractCIPData } from './cpf-utils';
 import * as MessageRouter from '@/cip/message-router';
 import { buildBatches, BatchRequest, parseMultiServiceResponse } from '@/cip/batch-builder';
-import { TYPE_SIZES, CIPDataType } from '@/cip/data-types';
+import { TYPE_SIZES, CIPDataType, getTypeName, STRING_STRUCT_HANDLE } from '@/cip/data-types';
 import { CIPError } from '@/errors';
-import { PLCEvents, PLCConnectOptions, TagValue, resolveConnectOptions } from './types';
+import { PLCEvents, PLCConnectOptions, TagValue, TagRecord, resolveConnectOptions } from './types';
 import { buildReadRequest, parseReadResponse } from './read';
 import { buildWriteRequest, buildBitWriteRequest } from './write';
 import { extractBitIndex } from './tag-path';
+import { fetchTemplate } from '@/registry/template-fetcher';
+import { decodeStruct, encodeStruct } from './struct-codec';
+import { isBoolHost } from '@/cip/template';
+
+export interface MemberShape {
+  type: string;
+  array?: number;
+  members?: Record<string, MemberShape>;
+}
+
+export interface StructShape {
+  name: string;
+  members: Record<string, MemberShape>;
+}
 
 /** InterfaceHandle(4) + Timeout(2) prefix before CPF data */
 const CPF_PREFIX_SIZE = 6;
@@ -62,6 +76,72 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
   async disconnect(): Promise<void> {
     await this.session.disconnect();
+  }
+
+  /** Discover all user tags and fetch UDT templates. Returns the discovered tag list. */
+  async discover(): Promise<DiscoveredTag[]> {
+    return this.populateRegistry(10000);
+  }
+
+  /**
+   * Get the template (field definitions) for a struct tag.
+   * Returns undefined for non-struct tags or if the template hasn't been fetched yet.
+   */
+  getTemplate(tagName: string): Template | undefined {
+    const entry = this._registry.lookup(tagName);
+    if (!entry?.isStruct) return undefined;
+    return (
+      this._registry.lookupTemplateByHandle(entry.type) ??
+      this._registry.lookupTemplate(entry.type)
+    );
+  }
+
+  /**
+   * Get a recursive shape description for a struct tag.
+   * Resolves nested structs inline. Returns undefined for non-struct tags.
+   *
+   * Example output:
+   * ```
+   * { name: 'stAxisStatus', members: {
+   *     ActiveMode: { type: 'BOOL' },
+   *     ActivePosition: { type: 'REAL' },
+   *     myNested: { type: 'stOther', members: { ... } }
+   * }}
+   * ```
+   */
+  getShape(tagName: string): StructShape | undefined {
+    const tmpl = this.getTemplate(tagName);
+    if (!tmpl) return undefined;
+    return this.buildShape(tmpl);
+  }
+
+  private buildShape(tmpl: Template): StructShape {
+    const members: Record<string, MemberShape> = {};
+    for (const m of tmpl.members) {
+      if (isBoolHost(m)) continue;
+      const shape: MemberShape = {
+        type: m.type.isStruct
+          ? m.type.code === STRING_STRUCT_HANDLE
+            ? 'STRING'
+            : (this.resolveTemplateName(m.type.code) ?? `0x${m.type.code.toString(16)}`)
+          : getTypeName(m.type.code as CIPDataType),
+      };
+      if (m.info > 0 && m.type.code !== CIPDataType.BOOL) shape.array = m.info;
+      if (m.type.isStruct && m.type.code !== STRING_STRUCT_HANDLE) {
+        const nested =
+          this._registry.lookupTemplateByHandle(m.type.code) ??
+          this._registry.lookupTemplate(m.type.code);
+        if (nested) shape.members = this.buildShape(nested).members;
+      }
+      members[m.name] = shape;
+    }
+    return { name: tmpl.name, members };
+  }
+
+  private resolveTemplateName(code: number): string | undefined {
+    const tmpl =
+      this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code);
+    return tmpl?.name;
   }
 
   async read(tag: string): Promise<TagValue>;
@@ -110,6 +190,30 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       });
     }
 
+    // Decode struct buffers into JS objects if template is available
+    if (isStruct && Buffer.isBuffer(value)) {
+      const template = await this.ensureTemplate(type);
+      if (template) {
+        return decodeStruct(template, value, (code) =>
+          this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
+        );
+      }
+    }
+
+    return value;
+  }
+
+  /** Decode a struct value if we have its template, otherwise return as-is. */
+  private async decodeIfStruct(value: TagValue, tagName: string): Promise<TagValue> {
+    const entry = this._registry.lookup(tagName);
+    if (entry?.isStruct && Buffer.isBuffer(value)) {
+      const template = await this.ensureTemplate(entry.type);
+      if (template) {
+        return decodeStruct(template, value, (code) =>
+          this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
+        );
+      }
+    }
     return value;
   }
 
@@ -146,7 +250,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       if (batch.requests.length === 1) {
         // Single request in batch — already a plain CIP request, no multi-service wrapper
         const { value } = parseReadResponse(mr.data, tags[tagIdx]);
-        results.push(value);
+        results.push(await this.decodeIfStruct(value, tags[tagIdx]));
         tagIdx++;
       } else {
         const replies = parseMultiServiceResponse(mr.data);
@@ -156,13 +260,28 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
             throw new CIPError(reply.generalStatusCode, reply.extendedStatus);
           }
           const { value } = parseReadResponse(reply.data, tags[tagIdx]);
-          results.push(value);
+          results.push(await this.decodeIfStruct(value, tags[tagIdx]));
           tagIdx++;
         }
       }
     }
 
     return results;
+  }
+
+  /** Encode a struct value to Buffer if needed, otherwise return as-is. */
+  private encodeIfStruct(value: TagValue, entry: { type: number; isStruct: boolean }): TagValue {
+    if (entry.isStruct && typeof value === 'object' && !Buffer.isBuffer(value) && !Array.isArray(value)) {
+      const tmpl =
+        this._registry.lookupTemplateByHandle(entry.type) ??
+        this._registry.lookupTemplate(entry.type);
+      if (tmpl) {
+        return encodeStruct(tmpl, value as TagRecord, (code) =>
+          this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
+        );
+      }
+    }
+    return value;
   }
 
   private async writeSingle(tagName: string, value: TagValue): Promise<void> {
@@ -173,11 +292,12 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     const entry = this._registry.lookup(tagName)!;
     const bitIndex = extractBitIndex(tagName);
+    const encoded = this.encodeIfStruct(value, entry);
 
     const cipRequest =
       bitIndex !== null
         ? buildBitWriteRequest(tagName, value as boolean, entry.type)
-        : buildWriteRequest(tagName, value, entry.type, 1, entry.isStruct ? entry.type : undefined);
+        : buildWriteRequest(tagName, encoded, entry.type, 1, entry.isStruct ? entry.type : undefined);
 
     const cipResponse = await this.sendCIP(cipRequest);
     const mr = MessageRouter.parse(cipResponse);
@@ -199,10 +319,11 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     const requests: BatchRequest[] = entries.map(([tag, val]) => {
       const entry = this._registry.lookup(tag)!;
       const bitIndex = extractBitIndex(tag);
+      const encoded = this.encodeIfStruct(val, entry);
       const serviceData =
         bitIndex !== null
           ? buildBitWriteRequest(tag, val as boolean, entry.type)
-          : buildWriteRequest(tag, val, entry.type, 1, entry.isStruct ? entry.type : undefined);
+          : buildWriteRequest(tag, encoded, entry.type, 1, entry.isStruct ? entry.type : undefined);
       return { serviceData, estimatedResponseSize: 4 }; // write replies are just status
     });
 
@@ -228,9 +349,10 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     }
   }
 
-  private async populateRegistry(timeoutMs: number): Promise<void> {
-    if (!this.session.pipeline) return;
+  private async populateRegistry(timeoutMs: number): Promise<DiscoveredTag[]> {
+    if (!this.session.pipeline) return [];
     const tags = await discoverUserTags(this.session.pipeline, this.session.sessionId, timeoutMs);
+    const structInstanceIds = new Set<number>();
     for (const tag of tags) {
       const fullName = tag.program ? `Program:${tag.program}.${tag.name}` : tag.name;
       this._registry.register(fullName, {
@@ -239,7 +361,54 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
         isStruct: tag.type.isStruct,
         arrayDims: tag.type.arrayDims,
       });
+      if (tag.type.isStruct) structInstanceIds.add(tag.type.code);
     }
+
+    // Fetch all UDT templates (recursive — nested structs handled by fetchTemplate)
+    for (const id of structInstanceIds) {
+      if (!this._registry.lookupTemplate(id)) {
+        await fetchTemplate((req) => this.sendCIP(req), this._registry, id);
+      }
+    }
+
+    return tags;
+  }
+
+  /**
+   * Ensure a struct template is cached.
+   *
+   * The structHandle (CRC) from a read response differs from the template
+   * instance ID (symbolType & 0x0FFF from tag discovery). We check the
+   * handle→instance reverse map first; if missing, run tag discovery to
+   * learn instance IDs, then fetch templates for all struct types found.
+   */
+  private async ensureTemplate(structHandle: number) {
+    if (structHandle === STRING_STRUCT_HANDLE) return undefined; // built-in STRING
+
+    // Fast path: already cached
+    const cached = this._registry.lookupTemplateByHandle(structHandle);
+    if (cached) return cached;
+
+    // Discover tags to learn template instance IDs, then fetch templates
+    if (this.session.pipeline) {
+      const tags = await discoverUserTags(
+        this.session.pipeline,
+        this.session.sessionId,
+        10000,
+      );
+      // Fetch templates for all struct types we haven't seen yet
+      const seen = new Set<number>();
+      for (const tag of tags) {
+        if (tag.type.isStruct && !seen.has(tag.type.code)) {
+          seen.add(tag.type.code);
+          if (!this._registry.lookupTemplate(tag.type.code)) {
+            await fetchTemplate((req) => this.sendCIP(req), this._registry, tag.type.code);
+          }
+        }
+      }
+    }
+
+    return this._registry.lookupTemplateByHandle(structHandle);
   }
 
   private async sendCIP(cipRequest: Buffer): Promise<Buffer> {
