@@ -4,7 +4,7 @@
 
 import * as MessageRouter from '@/cip/message-router';
 import { CIPService } from '@/cip/services';
-import { getCodec, CIPDataType, TYPE_SIZES } from '@/cip/data-types';
+import { getCodec, CIPDataType, TYPE_SIZES, STRING_STRUCT_HANDLE } from '@/cip/data-types';
 import { TagValue } from './types';
 import { buildTagPath, extractBitIndex } from './tag-path';
 
@@ -13,7 +13,6 @@ const STRUCT_MARKER_BYTE_0 = 0xa0;
 const STRUCT_MARKER_BYTE_1 = 0x02;
 
 /** Rockwell built-in STRING struct handle */
-const STRING_STRUCT_HANDLE = 0x0fce;
 
 /**
  * Build a CIP Write Tag request.

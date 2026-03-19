@@ -4,7 +4,7 @@
 
 import * as MessageRouter from '@/cip/message-router';
 import { CIPService } from '@/cip/services';
-import { getCodec, CIPDataType, isValidType } from '@/cip/data-types';
+import { getCodec, CIPDataType, isValidType, STRING_STRUCT_HANDLE } from '@/cip/data-types';
 import { TagValue } from './types';
 import { buildTagPath, extractBitIndex } from './tag-path';
 
@@ -35,7 +35,6 @@ export function isStructTypeParam(data: Buffer): boolean {
 
 /** Rockwell built-in STRING struct handle — STRING tags report as struct, not atomic 0xD0.
  *  Custom string UDTs (e.g. STRING20) will have different handles and need template retrieval. */
-const STRING_STRUCT_HANDLE = 0x0fce;
 
 /**
  * Parse a CIP Read Tag response into a JS value.

@@ -27,6 +27,9 @@ export interface DataCodec {
 
 /** STRING fixed size: 4-byte DINT length prefix + 82 chars max + 2 zero padding = 88 bytes */
 const STRING_TOTAL_SIZE = 88;
+
+/** Rockwell built-in STRING struct handle (CRC). Used in Tag Type Service Parameter on the wire. */
+export const STRING_STRUCT_HANDLE = 0x0fce;
 const STRING_LENGTH_PREFIX_SIZE = 4;
 const STRING_MAX_CHARS = 82;
 
