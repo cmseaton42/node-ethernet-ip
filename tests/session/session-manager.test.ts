@@ -243,7 +243,6 @@ describe('SessionManager connected option', () => {
   });
 });
 
-
 describe('SessionManager passes timeoutMs to transport', () => {
   it('calls transport.connect with the configured timeout', async () => {
     const transport = new MockTransport();
