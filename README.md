@@ -29,7 +29,7 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 - Auto-reconnect with exponential backoff
 - Per-tag scan rates for subscriptions
 - Typed error hierarchy with human-readable CIP status codes
-- 280+ unit tests
+- 320+ unit tests
 
 ## Prerequisites
 
@@ -144,6 +144,7 @@ const member = await plc.read('MyUDT.Member1');
 | SINT, INT, DINT, USINT, UINT, UDINT, REAL, LREAL | `number`        |
 | LINT, LWORD                                      | `bigint`        |
 | STRING, SHORT_STRING                             | `string`        |
+| STRUCT (with template)                           | `object`        |
 | STRUCT (unknown template)                        | `Buffer`        |
 
 ### Writing Tags
@@ -191,7 +192,35 @@ Or discover all tags on connect:
 
 ```typescript
 await plc.connect('192.168.1.1', { discover: true });
-// plc.registry now has every tag's type information
+// plc.registry now has every tag's type and UDT templates
+```
+
+### UDT / Struct Support
+
+Struct tags are automatically decoded into JS objects when the template is available:
+
+```typescript
+const motor = await plc.read('MotorStatus');
+// motor: { Running: true, Speed: 1750, Current: 12.5 }
+
+await plc.write('MotorControl', { Enable: true, SpeedSP: 1800 });
+```
+
+Discover tags and inspect struct shapes:
+
+```typescript
+const tags = await plc.discover();
+// tags: [{ name: 'MotorStatus', type: { code: 0x3b2, isStruct: true, ... } }, ...]
+
+const shape = plc.getShape('MotorStatus');
+// { name: 'stMotorStatus', members: {
+//     Running: { type: 'BOOL' },
+//     Speed:   { type: 'REAL' },
+//     Current: { type: 'REAL' },
+// }}
+
+const template = plc.getTemplate('MotorStatus');
+// Raw template with byte offsets, member info, structureSize
 ```
 
 ### Scanning / Subscriptions
