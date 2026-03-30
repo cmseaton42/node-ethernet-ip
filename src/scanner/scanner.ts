@@ -1,12 +1,13 @@
 /**
- * Scanner — manages tag subscriptions and periodic scan loops.
+ * Scanner — single scan group with subscribe/unsubscribe while running.
  *
- * Tags with the same scan rate are grouped and read together in one batch.
- * When a tag's value changes, the scanner emits a change event.
+ * All subscribed tags are read in one batch per cycle. The scan rate
+ * is set at construction. Tags can be added/removed while scanning —
+ * changes are picked up on the next tick.
  *
  * Usage:
- *   const scanner = new Scanner(readFn);
- *   scanner.subscribe('Temperature', { rate: 100 });
+ *   const scanner = new Scanner(readFn, { rate: 200 });
+ *   scanner.subscribe('Temperature');
  *   scanner.on('tagChanged', (tag, value, prev) => { ... });
  *   scanner.scan();
  */
@@ -18,112 +19,86 @@ import { Subscription, ScanEvents, DEFAULT_SCAN_RATE } from './types';
 /** Function signature for reading tags — injected from PLC class. */
 export type ReadFunction = (tags: string[]) => Promise<TagValue[]>;
 
+export interface ScannerOptions {
+  rate?: number;
+}
+
 export class Scanner extends TypedEventEmitter<ScanEvents> {
   private subscriptions = new Map<string, Subscription>();
-  private activeTimers = new Map<number, ReturnType<typeof setTimeout>>();
+  private timer: ReturnType<typeof setTimeout> | null = null;
   private _scanning = false;
+  private readonly rate: number;
 
-  constructor(private readonly readFn: ReadFunction) {
+  constructor(
+    private readonly readFn: ReadFunction,
+    options?: ScannerOptions,
+  ) {
     super();
+    this.rate = options?.rate ?? DEFAULT_SCAN_RATE;
   }
 
   get scanning(): boolean {
     return this._scanning;
   }
 
-  /** Subscribe a tag for periodic scanning. */
-  subscribe(tagName: string, options?: { rate?: number }): void {
-    const rate = options?.rate ?? DEFAULT_SCAN_RATE;
-    this.subscriptions.set(tagName.toLowerCase(), {
-      tagName,
-      rate,
-      lastValue: undefined,
-    });
+  /** Subscribe a tag. Picked up on the next scan tick if already running. */
+  subscribe(tagName: string): void {
+    const key = tagName.toLowerCase();
+    if (!this.subscriptions.has(key)) {
+      this.subscriptions.set(key, { tagName, lastValue: undefined });
+    }
   }
 
-  /** Remove a tag from scanning. */
+  /** Remove a tag. Picked up on the next scan tick if already running. */
   unsubscribe(tagName: string): void {
     this.subscriptions.delete(tagName.toLowerCase());
   }
 
-  /** Start the scan loop. Tags are grouped by rate so each rate gets its own timer. */
+  /** Start the scan loop. No-op if already scanning. */
   scan(): void {
     if (this._scanning) return;
     this._scanning = true;
-
-    const groups = this.groupSubscriptionsByRate();
-
-    for (const [rate, subs] of groups) {
-      this.startScanLoop(rate, subs);
-    }
+    this.scheduleTick();
   }
 
-  /** Stop all scan loops and clear timers. */
-  pauseScan(): void {
+  /** Stop scanning. Subscriptions are preserved for resume via scan(). */
+  pause(): void {
     this._scanning = false;
-    for (const timer of this.activeTimers.values()) {
-      clearTimeout(timer);
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
     }
-    this.activeTimers.clear();
   }
 
-  /**
-   * Group all current subscriptions by their scan rate.
-   * Example: 3 tags at 100ms and 2 tags at 5000ms → Map { 100 → [...], 5000 → [...] }
-   */
-  private groupSubscriptionsByRate(): Map<number, Subscription[]> {
-    const groups = new Map<number, Subscription[]>();
-    for (const sub of this.subscriptions.values()) {
-      const group = groups.get(sub.rate) ?? [];
-      group.push(sub);
-      groups.set(sub.rate, group);
-    }
-    return groups;
+  private scheduleTick(): void {
+    this.timer = setTimeout(() => this.tick(), 0);
   }
 
-  /**
-   * Start a recurring scan loop for a group of tags at the given rate.
-   *
-   * Uses recursive setTimeout (not setInterval) so the next read only
-   * schedules after the current one completes — prevents overlapping
-   * reads if the PLC is slow to respond.
-   */
-  private startScanLoop(rate: number, subs: Subscription[]): void {
-    const runOneTick = async () => {
-      if (!this._scanning) return;
+  private async tick(): Promise<void> {
+    if (!this._scanning) return;
 
+    const subs = [...this.subscriptions.values()];
+    if (subs.length > 0) {
       try {
         await this.readAndDetectChanges(subs);
       } catch (err) {
         this.emit('scanError', err as Error);
       }
+    }
 
-      if (this._scanning) {
-        this.activeTimers.set(rate, setTimeout(runOneTick, rate));
-      }
-    };
-
-    // Fire the first tick immediately (0ms delay)
-    this.activeTimers.set(rate, setTimeout(runOneTick, 0));
+    if (this._scanning) {
+      this.timer = setTimeout(() => this.tick(), this.rate);
+    }
   }
 
-  /**
-   * Read all tags in a group and emit events for any changes.
-   *
-   * - First read of a tag → emits 'tagInitialized'
-   * - Subsequent reads where value differs → emits 'tagChanged'
-   * - Same value as last read → no event
-   */
   private async readAndDetectChanges(subs: Subscription[]): Promise<void> {
-    // Filter to only currently subscribed tags (handles mid-scan unsubscribe)
-    const activeSubs = subs.filter((s) => this.subscriptions.has(s.tagName.toLowerCase()));
-    if (activeSubs.length === 0) return;
-
-    const tagNames = activeSubs.map((s) => s.tagName);
+    const tagNames = subs.map((s) => s.tagName);
     const values = await this.readFn(tagNames);
 
-    for (let i = 0; i < activeSubs.length; i++) {
-      const sub = activeSubs[i];
+    for (let i = 0; i < subs.length; i++) {
+      const sub = subs[i];
+      // Skip if unsubscribed mid-read
+      if (!this.subscriptions.has(sub.tagName.toLowerCase())) continue;
       const newValue = values[i];
 
       if (sub.lastValue === undefined) {

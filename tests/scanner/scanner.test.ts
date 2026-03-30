@@ -13,7 +13,6 @@ describe('Scanner', () => {
     const scanner = new Scanner(jest.fn());
     scanner.subscribe('MyTag');
     scanner.unsubscribe('MyTag');
-    // No error — just verifying the API works
   });
 
   it('emits tagInitialized on first scan', async () => {
@@ -25,77 +24,55 @@ describe('Scanner', () => {
     scanner.on('tagInitialized', initialized);
     scanner.scan();
 
-    // Advance past the initial setTimeout(tick, 0)
     jest.advanceTimersByTime(0);
     await Promise.resolve();
     await Promise.resolve();
 
     expect(initialized).toHaveBeenCalledWith('MyDINT', 42);
-    scanner.pauseScan();
+    scanner.pause();
   });
 
   it('emits tagChanged when value changes', async () => {
     let callCount = 0;
-    const readFn = jest.fn().mockImplementation(async () => {
-      callCount++;
-      return [callCount === 1 ? 10 : 20];
-    });
-
-    const scanner = new Scanner(readFn);
+    const readFn = jest.fn().mockImplementation(async () => [++callCount === 1 ? 10 : 20]);
+    const scanner = new Scanner(readFn, { rate: 100 });
     const changed = jest.fn();
 
-    scanner.subscribe('MyTag', { rate: 100 });
+    scanner.subscribe('MyTag');
     scanner.on('tagChanged', changed);
     scanner.scan();
 
-    // First tick — initializes
     jest.advanceTimersByTime(0);
     await Promise.resolve();
     await Promise.resolve();
 
-    // Second tick — value changes
     jest.advanceTimersByTime(100);
     await Promise.resolve();
     await Promise.resolve();
 
     expect(changed).toHaveBeenCalledWith('MyTag', 20, 10);
-    scanner.pauseScan();
+    scanner.pause();
   });
 
   it('does not emit tagChanged when value is same', async () => {
     const readFn = jest.fn().mockResolvedValue([42]);
-    const scanner = new Scanner(readFn);
+    const scanner = new Scanner(readFn, { rate: 100 });
     const changed = jest.fn();
 
-    scanner.subscribe('MyTag', { rate: 100 });
+    scanner.subscribe('MyTag');
     scanner.on('tagChanged', changed);
     scanner.scan();
 
-    // First tick — initializes
     jest.advanceTimersByTime(0);
     await Promise.resolve();
     await Promise.resolve();
 
-    // Second tick — same value
     jest.advanceTimersByTime(100);
     await Promise.resolve();
     await Promise.resolve();
 
     expect(changed).not.toHaveBeenCalled();
-    scanner.pauseScan();
-  });
-
-  it('supports different scan rates per tag', () => {
-    const readFn = jest.fn().mockResolvedValue([1]);
-    const scanner = new Scanner(readFn);
-
-    scanner.subscribe('FastTag', { rate: 50 });
-    scanner.subscribe('SlowTag', { rate: 500 });
-    scanner.scan();
-
-    expect(scanner.scanning).toBe(true);
-    scanner.pauseScan();
-    expect(scanner.scanning).toBe(false);
+    scanner.pause();
   });
 
   it('emits scanError on read failure', async () => {
@@ -112,19 +89,17 @@ describe('Scanner', () => {
     await Promise.resolve();
 
     expect(errorFn).toHaveBeenCalled();
-    scanner.pauseScan();
+    scanner.pause();
   });
 
-  it('pauseScan stops all timers', () => {
+  it('pause stops the timer', () => {
     const readFn = jest.fn().mockResolvedValue([1]);
-    const scanner = new Scanner(readFn);
+    const scanner = new Scanner(readFn, { rate: 100 });
 
-    scanner.subscribe('Tag1', { rate: 100 });
-    scanner.subscribe('Tag2', { rate: 200 });
+    scanner.subscribe('Tag1');
     scanner.scan();
-    scanner.pauseScan();
+    scanner.pause();
 
-    // Advance time — readFn should not be called again after pause
     readFn.mockClear();
     jest.advanceTimersByTime(1000);
     expect(readFn).not.toHaveBeenCalled();
@@ -135,14 +110,46 @@ describe('Scanner', () => {
     const scanner = new Scanner(readFn);
     scanner.subscribe('Tag');
     scanner.scan();
-    scanner.scan(); // Should not create duplicate timers
-    scanner.pauseScan();
+    scanner.scan();
+    scanner.pause();
+  });
+
+  it('uses default rate when none provided', () => {
+    const scanner = new Scanner(jest.fn());
+    expect(scanner.scanning).toBe(false);
+    // Default rate is 200ms — just verify construction works
   });
 });
 
-describe('Scanner mid-scan unsubscribe', () => {
+describe('live subscribe/unsubscribe', () => {
   beforeEach(() => jest.useFakeTimers());
   afterEach(() => jest.useRealTimers());
+
+  it('picks up new subscriptions on next tick', async () => {
+    const readFn = jest.fn().mockImplementation(async (tags: string[]) => tags.map(() => 1));
+    const scanner = new Scanner(readFn, { rate: 100 });
+    const initialized = jest.fn();
+
+    scanner.subscribe('TagA');
+    scanner.on('tagInitialized', initialized);
+    scanner.scan();
+
+    jest.advanceTimersByTime(0);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(initialized).toHaveBeenCalledWith('TagA', 1);
+
+    // Subscribe while running
+    scanner.subscribe('TagB');
+
+    jest.advanceTimersByTime(100);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(initialized).toHaveBeenCalledWith('TagB', 1);
+    scanner.pause();
+  });
 
   it('skips unsubscribed tags on next tick', async () => {
     let callCount = 0;
@@ -150,43 +157,34 @@ describe('Scanner mid-scan unsubscribe', () => {
       callCount++;
       return tags.map(() => callCount);
     });
+    const scanner = new Scanner(readFn, { rate: 100 });
 
-    const scanner = new Scanner(readFn);
-    const changed = jest.fn();
-
-    scanner.subscribe('TagA', { rate: 100 });
-    scanner.subscribe('TagB', { rate: 100 });
-    scanner.on('tagChanged', changed);
+    scanner.subscribe('TagA');
+    scanner.subscribe('TagB');
     scanner.scan();
 
-    // First tick — both initialized
     jest.advanceTimersByTime(0);
     await Promise.resolve();
     await Promise.resolve();
 
-    // Unsubscribe TagB
     scanner.unsubscribe('TagB');
 
-    // Second tick — only TagA should be read
     jest.advanceTimersByTime(100);
     await Promise.resolve();
     await Promise.resolve();
 
-    // readFn should have been called with only ['TagA'] on second tick
     const lastCall = readFn.mock.calls[readFn.mock.calls.length - 1];
     expect(lastCall[0]).toEqual(['TagA']);
-
-    scanner.pauseScan();
+    scanner.pause();
   });
 
-  it('skips tick entirely when all tags unsubscribed', async () => {
+  it('skips tick when all tags unsubscribed', async () => {
     const readFn = jest.fn().mockResolvedValue([1]);
-    const scanner = new Scanner(readFn);
+    const scanner = new Scanner(readFn, { rate: 100 });
 
-    scanner.subscribe('OnlyTag', { rate: 100 });
+    scanner.subscribe('OnlyTag');
     scanner.scan();
 
-    // First tick
     jest.advanceTimersByTime(0);
     await Promise.resolve();
     await Promise.resolve();
@@ -194,12 +192,52 @@ describe('Scanner mid-scan unsubscribe', () => {
     const callsBefore = readFn.mock.calls.length;
     scanner.unsubscribe('OnlyTag');
 
-    // Next tick — should not call readFn
     jest.advanceTimersByTime(100);
     await Promise.resolve();
     await Promise.resolve();
 
     expect(readFn.mock.calls.length).toBe(callsBefore);
-    scanner.pauseScan();
+    scanner.pause();
+  });
+
+  it('duplicate subscribe is a no-op', async () => {
+    const readFn = jest.fn().mockImplementation(async (tags: string[]) => tags.map(() => 1));
+    const scanner = new Scanner(readFn);
+
+    scanner.subscribe('Tag');
+    scanner.subscribe('Tag');
+    scanner.scan();
+
+    jest.advanceTimersByTime(0);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(readFn.mock.calls[0][0]).toEqual(['Tag']);
+    scanner.pause();
+  });
+
+  it('preserves subscriptions across pause/scan', async () => {
+    const readFn = jest.fn().mockResolvedValue([1]);
+    const scanner = new Scanner(readFn, { rate: 100 });
+    const initialized = jest.fn();
+
+    scanner.subscribe('Tag');
+    scanner.on('tagInitialized', initialized);
+    scanner.scan();
+
+    jest.advanceTimersByTime(0);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    scanner.pause();
+    scanner.scan();
+
+    jest.advanceTimersByTime(0);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Tag was already initialized — should not re-initialize
+    expect(initialized).toHaveBeenCalledTimes(1);
+    scanner.pause();
   });
 });

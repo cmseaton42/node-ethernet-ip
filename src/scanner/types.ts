@@ -1,12 +1,11 @@
 /**
- * Scanner types — subscription and scan group definitions.
+ * Scanner types — subscription and event definitions.
  */
 
 import { TagValue } from '@/plc/types';
 
 export interface Subscription {
   tagName: string;
-  rate: number;
   lastValue: TagValue | undefined;
 }
 
