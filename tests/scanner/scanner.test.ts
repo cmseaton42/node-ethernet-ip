@@ -117,7 +117,25 @@ describe('Scanner', () => {
   it('uses default rate when none provided', () => {
     const scanner = new Scanner(jest.fn());
     expect(scanner.scanning).toBe(false);
-    // Default rate is 200ms — just verify construction works
+  });
+
+  it('emits scanStarted and scanStopped', () => {
+    const scanner = new Scanner(jest.fn().mockResolvedValue([]), { rate: 100 });
+    const events: string[] = [];
+    scanner.on('scanStarted', () => events.push('started'));
+    scanner.on('scanStopped', () => events.push('stopped'));
+    scanner.subscribe('Tag');
+    scanner.scan();
+    scanner.pause();
+    expect(events).toEqual(['started', 'stopped']);
+  });
+
+  it('pause is idempotent', () => {
+    const scanner = new Scanner(jest.fn().mockResolvedValue([]));
+    const events: string[] = [];
+    scanner.on('scanStopped', () => events.push('stopped'));
+    scanner.pause();
+    expect(events).toEqual([]);
   });
 });
 

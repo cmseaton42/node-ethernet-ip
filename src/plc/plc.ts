@@ -15,26 +15,16 @@ import { parseCPF } from '@/encapsulation/common-packet-format';
 import { extractCIPData } from './cpf-utils';
 import * as MessageRouter from '@/cip/message-router';
 import { buildBatches, BatchRequest, parseMultiServiceResponse } from '@/cip/batch-builder';
-import { TYPE_SIZES, CIPDataType, getTypeName, STRING_STRUCT_HANDLE } from '@/cip/data-types';
+import { TYPE_SIZES, CIPDataType, STRING_STRUCT_HANDLE } from '@/cip/data-types';
 import { CIPError } from '@/errors';
-import { PLCEvents, PLCConnectOptions, TagValue, TagRecord, resolveConnectOptions } from './types';
+import { PLCEvents, PLCConnectOptions, TagValue, resolveConnectOptions } from './types';
 import { buildReadRequest, parseReadResponse } from './read';
 import { buildWriteRequest, buildBitWriteRequest } from './write';
 import { extractBitIndex } from './tag-path';
 import { fetchTemplate } from '@/registry/template-fetcher';
-import { decodeStruct, encodeStruct } from './struct-codec';
-import { isBoolHost } from '@/cip/template';
+import { StructShape, buildShape, encodeIfStruct, decodeIfStruct } from './struct-helpers';
 
-export interface MemberShape {
-  type: string;
-  array?: number;
-  members?: Record<string, MemberShape>;
-}
-
-export interface StructShape {
-  name: string;
-  members: Record<string, MemberShape>;
-}
+export type { MemberShape, StructShape } from './struct-helpers';
 
 /** InterfaceHandle(4) + Timeout(2) prefix before CPF data */
 const CPF_PREFIX_SIZE = 6;
@@ -118,35 +108,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
   getShape(tagName: string): StructShape | undefined {
     const tmpl = this.getTemplate(tagName);
     if (!tmpl) return undefined;
-    return this.buildShape(tmpl);
-  }
-
-  private buildShape(tmpl: Template): StructShape {
-    const members: Record<string, MemberShape> = {};
-    for (const m of tmpl.members) {
-      if (isBoolHost(m)) continue;
-      const shape: MemberShape = {
-        type: m.type.isStruct
-          ? m.type.code === STRING_STRUCT_HANDLE
-            ? 'STRING'
-            : (this.resolveTemplateName(m.type.code) ?? `0x${m.type.code.toString(16)}`)
-          : getTypeName(m.type.code as CIPDataType),
-      };
-      if (m.info > 0 && m.type.code !== CIPDataType.BOOL) shape.array = m.info;
-      if (m.type.isStruct && m.type.code !== STRING_STRUCT_HANDLE) {
-        const nested =
-          this._registry.lookupTemplateByHandle(m.type.code) ??
-          this._registry.lookupTemplate(m.type.code);
-        if (nested) shape.members = this.buildShape(nested).members;
-      }
-      members[m.name] = shape;
-    }
-    return { name: tmpl.name, members };
-  }
-
-  private resolveTemplateName(code: number): string | undefined {
-    const tmpl = this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code);
-    return tmpl?.name;
+    return buildShape(tmpl, this._registry);
   }
 
   async read(tag: string): Promise<TagValue>;
@@ -200,32 +162,18 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     // Decode struct buffers into JS objects if template is available
     if (isStruct && Buffer.isBuffer(value)) {
       const template = await this.ensureTemplate(type);
-      if (template) {
-        return decodeStruct(
-          template,
-          value,
-          (code) =>
-            this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
-        );
-      }
+      return decodeIfStruct(value, template, this._registry);
     }
 
     return value;
   }
 
   /** Decode a struct value if we have its template, otherwise return as-is. */
-  private async decodeIfStruct(value: TagValue, tagName: string): Promise<TagValue> {
+  private async decodeIfStructValue(value: TagValue, tagName: string): Promise<TagValue> {
     const entry = this._registry.lookup(tagName);
     if (entry?.isStruct && Buffer.isBuffer(value)) {
       const template = await this.ensureTemplate(entry.type);
-      if (template) {
-        return decodeStruct(
-          template,
-          value,
-          (code) =>
-            this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
-        );
-      }
+      if (template) return decodeIfStruct(value, template, this._registry);
     }
     return value;
   }
@@ -263,7 +211,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       if (batch.requests.length === 1) {
         // Single request in batch — already a plain CIP request, no multi-service wrapper
         const { value } = parseReadResponse(mr.data, tags[tagIdx]);
-        results.push(await this.decodeIfStruct(value, tags[tagIdx]));
+        results.push(await this.decodeIfStructValue(value, tags[tagIdx]));
         tagIdx++;
       } else {
         const replies = parseMultiServiceResponse(mr.data);
@@ -273,36 +221,13 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
             throw new CIPError(reply.generalStatusCode, reply.extendedStatus);
           }
           const { value } = parseReadResponse(reply.data, tags[tagIdx]);
-          results.push(await this.decodeIfStruct(value, tags[tagIdx]));
+          results.push(await this.decodeIfStructValue(value, tags[tagIdx]));
           tagIdx++;
         }
       }
     }
 
     return results;
-  }
-
-  /** Encode a struct value to Buffer if needed, otherwise return as-is. */
-  private encodeIfStruct(value: TagValue, entry: { type: number; isStruct: boolean }): TagValue {
-    if (
-      entry.isStruct &&
-      typeof value === 'object' &&
-      !Buffer.isBuffer(value) &&
-      !Array.isArray(value)
-    ) {
-      const tmpl =
-        this._registry.lookupTemplateByHandle(entry.type) ??
-        this._registry.lookupTemplate(entry.type);
-      if (tmpl) {
-        return encodeStruct(
-          tmpl,
-          value as TagRecord,
-          (code) =>
-            this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
-        );
-      }
-    }
-    return value;
   }
 
   private async writeSingle(tagName: string, value: TagValue): Promise<void> {
@@ -313,7 +238,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     const entry = this._registry.lookup(tagName)!;
     const bitIndex = extractBitIndex(tagName);
-    const encoded = this.encodeIfStruct(value, entry);
+    const encoded = encodeIfStruct(value, entry, this._registry);
 
     const cipRequest =
       bitIndex !== null
@@ -350,7 +275,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     const requests: BatchRequest[] = entries.map(([tag, val]) => {
       const entry = this._registry.lookup(tag)!;
       const bitIndex = extractBitIndex(tag);
-      const encoded = this.encodeIfStruct(val, entry);
+      const encoded = encodeIfStruct(val, entry, this._registry);
       const serviceData =
         bitIndex !== null
           ? buildBitWriteRequest(tag, val as boolean, entry.type)

@@ -58,16 +58,19 @@ export class Scanner extends TypedEventEmitter<ScanEvents> {
   scan(): void {
     if (this._scanning) return;
     this._scanning = true;
+    this.emit('scanStarted');
     this.scheduleTick();
   }
 
   /** Stop scanning. Subscriptions are preserved for resume via scan(). */
   pause(): void {
+    if (!this._scanning) return;
     this._scanning = false;
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
     }
+    this.emit('scanStopped');
   }
 
   private scheduleTick(): void {

@@ -2,12 +2,15 @@
 export { PLC } from './plc';
 export type { TagValue, TagRecord, PLCEvents, PLCConnectOptions } from './plc/types';
 export type { StructShape, MemberShape } from './plc/plc';
+export type { ConnectionState } from './session/types';
 
 // Transport
 export { ITransport, TCPTransport, MockTransport } from './transport';
 
 // Scanner
 export { Scanner } from './scanner';
+export type { ScannerOptions } from './scanner/scanner';
+export type { ScanEvents } from './scanner/types';
 
 // Logger
 export type { Logger } from './util/logger';

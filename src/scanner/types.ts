@@ -13,6 +13,8 @@ export type ScanEvents = {
   tagChanged: (tag: string, value: TagValue, prev: TagValue) => void;
   tagInitialized: (tag: string, value: TagValue) => void;
   scanError: (err: Error) => void;
+  scanStarted: () => void;
+  scanStopped: () => void;
 };
 
 /** Default scan rate in milliseconds */

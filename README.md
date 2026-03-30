@@ -27,9 +27,10 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 - Complete data type support (all atomics, STRING, SHORT_STRING, STRUCT, arrays)
 - Lazy tag type discovery with optional full tag list retrieval
 - Auto-reconnect with exponential backoff
-- Per-tag scan rates for subscriptions
+- Tag subscriptions with change detection
 - Typed error hierarchy with human-readable CIP status codes
-- 320+ unit tests
+- Injectable logger (noop default)
+- 360+ unit tests
 
 ## Prerequisites
 
@@ -227,17 +228,17 @@ const template = plc.getTemplate('MotorStatus');
 
 ### Scanning / Subscriptions
 
-Monitor tags for changes with configurable per-tag scan rates:
+Monitor tags for changes. All tags share a single scan rate, set at construction:
 
 ```typescript
 import { Scanner } from 'ethernet-ip';
 
-// Create a scanner, injecting the PLC's read function
-const scanner = new Scanner(async (tags) => plc.read(tags));
+// Create a scanner with 200ms scan rate (default)
+const scanner = new Scanner(async (tags) => plc.read(tags), { rate: 200 });
 
-// Subscribe tags with different scan rates
-scanner.subscribe('Temperature', { rate: 100 }); // Read every 100ms
-scanner.subscribe('BatchCount', { rate: 5000 }); // Read every 5 seconds
+// Subscribe tags — can add/remove while scanning
+scanner.subscribe('Temperature');
+scanner.subscribe('BatchCount');
 
 // Listen for changes
 scanner.on('tagInitialized', (tag, value) => {
@@ -255,8 +256,15 @@ scanner.on('scanError', (err) => {
 // Start scanning
 scanner.scan();
 
-// Stop scanning
-scanner.pauseScan();
+// Add/remove tags while running — picked up on next tick
+scanner.subscribe('NewTag');
+scanner.unsubscribe('BatchCount');
+
+// Pause scanning (subscriptions preserved)
+scanner.pause();
+
+// Resume
+scanner.scan();
 ```
 
 ### Auto-Reconnect
@@ -288,6 +296,29 @@ plc.on('connected', () => {
 plc.on('error', (err) => {
   console.error('Error:', err.message);
 });
+```
+
+### Connection State
+
+```typescript
+plc.isConnected; // true when connected, false otherwise
+```
+
+### Logger
+
+Inject a logger for observability. Default is noop — no console output unless you provide one:
+
+```typescript
+import { PLC, Logger } from 'ethernet-ip';
+
+const logger: Logger = {
+  debug: (msg, ctx) => console.log('[DEBUG]', msg, ctx),
+  info: (msg, ctx) => console.log('[INFO]', msg, ctx),
+  warn: (msg, ctx) => console.warn('[WARN]', msg, ctx),
+  error: (msg, ctx) => console.error('[ERROR]', msg, ctx),
+};
+
+const plc = new PLC({ logger });
 ```
 
 ### Generic CIP Messaging
