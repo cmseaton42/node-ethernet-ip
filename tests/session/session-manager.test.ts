@@ -112,6 +112,39 @@ describe('SessionManager', () => {
     expect(session.sessionId).toBe(0);
     expect(session.pipeline).toBeNull();
   });
+
+  it('cleans up previous session when connect() called again', async () => {
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+    expect(session.state).toBe(ConnectionState.Connected);
+
+    // Second connect on same instance — should not throw
+    const transport2 = new MockTransport();
+    const session2 = new SessionManager(transport2);
+    autoRespond(transport2, [buildRegisterSessionResponse(0x02), buildForwardOpenResponse(0x02)]);
+    await session2.connect('192.168.1.1');
+
+    // Simulate: first session still in Connected state, call connect again
+    autoRespond(transport, [buildRegisterSessionResponse(0x03), buildForwardOpenResponse(0x03)]);
+    await session.connect('192.168.1.1');
+    expect(session.state).toBe(ConnectionState.Connected);
+  });
+
+  it('cancels reconnect timer when connect() called', async () => {
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1', {
+      reconnect: { enabled: true, initialDelay: 100, maxDelay: 100, multiplier: 1, maxRetries: 5 },
+    });
+
+    transport.triggerClose();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(session.state).toBe(ConnectionState.Reconnecting);
+
+    // External connect() should cancel the reconnector
+    autoRespond(transport, [buildRegisterSessionResponse(0x02), buildForwardOpenResponse(0x02)]);
+    await session.connect('192.168.1.1');
+    expect(session.state).toBe(ConnectionState.Connected);
+  });
 });
 
 // Additional coverage tests in a separate describe block
@@ -325,5 +358,43 @@ describe('SessionManager reconnect on close', () => {
     await new Promise((r) => setTimeout(r, 10));
 
     expect(session.state).toBe(ConnectionState.Disconnected);
+  });
+
+  it('emits disconnected after error when transport is dead', async () => {
+    const transport = new MockTransport();
+    const session = new SessionManager(transport);
+
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+
+    const events: string[] = [];
+    session.on('error', () => events.push('error'));
+    session.on('disconnected', () => events.push('disconnected'));
+
+    // Simulate ECONNRESET: transport dies, then error fires
+    transport.connected = false;
+    transport.triggerError(new Error('read ECONNRESET'));
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(events).toEqual(['error', 'disconnected']);
+  });
+
+  it('does not double-emit disconnected when both error and close fire', async () => {
+    const transport = new MockTransport();
+    const session = new SessionManager(transport);
+
+    autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
+    await session.connect('192.168.1.1');
+
+    let disconnectCount = 0;
+    session.on('error', () => {}); // prevent unhandled error throw
+    session.on('disconnected', () => disconnectCount++);
+
+    transport.connected = false;
+    transport.triggerError(new Error('read ECONNRESET'));
+    transport.triggerClose();
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(disconnectCount).toBe(1);
   });
 });

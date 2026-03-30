@@ -43,14 +43,34 @@ export interface TagRegistryEntry {
   template?: Template;
 }
 
+/** CIP type code for BOOL */
+const BOOL_TYPE = 0xc1;
+
 export class TagRegistry {
   private entries = new Map<string, TagRegistryEntry>();
   private templates = new Map<number, Template>();
   private handleToInstance = new Map<number, number>();
 
-  /** Look up a tag's type info. Returns undefined if unknown. */
+  /** Look up a tag's type info. Returns BOOL for bit-level addresses (e.g. 'status.0'). */
   lookup(tagName: string): TagRegistryEntry | undefined {
-    return this.entries.get(this.normalizeKey(tagName));
+    const key = this.normalizeKey(tagName);
+    const direct = this.entries.get(key);
+    if (direct) return direct;
+
+    const base = this.bitBase(key);
+    if (base) {
+      const parent = this.entries.get(base);
+      if (parent && !parent.isStruct) {
+        return { type: BOOL_TYPE, size: 1, isStruct: false, arrayDims: 0 };
+      }
+    }
+    return undefined;
+  }
+
+  /** Look up the parent integer entry for a bit-level address (for mask sizing). */
+  lookupParent(tagName: string): TagRegistryEntry | undefined {
+    const base = this.bitBase(this.normalizeKey(tagName));
+    return base ? this.entries.get(base) : undefined;
   }
 
   /** Register a tag's type info (used by lazy discovery). */
@@ -80,9 +100,12 @@ export class TagRegistry {
     return instanceId !== undefined ? this.templates.get(instanceId) : undefined;
   }
 
-  /** Check if a tag is known. */
+  /** Check if a tag is known (includes bit-level addresses of known parents). */
   has(tagName: string): boolean {
-    return this.entries.has(this.normalizeKey(tagName));
+    const key = this.normalizeKey(tagName);
+    if (this.entries.has(key)) return true;
+    const base = this.bitBase(key);
+    return base ? this.entries.has(base) : false;
   }
 
   /** Number of registered tags. */
@@ -105,5 +128,13 @@ export class TagRegistry {
   /** Normalize tag name for case-insensitive lookup. */
   private normalizeKey(tagName: string): string {
     return tagName.toLowerCase();
+  }
+
+  /** If key is a bit address (e.g. 'status.0'), return the base name. Otherwise undefined. */
+  private bitBase(key: string): string | undefined {
+    const dot = key.lastIndexOf('.');
+    if (dot === -1) return undefined;
+    const suffix = key.substring(dot + 1);
+    return /^\d{1,2}$/.test(suffix) ? key.substring(0, dot) : undefined;
   }
 }

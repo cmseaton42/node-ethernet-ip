@@ -154,7 +154,13 @@ describe('template handle lookup', () => {
     const registry = new TagRegistry();
     const tmpl = {
       name: 'Test',
-      attributes: { id: 100, objectDefinitionSize: 1, structureSize: 4, memberCount: 0, structureHandle: 0xabcd },
+      attributes: {
+        id: 100,
+        objectDefinitionSize: 1,
+        structureSize: 4,
+        memberCount: 0,
+        structureHandle: 0xabcd,
+      },
       members: [],
     };
     registry.registerTemplate(100, tmpl);
@@ -170,12 +176,64 @@ describe('template handle lookup', () => {
     const registry = new TagRegistry();
     const tmpl = {
       name: 'Test',
-      attributes: { id: 1, objectDefinitionSize: 1, structureSize: 4, memberCount: 0, structureHandle: 0x1234 },
+      attributes: {
+        id: 1,
+        objectDefinitionSize: 1,
+        structureSize: 4,
+        memberCount: 0,
+        structureHandle: 0x1234,
+      },
       members: [],
     };
     registry.registerTemplate(1, tmpl);
     registry.clearAll();
     expect(registry.lookupTemplateByHandle(0x1234)).toBeUndefined();
     expect(registry.lookupTemplate(1)).toBeUndefined();
+  });
+});
+
+describe('bit-level addresses', () => {
+  let registry: TagRegistry;
+
+  beforeEach(() => {
+    registry = new TagRegistry();
+    registry.define('status', 0xc4, 4); // DINT
+  });
+
+  it('lookup returns BOOL for bit address', () => {
+    const entry = registry.lookup('status.0');
+    expect(entry).toBeDefined();
+    expect(entry!.type).toBe(0xc1);
+    expect(entry!.size).toBe(1);
+  });
+
+  it('lookup returns BOOL for double-digit bit index', () => {
+    expect(registry.lookup('status.31')!.type).toBe(0xc1);
+  });
+
+  it('has returns true for bit address of known parent', () => {
+    expect(registry.has('status.5')).toBe(true);
+  });
+
+  it('lookupParent returns parent DINT entry', () => {
+    const parent = registry.lookupParent('status.5');
+    expect(parent).toBeDefined();
+    expect(parent!.type).toBe(0xc4);
+  });
+
+  it('lookup returns undefined for bit address of unknown parent', () => {
+    expect(registry.lookup('unknown.0')).toBeUndefined();
+  });
+
+  it('lookupParent returns undefined for non-bit address', () => {
+    expect(registry.lookupParent('status')).toBeUndefined();
+  });
+
+  it('lookup does not treat non-digit suffix as bit address', () => {
+    expect(registry.lookup('status.member')).toBeUndefined();
+  });
+  it('does not return BOOL for struct member paths', () => {
+    registry.define('myStruct.member', 0xc4, 4);
+    expect(registry.lookup('myStruct.member')!.type).toBe(0xc4);
   });
 });

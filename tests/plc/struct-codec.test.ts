@@ -143,19 +143,51 @@ describe('round-trip', () => {
 describe('nested struct decode/encode', () => {
   const innerTemplate: Template = {
     name: 'Inner',
-    attributes: { id: 0x50, objectDefinitionSize: 2, structureSize: 8, memberCount: 2, structureHandle: 0xaaaa },
+    attributes: {
+      id: 0x50,
+      objectDefinitionSize: 2,
+      structureSize: 8,
+      memberCount: 2,
+      structureHandle: 0xaaaa,
+    },
     members: [
-      { name: 'x', info: 0, type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 }, offset: 0 },
-      { name: 'y', info: 0, type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 }, offset: 4 },
+      {
+        name: 'x',
+        info: 0,
+        type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 },
+        offset: 0,
+      },
+      {
+        name: 'y',
+        info: 0,
+        type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 },
+        offset: 4,
+      },
     ],
   };
 
   const outerTemplate: Template = {
     name: 'Outer',
-    attributes: { id: 0x60, objectDefinitionSize: 4, structureSize: 12, memberCount: 2, structureHandle: 0xbbbb },
+    attributes: {
+      id: 0x60,
+      objectDefinitionSize: 4,
+      structureSize: 12,
+      memberCount: 2,
+      structureHandle: 0xbbbb,
+    },
     members: [
-      { name: 'val', info: 0, type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 }, offset: 0 },
-      { name: 'nested', info: 0, type: { code: 0x50, isStruct: true, isReserved: false, arrayDims: 0 }, offset: 4 },
+      {
+        name: 'val',
+        info: 0,
+        type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 },
+        offset: 0,
+      },
+      {
+        name: 'nested',
+        info: 0,
+        type: { code: 0x50, isStruct: true, isReserved: false, arrayDims: 0 },
+        offset: 4,
+      },
     ],
   };
 
@@ -191,10 +223,26 @@ describe('nested struct decode/encode', () => {
 describe('struct with STRING member', () => {
   const tmpl: Template = {
     name: 'WithString',
-    attributes: { id: 1, objectDefinitionSize: 24, structureSize: 92, memberCount: 2, structureHandle: 0xcccc },
+    attributes: {
+      id: 1,
+      objectDefinitionSize: 24,
+      structureSize: 92,
+      memberCount: 2,
+      structureHandle: 0xcccc,
+    },
     members: [
-      { name: 'id', info: 0, type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 }, offset: 0 },
-      { name: 'label', info: 0, type: { code: 0x0fce, isStruct: true, isReserved: false, arrayDims: 0 }, offset: 4 },
+      {
+        name: 'id',
+        info: 0,
+        type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 },
+        offset: 0,
+      },
+      {
+        name: 'label',
+        info: 0,
+        type: { code: 0x0fce, isStruct: true, isReserved: false, arrayDims: 0 },
+        offset: 4,
+      },
     ],
   };
 
@@ -219,17 +267,39 @@ describe('struct with STRING member', () => {
 describe('array of structs', () => {
   const elemTemplate: Template = {
     name: 'Elem',
-    attributes: { id: 0x70, objectDefinitionSize: 1, structureSize: 4, memberCount: 1, structureHandle: 0xdddd },
+    attributes: {
+      id: 0x70,
+      objectDefinitionSize: 1,
+      structureSize: 4,
+      memberCount: 1,
+      structureHandle: 0xdddd,
+    },
     members: [
-      { name: 'v', info: 0, type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 }, offset: 0 },
+      {
+        name: 'v',
+        info: 0,
+        type: { code: CIPDataType.DINT, isStruct: false, isReserved: false, arrayDims: 0 },
+        offset: 0,
+      },
     ],
   };
 
   const parentTemplate: Template = {
     name: 'Parent',
-    attributes: { id: 0x80, objectDefinitionSize: 4, structureSize: 12, memberCount: 1, structureHandle: 0xeeee },
+    attributes: {
+      id: 0x80,
+      objectDefinitionSize: 4,
+      structureSize: 12,
+      memberCount: 1,
+      structureHandle: 0xeeee,
+    },
     members: [
-      { name: 'items', info: 3, type: { code: 0x70, isStruct: true, isReserved: false, arrayDims: 0 }, offset: 0 },
+      {
+        name: 'items',
+        info: 3,
+        type: { code: 0x70, isStruct: true, isReserved: false, arrayDims: 0 },
+        offset: 0,
+      },
     ],
   };
 

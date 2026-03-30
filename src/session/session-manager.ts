@@ -52,6 +52,12 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
   }
 
   async connect(ip: string, options: Partial<ConnectOptions> = {}): Promise<void> {
+    // Clean up any previous session
+    this._reconnector?.cancel();
+    if (this._state !== ConnectionState.Disconnected) {
+      this.cleanup();
+    }
+
     this._ip = ip;
     this._options = { ...DEFAULT_CONNECT_OPTIONS, ...options };
 
@@ -66,7 +72,10 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
 
     this._pipeline = new RequestPipeline(this.transport);
     this.transport.onClose(() => this.handleClose());
-    this.transport.onError((err) => this.emit('error', err));
+    this.transport.onError((err) => {
+      this.emit('error', err);
+      if (!this.transport.connected) this.handleClose();
+    });
 
     try {
       // Register Session
@@ -142,6 +151,8 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
 
   private handleClose(): void {
     if (this._state === ConnectionState.Disconnecting) return;
+    if (this._state === ConnectionState.Disconnected) return;
+    if (this._state === ConnectionState.Reconnecting) return;
 
     this._pipeline?.flush(new ConnectionError('Transport closed'));
     this._pipeline = null;

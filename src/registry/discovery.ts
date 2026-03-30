@@ -11,6 +11,7 @@ import { CIPService } from '@/cip/services';
 import { EPathBuilder, LogicalType } from '@/cip/epath';
 import { sendRRData } from '@/encapsulation/encapsulation';
 import { parseHeader } from '@/encapsulation/header';
+import { Template } from './tag-registry';
 
 /** CIP status code for partial transfer (more data available) */
 const STATUS_PARTIAL_TRANSFER = 0x06;
@@ -35,6 +36,7 @@ export interface DiscoveredTag {
     arrayDims: number;
   };
   program: string | null;
+  template?: Template;
 }
 
 /**

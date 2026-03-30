@@ -183,7 +183,6 @@ describe('parseReadTemplateResponse', () => {
   });
 });
 
-
 describe('parseReadTemplateResponse edge cases', () => {
   it('handles missing null terminator in last string', () => {
     // 1 member + template name without null + member name without null

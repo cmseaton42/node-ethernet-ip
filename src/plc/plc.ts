@@ -91,8 +91,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     const entry = this._registry.lookup(tagName);
     if (!entry?.isStruct) return undefined;
     return (
-      this._registry.lookupTemplateByHandle(entry.type) ??
-      this._registry.lookupTemplate(entry.type)
+      this._registry.lookupTemplateByHandle(entry.type) ?? this._registry.lookupTemplate(entry.type)
     );
   }
 
@@ -139,8 +138,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
   }
 
   private resolveTemplateName(code: number): string | undefined {
-    const tmpl =
-      this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code);
+    const tmpl = this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code);
     return tmpl?.name;
   }
 
@@ -180,9 +178,11 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     const { type, isStruct, value } = parseReadResponse(mr.data, tagName);
 
-    // Lazy discovery: cache type (struct handle for structs, CIP type code for atomics)
-    if (!this._registry.has(tagName)) {
-      this._registry.register(tagName, {
+    // Lazy discovery: cache type under the base tag name (strip bit index)
+    const baseName =
+      extractBitIndex(tagName) !== null ? tagName.substring(0, tagName.lastIndexOf('.')) : tagName;
+    if (!this._registry.has(baseName)) {
+      this._registry.register(baseName, {
         type,
         size: TYPE_SIZES.get(type as CIPDataType) ?? 0,
         isStruct,
@@ -194,8 +194,11 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     if (isStruct && Buffer.isBuffer(value)) {
       const template = await this.ensureTemplate(type);
       if (template) {
-        return decodeStruct(template, value, (code) =>
-          this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
+        return decodeStruct(
+          template,
+          value,
+          (code) =>
+            this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
         );
       }
     }
@@ -209,8 +212,11 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     if (entry?.isStruct && Buffer.isBuffer(value)) {
       const template = await this.ensureTemplate(entry.type);
       if (template) {
-        return decodeStruct(template, value, (code) =>
-          this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
+        return decodeStruct(
+          template,
+          value,
+          (code) =>
+            this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
         );
       }
     }
@@ -271,13 +277,21 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
   /** Encode a struct value to Buffer if needed, otherwise return as-is. */
   private encodeIfStruct(value: TagValue, entry: { type: number; isStruct: boolean }): TagValue {
-    if (entry.isStruct && typeof value === 'object' && !Buffer.isBuffer(value) && !Array.isArray(value)) {
+    if (
+      entry.isStruct &&
+      typeof value === 'object' &&
+      !Buffer.isBuffer(value) &&
+      !Array.isArray(value)
+    ) {
       const tmpl =
         this._registry.lookupTemplateByHandle(entry.type) ??
         this._registry.lookupTemplate(entry.type);
       if (tmpl) {
-        return encodeStruct(tmpl, value as TagRecord, (code) =>
-          this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
+        return encodeStruct(
+          tmpl,
+          value as TagRecord,
+          (code) =>
+            this._registry.lookupTemplateByHandle(code) ?? this._registry.lookupTemplate(code),
         );
       }
     }
@@ -296,8 +310,18 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     const cipRequest =
       bitIndex !== null
-        ? buildBitWriteRequest(tagName, value as boolean, entry.type)
-        : buildWriteRequest(tagName, encoded, entry.type, 1, entry.isStruct ? entry.type : undefined);
+        ? buildBitWriteRequest(
+            tagName,
+            value as boolean,
+            this._registry.lookupParent(tagName)!.type,
+          )
+        : buildWriteRequest(
+            tagName,
+            encoded,
+            entry.type,
+            1,
+            entry.isStruct ? entry.type : undefined,
+          );
 
     const cipResponse = await this.sendCIP(cipRequest);
     const mr = MessageRouter.parse(cipResponse);
@@ -371,6 +395,13 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       }
     }
 
+    // Attach templates to struct tags
+    for (const tag of tags) {
+      if (tag.type.isStruct) {
+        tag.template = this._registry.lookupTemplate(tag.type.code);
+      }
+    }
+
     return tags;
   }
 
@@ -391,11 +422,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     // Discover tags to learn template instance IDs, then fetch templates
     if (this.session.pipeline) {
-      const tags = await discoverUserTags(
-        this.session.pipeline,
-        this.session.sessionId,
-        10000,
-      );
+      const tags = await discoverUserTags(this.session.pipeline, this.session.sessionId, 10000);
       // Fetch templates for all struct types we haven't seen yet
       const seen = new Set<number>();
       for (const tag of tags) {

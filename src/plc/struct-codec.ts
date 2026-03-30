@@ -16,7 +16,6 @@ import { TagValue, TagRecord } from './types';
 
 /** Rockwell built-in STRING struct handle */
 
-
 type TemplateLookup = (typeCode: number) => Template | undefined;
 
 /**
