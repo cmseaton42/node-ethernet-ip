@@ -60,6 +60,10 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     return this._registry;
   }
 
+  get isConnected(): boolean {
+    return this.session.state === 'connected';
+  }
+
   async connect(ip: string, options?: PLCConnectOptions): Promise<void> {
     const opts = resolveConnectOptions(options);
     await this.session.connect(ip, {

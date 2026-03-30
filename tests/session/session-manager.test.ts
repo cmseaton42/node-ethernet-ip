@@ -1,4 +1,4 @@
-import { SessionManager, ConnectionState } from '@/session';
+import { SessionManager } from '@/session';
 import { MockTransport } from '@/transport/mock-transport';
 import { EIPCommand } from '@/encapsulation/commands';
 import { ConnectionError } from '@/errors';
@@ -71,7 +71,7 @@ describe('SessionManager', () => {
   });
 
   it('starts in Disconnected state', () => {
-    expect(session.state).toBe(ConnectionState.Disconnected);
+    expect(session.state).toBe('disconnected');
   });
 
   it('emits state events during connect', async () => {
@@ -86,7 +86,7 @@ describe('SessionManager', () => {
     await session.connect('192.168.1.1');
 
     expect(states).toEqual(['connecting', 'registering', 'forward-opening', 'connected']);
-    expect(session.state).toBe(ConnectionState.Connected);
+    expect(session.state).toBe('connected');
     expect(session.sessionId).toBe(0x42);
     expect(session.connectionSize).toBeGreaterThan(0);
   });
@@ -108,7 +108,7 @@ describe('SessionManager', () => {
     await session.connect('192.168.1.1');
     await session.disconnect();
 
-    expect(session.state).toBe(ConnectionState.Disconnected);
+    expect(session.state).toBe('disconnected');
     expect(session.sessionId).toBe(0);
     expect(session.pipeline).toBeNull();
   });
@@ -116,7 +116,7 @@ describe('SessionManager', () => {
   it('cleans up previous session when connect() called again', async () => {
     autoRespond(transport, [buildRegisterSessionResponse(0x01), buildForwardOpenResponse(0x01)]);
     await session.connect('192.168.1.1');
-    expect(session.state).toBe(ConnectionState.Connected);
+    expect(session.state).toBe('connected');
 
     // Second connect on same instance — should not throw
     const transport2 = new MockTransport();
@@ -127,7 +127,7 @@ describe('SessionManager', () => {
     // Simulate: first session still in Connected state, call connect again
     autoRespond(transport, [buildRegisterSessionResponse(0x03), buildForwardOpenResponse(0x03)]);
     await session.connect('192.168.1.1');
-    expect(session.state).toBe(ConnectionState.Connected);
+    expect(session.state).toBe('connected');
   });
 
   it('cancels reconnect timer when connect() called', async () => {
@@ -138,12 +138,12 @@ describe('SessionManager', () => {
 
     transport.triggerClose();
     await new Promise((r) => setTimeout(r, 10));
-    expect(session.state).toBe(ConnectionState.Reconnecting);
+    expect(session.state).toBe('reconnecting');
 
     // External connect() should cancel the reconnector
     autoRespond(transport, [buildRegisterSessionResponse(0x02), buildForwardOpenResponse(0x02)]);
     await session.connect('192.168.1.1');
-    expect(session.state).toBe(ConnectionState.Connected);
+    expect(session.state).toBe('connected');
   });
 });
 
@@ -161,7 +161,7 @@ describe('SessionManager error paths', () => {
     transport.connect = () => Promise.reject(new Error('ECONNREFUSED'));
 
     await expect(session.connect('192.168.1.1')).rejects.toBeInstanceOf(ConnectionError);
-    expect(session.state).toBe(ConnectionState.Disconnected);
+    expect(session.state).toBe('disconnected');
   });
 
   it('transitions to Disconnected on transport close', async () => {
@@ -175,7 +175,7 @@ describe('SessionManager error paths', () => {
     transport.triggerClose();
     await disconnectedPromise;
 
-    expect(session.state).toBe(ConnectionState.Disconnected);
+    expect(session.state).toBe('disconnected');
   });
 
   it('emits error event on transport error', async () => {
@@ -270,7 +270,7 @@ describe('SessionManager connected option', () => {
     ]);
 
     await expect(session.connect('192.168.1.1')).rejects.toThrow('Forward Open failed');
-    expect(session.state).toBe(ConnectionState.Disconnected);
+    expect(session.state).toBe('disconnected');
     expect(session.sessionId).toBe(0);
     expect(session.pipeline).toBeNull();
   });
@@ -321,7 +321,7 @@ describe('SessionManager reconnect on close', () => {
 
     // Give reconnector time to schedule
     await new Promise((r) => setTimeout(r, 50));
-    expect(session.state).toBe(ConnectionState.Reconnecting);
+    expect(session.state).toBe('reconnecting');
 
     // Cancel pending reconnect timer to avoid leaking handles
     await session.disconnect();
@@ -357,7 +357,7 @@ describe('SessionManager reconnect on close', () => {
     transport.triggerClose();
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(session.state).toBe(ConnectionState.Disconnected);
+    expect(session.state).toBe('disconnected');
   });
 
   it('emits disconnected after error when transport is dead', async () => {

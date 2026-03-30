@@ -2,15 +2,14 @@
  * Connection state machine and types for the Session Manager.
  */
 
-export enum ConnectionState {
-  Disconnected = 'disconnected',
-  Connecting = 'connecting',
-  Registering = 'registering',
-  ForwardOpening = 'forward-opening',
-  Connected = 'connected',
-  Disconnecting = 'disconnecting',
-  Reconnecting = 'reconnecting',
-}
+export type ConnectionState =
+  | 'disconnected'
+  | 'connecting'
+  | 'registering'
+  | 'forward-opening'
+  | 'connected'
+  | 'disconnecting'
+  | 'reconnecting';
 
 export type SessionEvents = {
   connecting: () => void;

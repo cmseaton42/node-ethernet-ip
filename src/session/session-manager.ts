@@ -1,9 +1,10 @@
 /**
  * Session Manager — orchestrates the connection lifecycle.
- * Composes: register-session, forward-open, reconnect
+ * Composes: register-session, forward-open, reconnect, state-machine
  */
 
 import { TypedEventEmitter } from '@/util/typed-event-emitter';
+import { StateMachine } from '@/util/state-machine';
 import { ITransport } from '@/transport/interfaces';
 import { RequestPipeline } from '@/pipeline/request-pipeline';
 import { ConnectionError } from '@/errors';
@@ -15,7 +16,13 @@ import { Reconnector } from './reconnect';
 const EIP_PORT = 44818;
 
 export class SessionManager extends TypedEventEmitter<SessionEvents> {
-  private _state = ConnectionState.Disconnected;
+  private sm = new StateMachine<ConnectionState>('disconnected', {
+    '*': ['connecting', 'disconnected'],
+    connecting: ['registering'],
+    registering: ['forward-opening', 'connected'],
+    'forward-opening': ['connected'],
+    connected: ['disconnecting', 'reconnecting'],
+  });
   private _sessionId = 0;
   private _connectionId = 0;
   private _connectionSize = 0;
@@ -28,10 +35,15 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
 
   constructor(private readonly transport: ITransport) {
     super();
+    this.sm.onStateChange((_prev, current) => {
+      if (current !== 'reconnecting') {
+        this.emit(current as keyof SessionEvents);
+      }
+    });
   }
 
   get state(): ConnectionState {
-    return this._state;
+    return this.sm.state;
   }
   get sessionId(): number {
     return this._sessionId;
@@ -54,19 +66,20 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
   async connect(ip: string, options: Partial<ConnectOptions> = {}): Promise<void> {
     // Clean up any previous session
     this._reconnector?.cancel();
-    if (this._state !== ConnectionState.Disconnected) {
+    if (!this.sm.is('disconnected')) {
       this.cleanup();
+      this.sm.setState('disconnected');
     }
 
     this._ip = ip;
     this._options = { ...DEFAULT_CONNECT_OPTIONS, ...options };
 
     // TCP connect
-    this.setState(ConnectionState.Connecting);
+    this.sm.setState('connecting');
     try {
       await this.transport.connect(ip, EIP_PORT, this._options.timeoutMs);
     } catch (err) {
-      this.setState(ConnectionState.Disconnected);
+      this.sm.setState('disconnected');
       throw new ConnectionError(`TCP connect failed: ${(err as Error).message}`);
     }
 
@@ -79,12 +92,12 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
 
     try {
       // Register Session
-      this.setState(ConnectionState.Registering);
+      this.sm.setState('registering');
       this._sessionId = await doRegisterSession(this._pipeline, this._options.timeoutMs);
 
       // Forward Open (connected messaging)
       if (this._options.connected) {
-        this.setState(ConnectionState.ForwardOpening);
+        this.sm.setState('forward-opening');
         try {
           const result = await doForwardOpen(
             this._pipeline,
@@ -105,16 +118,23 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
       }
     } catch (err) {
       this.cleanup();
-      this.setState(ConnectionState.Disconnected);
+      this.sm.setState('disconnected');
       throw err;
     }
 
-    this.setState(ConnectionState.Connected);
+    this.sm.setState('connected');
   }
 
   async disconnect(): Promise<void> {
     this._reconnector?.cancel();
-    this.setState(ConnectionState.Disconnecting);
+
+    if (this.sm.is('disconnected') || this.sm.is('reconnecting')) {
+      this.cleanup();
+      if (!this.sm.is('disconnected')) this.sm.setState('disconnected');
+      return;
+    }
+
+    this.sm.setState('disconnecting');
 
     try {
       if (this._pipeline && this._connectionSerial) {
@@ -130,13 +150,8 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
       }
     } finally {
       this.cleanup();
-      this.setState(ConnectionState.Disconnected);
+      this.sm.setState('disconnected');
     }
-  }
-
-  private setState(state: ConnectionState): void {
-    this._state = state;
-    this.emit(state as keyof SessionEvents);
   }
 
   private cleanup(): void {
@@ -150,9 +165,9 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
   }
 
   private handleClose(): void {
-    if (this._state === ConnectionState.Disconnecting) return;
-    if (this._state === ConnectionState.Disconnected) return;
-    if (this._state === ConnectionState.Reconnecting) return;
+    if (this.sm.is('disconnecting')) return;
+    if (this.sm.is('disconnected')) return;
+    if (this.sm.is('reconnecting')) return;
 
     this._pipeline?.flush(new ConnectionError('Transport closed'));
     this._pipeline = null;
@@ -162,16 +177,16 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     this._sequenceCount = 0;
 
     if (this._options.reconnect.enabled) {
-      this.setState(ConnectionState.Reconnecting);
+      this.sm.setState('reconnecting');
       this._reconnector = new Reconnector(this._options.reconnect, async (attempt) => {
         this.emit('reconnecting', attempt);
         await this.connect(this._ip, this._options);
       });
       if (!this._reconnector.schedule()) {
-        this.setState(ConnectionState.Disconnected);
+        this.sm.setState('disconnected');
       }
     } else {
-      this.setState(ConnectionState.Disconnected);
+      this.sm.setState('disconnected');
     }
   }
 }

@@ -22,3 +22,10 @@ describe('getTemplate', () => {
     expect(plc.getTemplate('osf')).toBeUndefined();
   });
 });
+
+describe('isConnected', () => {
+  it('returns false before connect', () => {
+    const plc = new PLC({ transport: new MockTransport() });
+    expect(plc.isConnected).toBe(false);
+  });
+});
