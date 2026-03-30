@@ -3,6 +3,7 @@
  */
 
 import { TypedEventEmitter } from '@/util/typed-event-emitter';
+import { Logger, noopLogger } from '@/util/logger';
 import { ITransport } from '@/transport/interfaces';
 import { TCPTransport } from '@/transport/tcp-transport';
 import { SessionManager } from '@/session/session-manager';
@@ -44,11 +45,13 @@ const UCMM_MAX_SIZE = 508;
 export class PLC extends TypedEventEmitter<PLCEvents> {
   private session: SessionManager;
   private _registry = new TagRegistry();
+  private log: Logger;
 
-  constructor(options?: { transport?: ITransport }) {
+  constructor(options?: { transport?: ITransport; logger?: Logger }) {
     super();
+    this.log = options?.logger ?? noopLogger;
     const transport = options?.transport ?? new TCPTransport();
-    this.session = new SessionManager(transport);
+    this.session = new SessionManager(transport, this.log);
 
     this.session.on('connected', () => this.emit('connected'));
     this.session.on('disconnected', () => this.emit('disconnected'));
@@ -406,6 +409,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       }
     }
 
+    this.log.info('Discover completed', { tagCount: tags.length });
     return tags;
   }
 

@@ -12,6 +12,7 @@ import { ConnectionState, SessionEvents, ConnectOptions, DEFAULT_CONNECT_OPTIONS
 import { doRegisterSession, doUnregisterSession } from './register-session';
 import { doForwardOpen, doForwardClose } from './forward-open';
 import { Reconnector } from './reconnect';
+import { Logger, noopLogger } from '@/util/logger';
 
 const EIP_PORT = 44818;
 
@@ -33,9 +34,13 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
   private _reconnector: Reconnector | null = null;
   private _ip = '';
 
-  constructor(private readonly transport: ITransport) {
+  constructor(
+    private readonly transport: ITransport,
+    readonly log: Logger = noopLogger,
+  ) {
     super();
-    this.sm.onStateChange((_prev, current) => {
+    this.sm.onStateChange((prev, current) => {
+      this.log.debug('State transition', { from: prev, to: current });
       if (current !== 'reconnecting') {
         this.emit(current as keyof SessionEvents);
       }
@@ -76,9 +81,11 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
 
     // TCP connect
     this.sm.setState('connecting');
+    this.log.info('Connecting', { ip, slot: this._options.slot });
     try {
       await this.transport.connect(ip, EIP_PORT, this._options.timeoutMs);
     } catch (err) {
+      this.log.error('TCP connect failed', { ip, error: (err as Error).message });
       this.sm.setState('disconnected');
       throw new ConnectionError(`TCP connect failed: ${(err as Error).message}`);
     }
@@ -86,6 +93,7 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     this._pipeline = new RequestPipeline(this.transport);
     this.transport.onClose(() => this.handleClose());
     this.transport.onError((err) => {
+      this.log.error('Transport error', { error: err.message });
       this.emit('error', err);
       if (!this.transport.connected) this.handleClose();
     });
@@ -94,6 +102,7 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
       // Register Session
       this.sm.setState('registering');
       this._sessionId = await doRegisterSession(this._pipeline, this._options.timeoutMs);
+      this.log.info('Session registered', { sessionId: this._sessionId });
 
       // Forward Open (connected messaging)
       if (this._options.connected) {
@@ -108,7 +117,12 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
           this._connectionId = result.connectionId;
           this._connectionSize = result.connectionSize;
           this._connectionSerial = result.connectionSerial;
+          this.log.info('Forward Open established', {
+            connectionId: this._connectionId,
+            connectionSize: this._connectionSize,
+          });
         } catch (err) {
+          this.log.error('Forward Open failed', { error: (err as Error).message });
           throw new ConnectionError(
             `Forward Open failed — the PLC rejected both Large and Small connection requests. ` +
               `Try connecting with { connected: false } to use unconnected messaging. ` +
@@ -123,6 +137,11 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     }
 
     this.sm.setState('connected');
+    this.log.info('Connected', {
+      ip,
+      connected: this._options.connected,
+      connectionSize: this._connectionSize,
+    });
   }
 
   async disconnect(): Promise<void> {
@@ -151,6 +170,7 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     } finally {
       this.cleanup();
       this.sm.setState('disconnected');
+      this.log.info('Disconnected');
     }
   }
 
@@ -169,6 +189,7 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     if (this.sm.is('disconnected')) return;
     if (this.sm.is('reconnecting')) return;
 
+    this.log.warn('Connection lost');
     this._pipeline?.flush(new ConnectionError('Transport closed'));
     this._pipeline = null;
     this._sessionId = 0;
@@ -179,6 +200,7 @@ export class SessionManager extends TypedEventEmitter<SessionEvents> {
     if (this._options.reconnect.enabled) {
       this.sm.setState('reconnecting');
       this._reconnector = new Reconnector(this._options.reconnect, async (attempt) => {
+        this.log.warn('Reconnect attempt', { attempt });
         this.emit('reconnecting', attempt);
         await this.connect(this._ip, this._options);
       });

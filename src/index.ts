@@ -9,6 +9,9 @@ export { ITransport, TCPTransport, MockTransport } from './transport';
 // Scanner
 export { Scanner } from './scanner';
 
+// Logger
+export type { Logger } from './util/logger';
+
 // Registry
 export { TagRegistry } from './registry';
 export type { TagRegistryEntry, Template, TemplateAttribute, TemplateMember } from './registry';
