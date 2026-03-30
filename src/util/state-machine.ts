@@ -3,28 +3,33 @@
  *
  * T must be a narrow string literal union (e.g. 'red' | 'green'), not plain `string`.
  *
- * Transition map rules:
- *   - Omit map entirely → any transition allowed
- *   - `{ connected: ['disconnecting'] }` → connected can only go to disconnecting
- *   - `{ connected: '*' }` → connected can go to any state
- *   - `{ '*': ['disconnected'] }` → any state can go to disconnected
+ * Transition rules:
+ *   - Omit config entirely → any transition allowed
+ *   - Provide config → only declared transitions allowed (strict)
+ *   - `exits`: from a state, which states it can go to
+ *   - `entries`: which states can reach this state
+ *   - `'*'` means unrestricted on that side
+ *   - A transition passes if either `exits` or `entries` allows it
  *
  * Handler ordering: change handlers fire in registration order after state updates.
  */
 
 type NarrowString<T> = T extends string & (string extends T ? never : unknown) ? T : never;
 
-type TransitionMap<T extends string> = Partial<Record<T | '*', T[] | '*'>>;
+export interface TransitionRules<T extends string> {
+  exits?: Partial<Record<T, T[] | '*'>>;
+  entries?: Partial<Record<T, T[] | '*'>>;
+}
 
 export class StateMachine<T extends string & (string extends T ? never : unknown)> {
   private _state: NarrowString<T>;
   private _previous?: NarrowString<T>;
-  private readonly transitions?: TransitionMap<T>;
+  private readonly rules?: TransitionRules<T>;
   private readonly changeHandlers: ((prev: T | undefined, current: T) => void)[] = [];
 
-  constructor(initialState: T, transitions?: TransitionMap<T>) {
+  constructor(initialState: T, rules?: TransitionRules<T>) {
     this._state = initialState as NarrowString<T>;
-    this.transitions = transitions;
+    this.rules = rules;
   }
 
   get state(): T {
@@ -58,11 +63,16 @@ export class StateMachine<T extends string & (string extends T ? never : unknown
   }
 
   private isAllowed(from: T, to: T): boolean {
-    if (!this.transitions) return true;
-    const specific = this.transitions[from as T | '*'];
-    if (specific === '*' || (Array.isArray(specific) && specific.includes(to))) return true;
-    const wildcard = this.transitions['*'];
-    if (wildcard === '*' || (Array.isArray(wildcard) && wildcard.includes(to))) return true;
+    if (!this.rules) return true;
+
+    // Check exits: can `from` go to `to`?
+    const exits = this.rules.exits?.[from];
+    if (exits === '*' || (Array.isArray(exits) && exits.includes(to))) return true;
+
+    // Check entries: can `to` be reached from `from`?
+    const entries = this.rules.entries?.[to];
+    if (entries === '*' || (Array.isArray(entries) && entries.includes(from))) return true;
+
     return false;
   }
 }

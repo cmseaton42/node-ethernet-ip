@@ -18,11 +18,16 @@ const EIP_PORT = 44818;
 
 export class SessionManager extends TypedEventEmitter<SessionEvents> {
   private sm = new StateMachine<ConnectionState>('disconnected', {
-    '*': ['connecting', 'disconnected'],
-    connecting: ['registering'],
-    registering: ['forward-opening', 'connected'],
-    'forward-opening': ['connected'],
-    connected: ['disconnecting', 'reconnecting'],
+    exits: {
+      connecting: ['registering'],
+      registering: ['forward-opening', 'connected'],
+      'forward-opening': ['connected'],
+      connected: ['disconnecting', 'reconnecting'],
+    },
+    entries: {
+      connecting: '*',
+      disconnected: '*',
+    },
   });
   private _sessionId = 0;
   private _connectionId = 0;

@@ -79,12 +79,10 @@ describe('change handlers', () => {
   });
 });
 
-describe('transition validation', () => {
-  it('allows valid transitions', () => {
+describe('exits validation', () => {
+  it('allows valid exits', () => {
     const sm = new StateMachine<Light>('red', {
-      red: ['green'],
-      green: ['yellow'],
-      yellow: ['red'],
+      exits: { red: ['green'], green: ['yellow'], yellow: ['red'] },
     });
     sm.setState('green');
     sm.setState('yellow');
@@ -92,33 +90,83 @@ describe('transition validation', () => {
     expect(sm.state).toBe('red');
   });
 
-  it('throws on invalid transition', () => {
+  it('throws on invalid exit', () => {
     const sm = new StateMachine<Light>('red', {
-      red: ['green'],
-      green: ['yellow'],
-      yellow: ['red'],
+      exits: { red: ['green'], green: ['yellow'], yellow: ['red'] },
     });
     expect(() => sm.setState('yellow')).toThrow('Invalid transition: red → yellow');
   });
 
-  it('throws when state has empty target list', () => {
+  it('throws when state has empty exit list', () => {
     const sm = new StateMachine<Light>('red', {
-      red: ['green'],
-      green: [],
+      exits: { red: ['green'], green: [] },
     });
     sm.setState('green');
     expect(() => sm.setState('red')).toThrow('Invalid transition: green → red');
   });
 
-  it('throws when state is not in map', () => {
+  it('throws when state not in exits map', () => {
     const sm = new StateMachine<Light>('red', {
-      red: ['green'],
+      exits: { red: ['green'] },
     });
     sm.setState('green');
     expect(() => sm.setState('yellow')).toThrow('Invalid transition: green → yellow');
   });
 
-  it('allows any transition without map', () => {
+  it('wildcard exits allows any target', () => {
+    const sm = new StateMachine<Light>('red', {
+      exits: { red: '*' },
+    });
+    sm.setState('green');
+    expect(sm.state).toBe('green');
+  });
+});
+
+describe('entries validation', () => {
+  it('allows valid entries', () => {
+    const sm = new StateMachine<Light>('red', {
+      exits: { red: ['green'] },
+      entries: { red: '*' },
+    });
+    sm.setState('green');
+    // green has no exits, but red has entries from anywhere
+    sm.setState('red');
+    expect(sm.state).toBe('red');
+  });
+
+  it('entries with specific sources', () => {
+    const sm = new StateMachine<Light>('red', {
+      exits: { red: ['green'], green: ['yellow'] },
+      entries: { red: ['yellow'] },
+    });
+    sm.setState('green');
+    sm.setState('yellow');
+    // yellow has no exits, but red accepts entry from yellow
+    sm.setState('red');
+    expect(sm.state).toBe('red');
+  });
+
+  it('rejects entry from unlisted source', () => {
+    const sm = new StateMachine<Light>('red', {
+      exits: { red: ['green'], green: ['yellow'] },
+      entries: { red: ['yellow'] },
+    });
+    sm.setState('green');
+    // green is not in red's entries list
+    expect(() => sm.setState('red')).toThrow('Invalid transition: green → red');
+  });
+
+  it('wildcard entries allows any source', () => {
+    const sm = new StateMachine<Light>('red', {
+      entries: { green: '*' },
+    });
+    sm.setState('green');
+    expect(sm.state).toBe('green');
+  });
+});
+
+describe('no config', () => {
+  it('allows any transition', () => {
     const sm = new StateMachine<Light>('red');
     sm.setState('yellow');
     sm.setState('green');
@@ -127,59 +175,25 @@ describe('transition validation', () => {
   });
 });
 
-describe('wildcard transitions', () => {
-  it('* value: state can go to any target', () => {
+describe('exits + entries combined', () => {
+  it('passes if either side allows', () => {
     const sm = new StateMachine<Light>('red', {
-      red: '*',
-      green: ['yellow'],
-      yellow: ['red'],
+      exits: { red: ['green'], green: ['yellow'] },
+      entries: { red: '*' },
     });
-    sm.setState('green');
-    expect(sm.state).toBe('green');
-    // Reset to test other target
-    const sm2 = new StateMachine<Light>('red', { red: '*' });
-    sm2.setState('yellow');
-    expect(sm2.state).toBe('yellow');
-  });
-
-  it('* key: any state can go to listed targets', () => {
-    const sm = new StateMachine<Light>('red', {
-      '*': ['red'],
-      red: ['green'],
-    });
-    sm.setState('green');
-    // green has no explicit targets, but wildcard allows red
-    sm.setState('red');
-    expect(sm.state).toBe('red');
-  });
-
-  it('* key rejects unlisted targets', () => {
-    const sm = new StateMachine<Light>('red', {
-      '*': ['red'],
-      red: ['green'],
-    });
-    sm.setState('green');
-    expect(() => sm.setState('yellow')).toThrow('Invalid transition: green → yellow');
-  });
-
-  it('* key with * value: any transition allowed', () => {
-    const sm = new StateMachine<Light>('red', { '*': '*' });
-    sm.setState('yellow');
-    sm.setState('green');
-    sm.setState('red');
-    expect(sm.state).toBe('red');
-  });
-
-  it('specific rule takes priority alongside wildcard', () => {
-    const sm = new StateMachine<Light>('red', {
-      '*': ['red'],
-      red: ['green'],
-      green: ['yellow'],
-    });
-    // red → green (specific), green → yellow (specific), yellow → red (wildcard)
     sm.setState('green');
     sm.setState('yellow');
+    // yellow has no exits to red, but red has entries from '*'
     sm.setState('red');
     expect(sm.state).toBe('red');
+  });
+
+  it('rejects when neither side allows', () => {
+    const sm = new StateMachine<Light>('red', {
+      exits: { red: ['green'] },
+      entries: { yellow: ['green'] },
+    });
+    // red can't exit to yellow, and yellow only accepts entry from green
+    expect(() => sm.setState('yellow')).toThrow('Invalid transition: red → yellow');
   });
 });
