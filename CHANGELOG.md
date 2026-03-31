@@ -13,16 +13,21 @@ All notable changes to this project will be documented in this file.
 - `autoReconnect` timer cancelled on successful `connect()` — no more spurious reconnect attempts
 - `disconnect()` while reconnecting no longer goes through invalid `disconnecting` state
 - `getShape()` / `getTemplate()` return `undefined` for non-struct tags (no crash)
+- Batch read response parsing uses service code, not batch size — fixes unconnected single-service batch returning raw Buffer for STRING array elements
+- Scanner struct equality — `tagChanged` no longer fires on every tick for struct tags with identical values
+- Forward Open connection timeout increased from 256ms to ~30.7s (RPI 60ms × multiplier 512) — eliminates spurious drops under normal operation
 
 ### Added
 
 - `StateMachine` utility with transition validation and wildcard support
+- `SerializedPromiseQueue` utility for serializing async operations
 - `plc.isConnected` getter (reads from session state machine)
 - `Logger` interface with noop default — inject via `new PLC({ logger })`
 - Logging at key lifecycle points: connect, disconnect, session register, Forward Open, errors, reconnect, state transitions, discover
 - `scanStarted` / `scanStopped` events on Scanner
 - `discover()` now attaches `template` to struct tags in results
 - Exported types: `ConnectionState`, `ScannerOptions`, `ScanEvents`, `Logger`
+- Operation queue on PLC — all `read`/`write`/`discover` serialized to prevent interleaving
 
 ### Changed
 
@@ -33,6 +38,8 @@ All notable changes to this project will be documented in this file.
 - `pauseScan()` renamed to `pause()`
 - `pause()` is idempotent (no event if not already scanning)
 - Struct helpers extracted from `plc.ts` into `plc/struct-helpers.ts`
+- Deterministic decode path — single `decodeValue()` using wire handle for all struct/string decode decisions
+- Exact response size calculation using template `structureSize` for optimal batch packing
 
 ## [2.0.0-alpha.0] — 2026-03-18
 
