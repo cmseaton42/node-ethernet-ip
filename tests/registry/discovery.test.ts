@@ -36,11 +36,11 @@ function buildTagListResponse(sessionId: number, cipStatus: number, tagData: Buf
 
 /**
  * Build tag list data for a single tag entry.
- * Layout: instanceId(4) + nameLength(2) + name(N) + type(2)
+ * Layout: instanceId(4) + nameLength(2) + name(N) + type(2) + dimSizes(12)
  */
-function buildTagEntry(id: number, name: string, rawType: number): Buffer {
+function buildTagEntry(id: number, name: string, rawType: number, dimSizes: number[] = []): Buffer {
   const nameBuf = Buffer.from(name, 'ascii');
-  const buf = Buffer.alloc(4 + 2 + nameBuf.length + 2);
+  const buf = Buffer.alloc(4 + 2 + nameBuf.length + 2 + 12);
   let offset = 0;
   buf.writeUInt32LE(id, offset);
   offset += 4;
@@ -49,6 +49,11 @@ function buildTagEntry(id: number, name: string, rawType: number): Buffer {
   nameBuf.copy(buf, offset);
   offset += nameBuf.length;
   buf.writeUInt16LE(rawType, offset);
+  offset += 2;
+  for (let d = 0; d < 3; d++) {
+    buf.writeUInt32LE(dimSizes[d] ?? 0, offset);
+    offset += 4;
+  }
   return buf;
 }
 
@@ -143,13 +148,44 @@ describe('discoverAll', () => {
     expect(tags.length).toBe(1);
     expect(tags[0].program).toBe('MainProgram');
   });
+
+  it('parses array dimension sizes from attribute 8', async () => {
+    const tagData = Buffer.concat([
+      buildTagEntry(1, 'arr1D', 0x20c4, [10]), // 1D DINT[10]
+      buildTagEntry(2, 'arr2D', 0x40c4, [3, 5]), // 2D DINT[3,5]
+      buildTagEntry(3, 'arr3D', 0x60c4, [2, 3, 4]), // 3D DINT[2,3,4]
+      buildTagEntry(4, 'scalar', 0x00c4), // 0D DINT
+    ]);
+
+    const origWrite = transport.write.bind(transport);
+    transport.write = (data: Buffer) => {
+      origWrite(data);
+      setImmediate(() => {
+        transport.injectResponse(buildTagListResponse(0x01, 0x00, tagData));
+      });
+    };
+
+    const tags = await discoverAll(pipeline, 0x01, 5000);
+
+    expect(tags[0].type.dimSizes).toEqual([10]);
+    expect(tags[1].type.dimSizes).toEqual([3, 5]);
+    expect(tags[2].type.dimSizes).toEqual([2, 3, 4]);
+    expect(tags[3].type.dimSizes).toEqual([]);
+  });
 });
 
 function makeTag(name: string, overrides?: Partial<DiscoveredTag['type']>): DiscoveredTag {
   return {
     id: 1,
     name,
-    type: { code: 0xc4, isStruct: false, isReserved: false, arrayDims: 0, ...overrides },
+    type: {
+      code: 0xc4,
+      isStruct: false,
+      isReserved: false,
+      arrayDims: 0,
+      dimSizes: [],
+      ...overrides,
+    },
     program: null,
   };
 }

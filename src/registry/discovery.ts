@@ -16,6 +16,9 @@ import { Template } from './tag-registry';
 /** CIP status code for partial transfer (more data available) */
 const STATUS_PARTIAL_TRANSFER = 0x06;
 
+/** Fixed overhead per tag entry: id(4) + nameLen(2) + type(2) + dimSizes(12) */
+const TAG_ENTRY_OVERHEAD = 20;
+
 /** Offset to CIP data within SendRRData response payload */
 const CIP_DATA_OFFSET = 16;
 
@@ -34,6 +37,8 @@ export interface DiscoveredTag {
     isStruct: boolean;
     isReserved: boolean;
     arrayDims: number;
+    /** Size of each dimension (e.g. [10, 5] for a 10×5 2D array). Empty if not an array. */
+    dimSizes: number[];
   };
   program: string | null;
   template?: Template;
@@ -49,6 +54,7 @@ export function parseTagType(raw: number): DiscoveredTag['type'] {
     isStruct: !!(raw & TAG_TYPE_STRUCT_FLAG),
     isReserved: !!(raw & TAG_TYPE_RESERVED_FLAG),
     arrayDims: (raw & TAG_TYPE_ARRAY_DIMS_MASK) >> TAG_TYPE_ARRAY_DIMS_SHIFT,
+    dimSizes: [],
   };
 }
 
@@ -77,12 +83,13 @@ function buildTagListRequest(instanceId: number, program?: string): Buffer {
 
   const path = pathBuilder.build();
 
-  // Request data: attribute count(2) + attribute 1(2) + attribute 2(2)
-  const ATTRIBUTE_COUNT = 2;
-  const requestData = Buffer.alloc(6);
+  // Request data: attribute count(2) + attribute 1(2) + attribute 2(2) + attribute 8(2)
+  const ATTRIBUTE_COUNT = 3;
+  const requestData = Buffer.alloc(8);
   requestData.writeUInt16LE(ATTRIBUTE_COUNT, 0);
   requestData.writeUInt16LE(0x01, 2); // Attribute 1: Symbol Name
   requestData.writeUInt16LE(0x02, 4); // Attribute 2: Symbol Type
+  requestData.writeUInt16LE(0x08, 6); // Attribute 8: Dimension Sizes (3 × UINT32)
 
   return MessageRouter.build(CIPService.GET_INSTANCE_ATTRIBUTE_LIST, path, requestData);
 }
@@ -102,25 +109,25 @@ function parseTagListResponse(
   let lastInstanceId = 0;
   let offset = 0;
 
-  while (offset < data.length) {
-    // Instance ID (UINT32LE)
+  while (offset + TAG_ENTRY_OVERHEAD <= data.length) {
     const id = data.readUInt32LE(offset);
-    offset += 4;
+    const nameLength = data.readUInt16LE(offset + 4);
 
-    // Name length (UINT16LE)
-    const nameLength = data.readUInt16LE(offset);
-    offset += 2;
+    if (offset + nameLength + TAG_ENTRY_OVERHEAD > data.length) break;
 
-    // Name (ASCII)
-    const name = data.subarray(offset, offset + nameLength).toString('ascii');
-    offset += nameLength;
+    const name = data.subarray(offset + 6, offset + 6 + nameLength).toString('ascii');
+    const rawType = data.readUInt16LE(offset + 6 + nameLength);
+    const type = parseTagType(rawType);
 
-    // Type (UINT16LE, bit-packed)
-    const rawType = data.readUInt16LE(offset);
-    offset += 2;
+    // Attribute 8: three UINT32LE dimension sizes (zero-padded for unused dims)
+    const dimBase = offset + 8 + nameLength;
+    for (let d = 0; d < type.arrayDims; d++) {
+      type.dimSizes.push(data.readUInt32LE(dimBase + d * 4));
+    }
 
-    tags.push({ id, name, type: parseTagType(rawType), program });
+    tags.push({ id, name, type, program });
     lastInstanceId = id;
+    offset += nameLength + TAG_ENTRY_OVERHEAD;
   }
 
   return { tags, lastInstanceId };
