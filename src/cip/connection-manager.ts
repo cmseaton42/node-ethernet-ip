@@ -58,7 +58,7 @@ export function encodeConnectionParams(
 }
 
 export interface ForwardOpenOptions {
-  /** O→T and T→O RPI in microseconds (default 8000 = 8ms) */
+  /** O→T and T→O RPI in microseconds (default 60000 = 60ms) */
   rpiMicroseconds?: number;
   /** Network connection parameters (use encodeConnectionParams) */
   connectionParams?: number;
@@ -90,7 +90,7 @@ export interface ForwardOpenOptions {
  *    transportTrigger(1)]
  */
 export function buildForwardOpenData(opts: ForwardOpenOptions = {}): Buffer {
-  const rpi = opts.rpiMicroseconds ?? 8000;
+  const rpi = opts.rpiMicroseconds ?? 60_000;
   const connParams =
     opts.connectionParams ??
     encodeConnectionParams(
@@ -101,7 +101,7 @@ export function buildForwardOpenData(opts: ForwardOpenOptions = {}): Buffer {
       500,
     );
   const timeoutMs = opts.timeoutMs ?? 1000;
-  const timeoutMult = opts.timeoutMultiplier ?? 32;
+  const timeoutMult = opts.timeoutMultiplier ?? 512;
   const connSerial = opts.connectionSerial ?? Math.floor(Math.random() * 0x7fff);
   const toConnId = opts.toConnectionId ?? Math.floor(Math.random() * 0x7fffffff);
   const vendorId = opts.vendorId ?? 0x3333;
@@ -151,7 +151,7 @@ export function buildForwardOpenData(opts: ForwardOpenOptions = {}): Buffer {
  * Layout (39 bytes).
  */
 export function buildLargeForwardOpenData(opts: ForwardOpenOptions = {}): Buffer {
-  const rpi = opts.rpiMicroseconds ?? 8000;
+  const rpi = opts.rpiMicroseconds ?? 60_000;
   const size = opts.connectionParams ?? 4002;
   // Large format: connection params are 32-bit with size in low 16 bits
   const connParams = encodeConnectionParams(
@@ -164,7 +164,7 @@ export function buildLargeForwardOpenData(opts: ForwardOpenOptions = {}): Buffer
   const largeParams = (connParams << 16) | size;
 
   const timeoutMs = opts.timeoutMs ?? 1000;
-  const timeoutMult = opts.timeoutMultiplier ?? 32;
+  const timeoutMult = opts.timeoutMultiplier ?? 512;
   const connSerial = opts.connectionSerial ?? Math.floor(Math.random() * 0x7fff);
   const toConnId = opts.toConnectionId ?? Math.floor(Math.random() * 0x7fffffff);
   const vendorId = opts.vendorId ?? 0x3333;
