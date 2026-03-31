@@ -30,7 +30,7 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 - Tag subscriptions with change detection
 - Typed error hierarchy with human-readable CIP status codes
 - Injectable logger (noop default)
-- 370+ unit tests
+- 375+ unit tests
 
 ## Prerequisites
 
@@ -213,7 +213,11 @@ Discover tags and inspect struct shapes:
 
 ```typescript
 const tags = await plc.discover();
-// tags: [{ name: 'MotorStatus', type: { code: 0x3b2, isStruct: true, ... } }, ...]
+// tags: [{ name: 'MotorStatus', type: { code: 0x3b2, isStruct: true, arrayDims: 0, dimSizes: [] } }, ...]
+
+// Array tags include dimension sizes
+const arr = tags.find((t) => t.name === 'Matrix');
+// arr.type.arrayDims = 2, arr.type.dimSizes = [10, 5]  →  Matrix[10, 5]
 
 const shape = plc.getShape('MotorStatus');
 // { name: 'stMotorStatus', members: {
