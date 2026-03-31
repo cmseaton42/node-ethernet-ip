@@ -15,19 +15,27 @@ import { parseCPF } from '@/encapsulation/common-packet-format';
 import { extractCIPData } from './cpf-utils';
 import * as MessageRouter from '@/cip/message-router';
 import { buildBatches, BatchRequest, parseMultiServiceResponse } from '@/cip/batch-builder';
-import { TYPE_SIZES, CIPDataType, STRING_STRUCT_HANDLE } from '@/cip/data-types';
+import { TYPE_SIZES, CIPDataType, getCodec, STRING_STRUCT_HANDLE } from '@/cip/data-types';
+import { CIPService } from '@/cip/services';
 import { CIPError } from '@/errors';
 import { PLCEvents, PLCConnectOptions, TagValue, resolveConnectOptions } from './types';
 import { buildReadRequest, parseReadResponse } from './read';
 import { buildWriteRequest, buildBitWriteRequest } from './write';
 import { extractBitIndex } from './tag-path';
 import { fetchTemplate } from '@/registry/template-fetcher';
-import { StructShape, buildShape, encodeIfStruct, decodeIfStruct } from './struct-helpers';
+import { StructShape, buildShape, encodeIfStruct, templateLookup } from './struct-helpers';
+import { decodeStruct } from './struct-codec';
+
+import { SerializedPromiseQueue } from '@/util/serialized-promise-queue';
 
 export type { MemberShape, StructShape } from './struct-helpers';
 
 /** InterfaceHandle(4) + Timeout(2) prefix before CPF data */
 const CPF_PREFIX_SIZE = 6;
+
+/** Atomic type param is 2 bytes, struct type param is 4 bytes (0xA0 0x02 + handle) */
+const ATOMIC_TYPE_PARAM_SIZE = 2;
+const STRUCT_TYPE_PARAM_SIZE = 4;
 
 /** Max usable packet size for unconnected messaging (UCMM) */
 const UCMM_MAX_SIZE = 508;
@@ -36,6 +44,8 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
   private session: SessionManager;
   private _registry = new TagRegistry();
   private log: Logger;
+  private _discoveredOnce = false;
+  private _queue = new SerializedPromiseQueue();
 
   constructor(options?: { transport?: ITransport; logger?: Logger }) {
     super();
@@ -77,13 +87,9 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
   /** Discover all user tags and fetch UDT templates. Returns the discovered tag list. */
   async discover(): Promise<DiscoveredTag[]> {
-    return this.populateRegistry(10000);
+    return this._queue.enqueue(() => this.populateRegistry(10000));
   }
 
-  /**
-   * Get the template (field definitions) for a struct tag.
-   * Returns undefined for non-struct tags or if the template hasn't been fetched yet.
-   */
   getTemplate(tagName: string): Template | undefined {
     const entry = this._registry.lookup(tagName);
     if (!entry?.isStruct) return undefined;
@@ -92,19 +98,6 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     );
   }
 
-  /**
-   * Get a recursive shape description for a struct tag.
-   * Resolves nested structs inline. Returns undefined for non-struct tags.
-   *
-   * Example output:
-   * ```
-   * { name: 'stAxisStatus', members: {
-   *     ActiveMode: { type: 'BOOL' },
-   *     ActivePosition: { type: 'REAL' },
-   *     myNested: { type: 'stOther', members: { ... } }
-   * }}
-   * ```
-   */
   getShape(tagName: string): StructShape | undefined {
     const tmpl = this.getTemplate(tagName);
     if (!tmpl) return undefined;
@@ -114,29 +107,30 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
   async read(tag: string): Promise<TagValue>;
   async read(tags: string[]): Promise<TagValue[]>;
   async read(tagOrTags: string | string[]): Promise<TagValue | TagValue[]> {
-    if (Array.isArray(tagOrTags)) {
-      if (tagOrTags.length === 1) return [await this.readSingle(tagOrTags[0])];
-      return this.readBatch(tagOrTags);
-    }
-    return this.readSingle(tagOrTags);
+    return this._queue.enqueue(() => {
+      if (Array.isArray(tagOrTags)) {
+        if (tagOrTags.length === 1) return this.readSingle(tagOrTags[0]).then((v) => [v]);
+        return this.readBatch(tagOrTags);
+      }
+      return this.readSingle(tagOrTags);
+    });
   }
 
   async write(tag: string, value: TagValue): Promise<void>;
   async write(tags: Record<string, TagValue>): Promise<void>;
   async write(tagOrTags: string | Record<string, TagValue>, value?: TagValue): Promise<void> {
-    if (typeof tagOrTags === 'string') {
-      await this.writeSingle(tagOrTags, value!);
-      return;
-    }
-    const entries = Object.entries(tagOrTags);
-    if (entries.length === 1) {
-      await this.writeSingle(entries[0][0], entries[0][1]);
-      return;
-    }
-    await this.writeBatch(tagOrTags);
+    return this._queue.enqueue(() => {
+      if (typeof tagOrTags === 'string') return this.writeSingle(tagOrTags, value!);
+      const entries = Object.entries(tagOrTags);
+      if (entries.length === 1) return this.writeSingle(entries[0][0], entries[0][1]);
+      return this.writeBatch(tagOrTags);
+    });
   }
 
+  // ── Read ──────────────────────────────────────────────────
+
   private async readSingle(tagName: string): Promise<TagValue> {
+    this.log.debug('Read single', { tag: tagName });
     const cipRequest = buildReadRequest(tagName);
     const cipResponse = await this.sendCIP(cipRequest);
     const mr = MessageRouter.parse(cipResponse);
@@ -147,7 +141,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     const { type, isStruct, value } = parseReadResponse(mr.data, tagName);
 
-    // Lazy discovery: cache type under the base tag name (strip bit index)
+    // Lazy registration: cache type under the base tag name
     const baseName =
       extractBitIndex(tagName) !== null ? tagName.substring(0, tagName.lastIndexOf('.')) : tagName;
     if (!this._registry.has(baseName)) {
@@ -159,23 +153,14 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       });
     }
 
-    // Decode struct buffers into JS objects if template is available
-    if (isStruct && Buffer.isBuffer(value)) {
-      const template = await this.ensureTemplate(type);
-      return decodeIfStruct(value, template, this._registry);
+    // Lazy template fetch: on first struct encounter, discover all templates once
+    if (isStruct && type !== STRING_STRUCT_HANDLE && !this._discoveredOnce) {
+      if (!this._registry.lookupTemplateByHandle(type)) {
+        await this.populateRegistry(10000);
+      }
     }
 
-    return value;
-  }
-
-  /** Decode a struct value if we have its template, otherwise return as-is. */
-  private async decodeIfStructValue(value: TagValue, tagName: string): Promise<TagValue> {
-    const entry = this._registry.lookup(tagName);
-    if (entry?.isStruct && Buffer.isBuffer(value)) {
-      const template = await this.ensureTemplate(entry.type);
-      if (template) return decodeIfStruct(value, template, this._registry);
-    }
-    return value;
+    return this.decodeValue(type, isStruct, value);
   }
 
   private async readBatch(tags: string[]): Promise<TagValue[]> {
@@ -184,19 +169,18 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       if (!this._registry.has(tag)) await this.readSingle(tag);
     }
 
-    // Build individual read requests with estimated response sizes
     const requests: BatchRequest[] = tags.map((tag) => {
       const entry = this._registry.lookup(tag)!;
       return {
         serviceData: buildReadRequest(tag),
-        estimatedResponseSize: (entry.size || 88) + 4, // data + type param + MR header
+        estimatedResponseSize: this.responseSize(entry),
       };
     });
 
     const maxSize = this.session.connectionSize || UCMM_MAX_SIZE;
     const batches = buildBatches(requests, maxSize);
+    this.log.debug('Batch read', { tags: tags.length, batches: batches.length, maxSize });
 
-    // Send each batch and collect results
     const results: TagValue[] = [];
     let tagIdx = 0;
 
@@ -208,33 +192,32 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
         throw new CIPError(mr.generalStatusCode, mr.extendedStatus);
       }
 
-      if (batch.requests.length === 1) {
-        // Single request in batch — already a plain CIP request, no multi-service wrapper
-        const { value } = parseReadResponse(mr.data, tags[tagIdx]);
-        results.push(await this.decodeIfStructValue(value, tags[tagIdx]));
-        tagIdx++;
-      } else {
-        const replies = parseMultiServiceResponse(mr.data);
+      const isMultiService = (mr.service & 0x7f) === CIPService.MULTIPLE_SERVICE_PACKET;
 
+      if (isMultiService) {
+        const replies = parseMultiServiceResponse(mr.data);
         for (const reply of replies) {
           if (reply.generalStatusCode !== 0) {
             throw new CIPError(reply.generalStatusCode, reply.extendedStatus);
           }
-          const { value } = parseReadResponse(reply.data, tags[tagIdx]);
-          results.push(await this.decodeIfStructValue(value, tags[tagIdx]));
+          const { type, isStruct, value } = parseReadResponse(reply.data, tags[tagIdx]);
+          results.push(this.decodeValue(type, isStruct, value));
           tagIdx++;
         }
+      } else {
+        const { type, isStruct, value } = parseReadResponse(mr.data, tags[tagIdx]);
+        results.push(this.decodeValue(type, isStruct, value));
+        tagIdx++;
       }
     }
 
     return results;
   }
 
+  // ── Write ─────────────────────────────────────────────────
+
   private async writeSingle(tagName: string, value: TagValue): Promise<void> {
-    // Discover type if unknown
-    if (!this._registry.has(tagName)) {
-      await this.readSingle(tagName);
-    }
+    if (!this._registry.has(tagName)) await this.readSingle(tagName);
 
     const entry = this._registry.lookup(tagName)!;
     const bitIndex = extractBitIndex(tagName);
@@ -257,7 +240,6 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     const cipResponse = await this.sendCIP(cipRequest);
     const mr = MessageRouter.parse(cipResponse);
-
     if (mr.generalStatusCode !== 0) {
       throw new CIPError(mr.generalStatusCode, mr.extendedStatus);
     }
@@ -265,13 +247,10 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
   private async writeBatch(tags: Record<string, TagValue>): Promise<void> {
     const entries = Object.entries(tags);
-
-    // Discover unknown types first
     for (const [tag] of entries) {
       if (!this._registry.has(tag)) await this.readSingle(tag);
     }
 
-    // Build individual write requests
     const requests: BatchRequest[] = entries.map(([tag, val]) => {
       const entry = this._registry.lookup(tag)!;
       const bitIndex = extractBitIndex(tag);
@@ -280,7 +259,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
         bitIndex !== null
           ? buildBitWriteRequest(tag, val as boolean, entry.type)
           : buildWriteRequest(tag, encoded, entry.type, 1, entry.isStruct ? entry.type : undefined);
-      return { serviceData, estimatedResponseSize: 4 }; // write replies are just status
+      return { serviceData, estimatedResponseSize: 4 };
     });
 
     const maxSize = this.session.connectionSize || UCMM_MAX_SIZE;
@@ -289,11 +268,9 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     for (const batch of batches) {
       const cipResponse = await this.sendCIP(batch.data);
       const mr = MessageRouter.parse(cipResponse);
-
       if (mr.generalStatusCode !== 0) {
         throw new CIPError(mr.generalStatusCode, mr.extendedStatus);
       }
-
       if (batch.requests.length > 1) {
         const replies = parseMultiServiceResponse(mr.data);
         for (const reply of replies) {
@@ -304,6 +281,32 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       }
     }
   }
+
+  // ── Decode (single path for all reads) ────────────────────
+
+  /**
+   * Decode a read response value. Uses the wire handle (from parseReadResponse)
+   * to make all decode decisions. One function, one path, deterministic.
+   */
+  private decodeValue(wireType: number, isStruct: boolean, value: TagValue): TagValue {
+    if (!isStruct || !Buffer.isBuffer(value)) return value;
+
+    // Built-in STRING: decode directly, no template needed
+    if (wireType === STRING_STRUCT_HANDLE) {
+      return getCodec(CIPDataType.STRING).decode(value, 0) as string;
+    }
+
+    // UDT: decode if template is cached
+    const tmpl = this._registry.lookupTemplateByHandle(wireType);
+    if (tmpl) {
+      return decodeStruct(tmpl, value, templateLookup(this._registry));
+    }
+
+    // No template — return raw Buffer
+    return value;
+  }
+
+  // ── Discovery & Templates ─────────────────────────────────
 
   private async populateRegistry(timeoutMs: number): Promise<DiscoveredTag[]> {
     if (!this.session.pipeline) return [];
@@ -320,56 +323,24 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       if (tag.type.isStruct) structInstanceIds.add(tag.type.code);
     }
 
-    // Fetch all UDT templates (recursive — nested structs handled by fetchTemplate)
     for (const id of structInstanceIds) {
       if (!this._registry.lookupTemplate(id)) {
         await fetchTemplate((req) => this.sendCIP(req), this._registry, id);
       }
     }
 
-    // Attach templates to struct tags
     for (const tag of tags) {
       if (tag.type.isStruct) {
         tag.template = this._registry.lookupTemplate(tag.type.code);
       }
     }
 
+    this._discoveredOnce = true;
     this.log.info('Discover completed', { tagCount: tags.length });
     return tags;
   }
 
-  /**
-   * Ensure a struct template is cached.
-   *
-   * The structHandle (CRC) from a read response differs from the template
-   * instance ID (symbolType & 0x0FFF from tag discovery). We check the
-   * handle→instance reverse map first; if missing, run tag discovery to
-   * learn instance IDs, then fetch templates for all struct types found.
-   */
-  private async ensureTemplate(structHandle: number) {
-    if (structHandle === STRING_STRUCT_HANDLE) return undefined; // built-in STRING
-
-    // Fast path: already cached
-    const cached = this._registry.lookupTemplateByHandle(structHandle);
-    if (cached) return cached;
-
-    // Discover tags to learn template instance IDs, then fetch templates
-    if (this.session.pipeline) {
-      const tags = await discoverUserTags(this.session.pipeline, this.session.sessionId, 10000);
-      // Fetch templates for all struct types we haven't seen yet
-      const seen = new Set<number>();
-      for (const tag of tags) {
-        if (tag.type.isStruct && !seen.has(tag.type.code)) {
-          seen.add(tag.type.code);
-          if (!this._registry.lookupTemplate(tag.type.code)) {
-            await fetchTemplate((req) => this.sendCIP(req), this._registry, tag.type.code);
-          }
-        }
-      }
-    }
-
-    return this._registry.lookupTemplateByHandle(structHandle);
-  }
+  // ── Transport ─────────────────────────────────────────────
 
   private async sendCIP(cipRequest: Buffer): Promise<Buffer> {
     if (!this.session.pipeline) throw new Error('Not connected');
@@ -384,11 +355,33 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
         )
       : sendRRData(this.session.sessionId, cipRequest);
 
+    this.log.debug('sendCIP', { reqSize: eipPacket.length, connected: isConnected });
     const response = await this.session.pipeline.send(eipPacket);
+    this.log.debug('recvCIP', {
+      respSize: response.length,
+      respHdr: response.subarray(0, 8).toString('hex'),
+    });
     const parsed = parseHeader(response);
 
-    // Parse CPF items to find the CIP data (robust to item ordering/extras)
     const cpf = parseCPF(parsed.data.subarray(CPF_PREFIX_SIZE));
     return extractCIPData(cpf);
+  }
+
+  /** Calculate the exact response payload size for a tag read. */
+  private responseSize(entry: { type: number; isStruct: boolean }): number {
+    if (entry.isStruct) {
+      const tmpl =
+        this._registry.lookupTemplateByHandle(entry.type) ??
+        this._registry.lookupTemplate(entry.type);
+      if (!tmpl) {
+        throw new Error(`Missing template for struct type 0x${entry.type.toString(16)}`);
+      }
+      return STRUCT_TYPE_PARAM_SIZE + tmpl.attributes.structureSize;
+    }
+    const dataSize = TYPE_SIZES.get(entry.type as CIPDataType);
+    if (dataSize === undefined) {
+      throw new Error(`Unknown atomic type 0x${entry.type.toString(16)}`);
+    }
+    return ATOMIC_TYPE_PARAM_SIZE + dataSize;
   }
 }
