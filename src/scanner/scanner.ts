@@ -116,9 +116,12 @@ export class Scanner extends TypedEventEmitter<ScanEvents> {
   }
 }
 
-/** Simple equality check — reference equality with Buffer content comparison. */
+/** Equality check — reference, Buffer content, or deep object comparison. */
 function valuesEqual(a: TagValue, b: TagValue): boolean {
   if (a === b) return true;
   if (Buffer.isBuffer(a) && Buffer.isBuffer(b)) return a.equals(b);
+  if (typeof a === 'object' && typeof b === 'object' && a !== null && b !== null) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
   return false;
 }

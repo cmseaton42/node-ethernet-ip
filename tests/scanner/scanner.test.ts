@@ -75,6 +75,27 @@ describe('Scanner', () => {
     scanner.pause();
   });
 
+  it('does not emit tagChanged when struct value is deeply equal', async () => {
+    const readFn = jest.fn().mockImplementation(async () => [{ a: 1, b: true }]);
+    const scanner = new Scanner(readFn, { rate: 100 });
+    const changed = jest.fn();
+
+    scanner.subscribe('MyStruct');
+    scanner.on('tagChanged', changed);
+    scanner.scan();
+
+    jest.advanceTimersByTime(0);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    jest.advanceTimersByTime(100);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(changed).not.toHaveBeenCalled();
+    scanner.pause();
+  });
+
   it('emits scanError on read failure', async () => {
     const readFn = jest.fn().mockRejectedValue(new Error('read failed'));
     const scanner = new Scanner(readFn);
