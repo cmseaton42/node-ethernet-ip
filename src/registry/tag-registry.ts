@@ -40,6 +40,7 @@ export interface TagRegistryEntry {
   size: number;
   isStruct: boolean;
   arrayDims: number;
+  dimSizes?: number[];
   template?: Template;
 }
 

@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - `scanStarted` / `scanStopped` events on Scanner
 - `discover()` now attaches `template` to struct tags in results
 - `discover()` now returns `dimSizes` for array tags (e.g. `[10, 5]` for a 10×5 2D array) via Symbol Object attribute 8
+- `plc.getDimensions(tag)` — returns array dimension sizes from registry, `[]` for scalars
 - Exported types: `ConnectionState`, `ScannerOptions`, `ScanEvents`, `Logger`
 - Operation queue on PLC — all `read`/`write`/`discover` serialized to prevent interleaving
 

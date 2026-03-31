@@ -228,6 +228,10 @@ const shape = plc.getShape('MotorStatus');
 
 const template = plc.getTemplate('MotorStatus');
 // Raw template with byte offsets, member info, structureSize
+
+const dims = plc.getDimensions('Matrix');
+// [10, 5]  →  Matrix[10, 5]
+// Returns [] for scalars or unknown tags
 ```
 
 ### Scanning / Subscriptions

@@ -104,6 +104,11 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
     return buildShape(tmpl, this._registry);
   }
 
+  /** Get array dimension sizes, e.g. [10, 5] for a 10×5 2D array. Empty if not an array. */
+  getDimensions(tagName: string): number[] {
+    return this._registry.lookup(tagName)?.dimSizes ?? [];
+  }
+
   async read(tag: string): Promise<TagValue>;
   async read(tags: string[]): Promise<TagValue[]>;
   async read(tagOrTags: string | string[]): Promise<TagValue | TagValue[]> {
@@ -319,6 +324,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
         size: TYPE_SIZES.get(tag.type.code as CIPDataType) ?? 0,
         isStruct: tag.type.isStruct,
         arrayDims: tag.type.arrayDims,
+        dimSizes: tag.type.dimSizes.length > 0 ? tag.type.dimSizes : undefined,
       });
       if (tag.type.isStruct) structInstanceIds.add(tag.type.code);
     }
