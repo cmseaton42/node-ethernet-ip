@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Batch read response parsing uses service code, not batch size — fixes unconnected single-service batch returning raw Buffer for STRING array elements
 - Scanner struct equality — `tagChanged` no longer fires on every tick for struct tags with identical values
 - Forward Open connection timeout increased from 256ms to ~30.7s (RPI 60ms × multiplier 512) — eliminates spurious drops under normal operation
+- Scanner first tick fires at configured rate instead of 0ms — prevents race where events emit before listeners are attached
 
 ### Added
 
@@ -42,6 +43,7 @@ All notable changes to this project will be documented in this file.
 - Struct helpers extracted from `plc.ts` into `plc/struct-helpers.ts`
 - Deterministic decode path — single `decodeValue()` using wire handle for all struct/string decode decisions
 - Exact response size calculation using template `structureSize` for optimal batch packing
+- `SerializedPromiseQueue` rewritten with async/await for clarity
 
 ## [2.0.0-alpha.0] — 2026-03-18
 

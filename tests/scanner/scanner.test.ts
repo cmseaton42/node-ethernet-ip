@@ -5,28 +5,26 @@ describe('Scanner', () => {
   afterEach(() => jest.useRealTimers());
 
   it('starts not scanning', () => {
-    const scanner = new Scanner(jest.fn());
+    const scanner = new Scanner(jest.fn(), { rate: 100 });
     expect(scanner.scanning).toBe(false);
   });
 
   it('subscribes and unsubscribes tags', () => {
-    const scanner = new Scanner(jest.fn());
+    const scanner = new Scanner(jest.fn(), { rate: 100 });
     scanner.subscribe('MyTag');
     scanner.unsubscribe('MyTag');
   });
 
   it('emits tagInitialized on first scan', async () => {
     const readFn = jest.fn().mockResolvedValue([42]);
-    const scanner = new Scanner(readFn);
+    const scanner = new Scanner(readFn, { rate: 100 });
     const initialized = jest.fn();
 
     scanner.subscribe('MyDINT');
     scanner.on('tagInitialized', initialized);
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     expect(initialized).toHaveBeenCalledWith('MyDINT', 42);
     scanner.pause();
@@ -42,13 +40,9 @@ describe('Scanner', () => {
     scanner.on('tagChanged', changed);
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
-    jest.advanceTimersByTime(100);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     expect(changed).toHaveBeenCalledWith('MyTag', 20, 10);
     scanner.pause();
@@ -63,13 +57,9 @@ describe('Scanner', () => {
     scanner.on('tagChanged', changed);
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
-    jest.advanceTimersByTime(100);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     expect(changed).not.toHaveBeenCalled();
     scanner.pause();
@@ -84,13 +74,9 @@ describe('Scanner', () => {
     scanner.on('tagChanged', changed);
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
-    jest.advanceTimersByTime(100);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     expect(changed).not.toHaveBeenCalled();
     scanner.pause();
@@ -98,16 +84,14 @@ describe('Scanner', () => {
 
   it('emits scanError on read failure', async () => {
     const readFn = jest.fn().mockRejectedValue(new Error('read failed'));
-    const scanner = new Scanner(readFn);
+    const scanner = new Scanner(readFn, { rate: 100 });
     const errorFn = jest.fn();
 
     scanner.subscribe('BadTag');
     scanner.on('scanError', errorFn);
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     expect(errorFn).toHaveBeenCalled();
     scanner.pause();
@@ -128,7 +112,7 @@ describe('Scanner', () => {
 
   it('scan is idempotent', () => {
     const readFn = jest.fn().mockResolvedValue([1]);
-    const scanner = new Scanner(readFn);
+    const scanner = new Scanner(readFn, { rate: 100 });
     scanner.subscribe('Tag');
     scanner.scan();
     scanner.scan();
@@ -136,7 +120,7 @@ describe('Scanner', () => {
   });
 
   it('uses default rate when none provided', () => {
-    const scanner = new Scanner(jest.fn());
+    const scanner = new Scanner(jest.fn(), { rate: 100 });
     expect(scanner.scanning).toBe(false);
   });
 
@@ -173,18 +157,14 @@ describe('live subscribe/unsubscribe', () => {
     scanner.on('tagInitialized', initialized);
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     expect(initialized).toHaveBeenCalledWith('TagA', 1);
 
     // Subscribe while running
     scanner.subscribe('TagB');
 
-    jest.advanceTimersByTime(100);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     expect(initialized).toHaveBeenCalledWith('TagB', 1);
     scanner.pause();
@@ -202,15 +182,11 @@ describe('live subscribe/unsubscribe', () => {
     scanner.subscribe('TagB');
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     scanner.unsubscribe('TagB');
 
-    jest.advanceTimersByTime(100);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     const lastCall = readFn.mock.calls[readFn.mock.calls.length - 1];
     expect(lastCall[0]).toEqual(['TagA']);
@@ -224,16 +200,12 @@ describe('live subscribe/unsubscribe', () => {
     scanner.subscribe('OnlyTag');
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     const callsBefore = readFn.mock.calls.length;
     scanner.unsubscribe('OnlyTag');
 
-    jest.advanceTimersByTime(100);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     expect(readFn.mock.calls.length).toBe(callsBefore);
     scanner.pause();
@@ -241,15 +213,13 @@ describe('live subscribe/unsubscribe', () => {
 
   it('duplicate subscribe is a no-op', async () => {
     const readFn = jest.fn().mockImplementation(async (tags: string[]) => tags.map(() => 1));
-    const scanner = new Scanner(readFn);
+    const scanner = new Scanner(readFn, { rate: 100 });
 
     scanner.subscribe('Tag');
     scanner.subscribe('Tag');
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     expect(readFn.mock.calls[0][0]).toEqual(['Tag']);
     scanner.pause();
@@ -264,19 +234,32 @@ describe('live subscribe/unsubscribe', () => {
     scanner.on('tagInitialized', initialized);
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     scanner.pause();
     scanner.scan();
 
-    jest.advanceTimersByTime(0);
-    await Promise.resolve();
-    await Promise.resolve();
+    await jest.advanceTimersByTimeAsync(100);
 
     // Tag was already initialized — should not re-initialize
     expect(initialized).toHaveBeenCalledTimes(1);
+    scanner.pause();
+  });
+
+  it('emits tagInitialized even when listener is registered after scan()', async () => {
+    const readFn = jest.fn().mockResolvedValue([42]);
+    const scanner = new Scanner(readFn, { rate: 100 });
+
+    scanner.subscribe('MyTag');
+    scanner.scan();
+
+    // Listener registered AFTER scan() — must still receive the event
+    const initialized = jest.fn();
+    scanner.on('tagInitialized', initialized);
+
+    await jest.advanceTimersByTimeAsync(100);
+
+    expect(initialized).toHaveBeenCalledWith('MyTag', 42);
     scanner.pause();
   });
 });

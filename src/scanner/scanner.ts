@@ -74,7 +74,7 @@ export class Scanner extends TypedEventEmitter<ScanEvents> {
   }
 
   private scheduleTick(): void {
-    this.timer = setTimeout(() => this.tick(), 0);
+    this.timer = setTimeout(() => this.tick(), this.rate);
   }
 
   private async tick(): Promise<void> {

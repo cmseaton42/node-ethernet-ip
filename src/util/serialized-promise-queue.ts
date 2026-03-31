@@ -8,11 +8,15 @@
 export class SerializedPromiseQueue {
   private tail: Promise<void> = Promise.resolve();
 
-  enqueue<T>(fn: () => Promise<T>): Promise<T> {
+  async enqueue<T>(fn: () => Promise<T>): Promise<T> {
     const prev = this.tail;
     let release!: () => void;
     this.tail = new Promise<void>((r) => (release = r));
-
-    return prev.then(fn).finally(release);
+    await prev;
+    try {
+      return await fn();
+    } finally {
+      release();
+    }
   }
 }
