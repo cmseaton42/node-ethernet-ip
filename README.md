@@ -30,7 +30,7 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 - Tag subscriptions with change detection
 - Typed error hierarchy with human-readable CIP status codes
 - Injectable logger (noop default)
-- 375+ unit tests
+- 380+ unit tests
 
 ## Prerequisites
 
@@ -243,6 +243,9 @@ import { Scanner } from 'ethernet-ip';
 
 // Create a scanner with 200ms scan rate (default)
 const scanner = new Scanner(async (tags) => plc.read(tags), { rate: 200 });
+
+// Inject a logger for scan metrics (logged every ~5 minutes at debug level)
+const scannerWithMetrics = new Scanner(async (tags) => plc.read(tags), { rate: 200, logger });
 
 // Subscribe tags — can add/remove while scanning
 scanner.subscribe('Temperature');

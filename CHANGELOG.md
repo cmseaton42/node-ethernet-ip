@@ -22,9 +22,11 @@ All notable changes to this project will be documented in this file.
 
 - `StateMachine` utility with transition validation and wildcard support
 - `SerializedPromiseQueue` utility for serializing async operations
+- `TickTimer` utility for measuring tick intervals with periodic flush callback
 - `plc.isConnected` getter (reads from session state machine)
 - `Logger` interface with noop default — inject via `new PLC({ logger })`
 - Logging at key lifecycle points: connect, disconnect, session register, Forward Open, errors, reconnect, state transitions, discover
+- Scanner metrics logging — periodic debug log with avg/min/max tick interval, tag count, configured rate. Fires every ~5 minutes when a logger is injected. Configurable via `metricsInterval` option.
 - `scanStarted` / `scanStopped` events on Scanner
 - `discover()` now attaches `template` to struct tags in results
 - `discover()` now returns `dimSizes` for array tags (e.g. `[10, 5]` for a 10×5 2D array) via Symbol Object attribute 8

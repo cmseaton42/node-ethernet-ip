@@ -14,20 +14,24 @@
 
 import { TypedEventEmitter } from '@/util/typed-event-emitter';
 import { TagValue } from '@/plc/types';
-import { Subscription, ScanEvents, DEFAULT_SCAN_RATE } from './types';
+import { TickTimer } from '@/util/tick-timer';
+import {
+  Subscription,
+  ScannerOptions,
+  ScanEvents,
+  DEFAULT_SCAN_RATE,
+  METRICS_TARGET_MS,
+} from './types';
 
 /** Function signature for reading tags — injected from PLC class. */
 export type ReadFunction = (tags: string[]) => Promise<TagValue[]>;
-
-export interface ScannerOptions {
-  rate?: number;
-}
 
 export class Scanner extends TypedEventEmitter<ScanEvents> {
   private subscriptions = new Map<string, Subscription>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private _scanning = false;
   private readonly rate: number;
+  private readonly metrics: TickTimer;
 
   constructor(
     private readonly readFn: ReadFunction,
@@ -35,6 +39,11 @@ export class Scanner extends TypedEventEmitter<ScanEvents> {
   ) {
     super();
     this.rate = options?.rate ?? DEFAULT_SCAN_RATE;
+    const logger = options?.logger;
+    const interval = options?.metricsInterval ?? Math.ceil(METRICS_TARGET_MS / this.rate);
+    this.metrics = new TickTimer(logger ? interval : 0, (m) => {
+      logger?.debug('Scanner metrics', { ...m, tags: this.subscriptions.size, rateMs: this.rate });
+    });
   }
 
   get scanning(): boolean {
@@ -70,6 +79,7 @@ export class Scanner extends TypedEventEmitter<ScanEvents> {
       clearTimeout(this.timer);
       this.timer = null;
     }
+    this.metrics.reset();
     this.emit('scanStopped');
   }
 
@@ -79,6 +89,7 @@ export class Scanner extends TypedEventEmitter<ScanEvents> {
 
   private async tick(): Promise<void> {
     if (!this._scanning) return;
+    this.metrics.tick();
 
     const subs = [...this.subscriptions.values()];
     if (subs.length > 0) {

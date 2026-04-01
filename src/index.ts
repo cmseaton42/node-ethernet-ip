@@ -9,7 +9,7 @@ export { ITransport, TCPTransport, MockTransport } from './transport';
 
 // Scanner
 export { Scanner } from './scanner';
-export type { ScannerOptions } from './scanner/scanner';
+export type { ScannerOptions } from './scanner/types';
 export type { ScanEvents } from './scanner/types';
 
 // Logger
