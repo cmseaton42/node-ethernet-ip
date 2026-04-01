@@ -30,7 +30,7 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 - Tag subscriptions with change detection
 - Typed error hierarchy with human-readable CIP status codes
 - Injectable logger (noop default)
-- 380+ unit tests
+- 383+ unit tests
 
 ## Prerequisites
 

@@ -6,8 +6,21 @@
  * Tracks BOTH request and response sizes to avoid overflow.
  * Per CIP Vol 1, Appendix A-7 — Multiple Service Packet
  *
- * Multi-Service Packet layout:
- *   [serviceCount(2), offset1(2), offset2(2), ..., service1, service2, ...]
+ * Request packet structure (connected):
+ *   EIP Header (24) + InterfaceHandle (4) + Timeout (2) + CPF (varies)
+ *   └─ Connected Data Item: SequenceCount (2) + CIP data
+ *      └─ MR header: Service (1) + PathSize (1) + Path (4)
+ *         └─ Multi-Service: Count (2) + Offsets (2×N) + ServiceData[]
+ *
+ * Response packet structure (connected):
+ *   EIP Header (24) + InterfaceHandle (4) + Timeout (2) + CPF (varies)
+ *   └─ Connected Data Item: SequenceCount (2) + CIP data
+ *      └─ MR header: Service (1) + Reserved (1) + Status (1) + ExtSize (1)
+ *         └─ Multi-Service: Count (2) + Offsets (2×N) + Replies[]
+ *            └─ Each reply: Service (1) + Reserved (1) + Status (1) + ExtSize (1) + Data
+ *
+ * The connectionSize limits the Connected Data Item payload (seq + CIP).
+ * For unconnected (UCMM), there is no sequence count — CIP data goes directly.
  */
 
 import * as MessageRouter from './message-router';
@@ -19,6 +32,24 @@ const MESSAGE_ROUTER_PATH = Buffer.concat([
   buildLogicalSegment(LogicalType.ClassID, 0x02),
   buildLogicalSegment(LogicalType.InstanceID, 0x01),
 ]);
+
+/**
+ * MR wrapper overhead added by assembleBatch:
+ *   service(1) + pathSize(1) + path(4 for class 0x02 instance 0x01) = 6 bytes
+ */
+const MR_REQUEST_OVERHEAD = 2 + MESSAGE_ROUTER_PATH.length;
+
+/**
+ * MR response header: service(1) + reserved(1) + status(1) + extStatusSize(1) = 4 bytes
+ */
+const MR_RESPONSE_OVERHEAD = 4;
+
+/**
+ * Connected transport overhead: sequence count (2 bytes) prepended to CIP data.
+ * The connection size limits sequenceCount + CIP data, so usable CIP space
+ * is connectionSize - CONNECTED_TRANSPORT_OVERHEAD.
+ */
+const CONNECTED_TRANSPORT_OVERHEAD = 2;
 
 /** Overhead bytes in the request multi-service packet (before services) */
 const REQUEST_BASE_OVERHEAD = 2; // service count (UINT16LE)
@@ -50,36 +81,50 @@ export interface Batch {
  * Split an array of CIP service requests into optimally-packed
  * Multi-Service Packet batches.
  *
+ * Accounts for all protocol overhead:
+ *   Connected:   connectionSize ≥ seqCount(2) + MR(6) + multiSvc header + services
+ *   Unconnected: connectionSize ≥ MR(6) + multiSvc header + services
+ *
  * @param requests       - Individual CIP service requests with size estimates
- * @param connectionSize - Max packet size from Forward Open (504 or 4002)
+ * @param connectionSize - Max packet size (4002 Large, 504 Small, 508 UCMM)
+ * @param connected      - True for connected messaging (sequence count overhead)
  */
-export function buildBatches(requests: BatchRequest[], connectionSize: number): Batch[] {
+export function buildBatches(
+  requests: BatchRequest[],
+  connectionSize: number,
+  connected: boolean,
+): Batch[] {
   if (requests.length === 0) return [];
   if (requests.length === 1) {
     // Single request — no need for multi-service wrapping
     return [{ requests, data: requests[0].serviceData }];
   }
 
+  const transportOverhead = connected ? CONNECTED_TRANSPORT_OVERHEAD : 0;
+  const maxCipPayload = connectionSize - transportOverhead;
+
+  // Fixed overhead per batch: MR wrapper + multi-service count field
+  const requestFixedOverhead = MR_REQUEST_OVERHEAD + REQUEST_BASE_OVERHEAD;
+  const responseFixedOverhead = MR_RESPONSE_OVERHEAD + RESPONSE_BASE_OVERHEAD;
+
   const batches: Batch[] = [];
   let currentRequests: BatchRequest[] = [];
-  let requestSize = REQUEST_BASE_OVERHEAD;
-  let responseSize = RESPONSE_BASE_OVERHEAD;
+  let requestSize = requestFixedOverhead;
+  let responseSize = responseFixedOverhead;
 
   for (const req of requests) {
     const nextRequestSize = requestSize + REQUEST_PER_SERVICE_OVERHEAD + req.serviceData.length;
     const nextResponseSize =
       responseSize + RESPONSE_PER_SERVICE_OVERHEAD + req.estimatedResponseSize;
 
-    // Check if adding this request would exceed either limit
     if (
       currentRequests.length > 0 &&
-      (nextRequestSize > connectionSize || nextResponseSize > connectionSize)
+      (nextRequestSize > maxCipPayload || nextResponseSize > maxCipPayload)
     ) {
-      // Seal current batch
       batches.push(assembleBatch(currentRequests));
       currentRequests = [];
-      requestSize = REQUEST_BASE_OVERHEAD;
-      responseSize = RESPONSE_BASE_OVERHEAD;
+      requestSize = requestFixedOverhead;
+      responseSize = responseFixedOverhead;
     }
 
     currentRequests.push(req);
@@ -87,11 +132,7 @@ export function buildBatches(requests: BatchRequest[], connectionSize: number): 
     responseSize += RESPONSE_PER_SERVICE_OVERHEAD + req.estimatedResponseSize;
   }
 
-  // Seal final batch
-  if (currentRequests.length > 0) {
-    batches.push(assembleBatch(currentRequests));
-  }
-
+  batches.push(assembleBatch(currentRequests));
   return batches;
 }
 

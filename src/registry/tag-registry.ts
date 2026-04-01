@@ -52,12 +52,29 @@ export class TagRegistry {
   private templates = new Map<number, Template>();
   private handleToInstance = new Map<number, number>();
 
+  /** Strip array indices: 'foo[1,2]' → 'foo', 'foo[0].bar' → 'foo.bar' */
+  private arrayBase(key: string): string | undefined {
+    const idx = key.indexOf('[');
+    if (idx === -1) return undefined;
+    const close = key.indexOf(']', idx);
+    if (close === -1) return undefined;
+    return key.substring(0, idx) + key.substring(close + 1);
+  }
+
   /** Look up a tag's type info. Returns BOOL for bit-level addresses (e.g. 'status.0'). */
   lookup(tagName: string): TagRegistryEntry | undefined {
     const key = this.normalizeKey(tagName);
     const direct = this.entries.get(key);
     if (direct) return direct;
 
+    // Array element → base tag
+    const arrBase = this.arrayBase(key);
+    if (arrBase) {
+      const parent = this.entries.get(arrBase);
+      if (parent) return parent;
+    }
+
+    // Bit address → BOOL
     const base = this.bitBase(key);
     if (base) {
       const parent = this.entries.get(base);
@@ -105,6 +122,8 @@ export class TagRegistry {
   has(tagName: string): boolean {
     const key = this.normalizeKey(tagName);
     if (this.entries.has(key)) return true;
+    const arrBase = this.arrayBase(key);
+    if (arrBase && this.entries.has(arrBase)) return true;
     const base = this.bitBase(key);
     return base ? this.entries.has(base) : false;
   }

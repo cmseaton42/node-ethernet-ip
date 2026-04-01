@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 - Scanner struct equality — `tagChanged` no longer fires on every tick for struct tags with identical values
 - Forward Open connection timeout increased from 256ms to ~30.7s (RPI 60ms × multiplier 512) — eliminates spurious drops under normal operation
 - Scanner first tick fires at configured rate instead of 0ms — prevents race where events emit before listeners are attached
+- Batch builder now accounts for all protocol overhead (MR wrapper, sequence count, response headers) — fixes timeout on large batches exceeding connection size
+- Registry `lookup`/`has` now resolve array elements to their base tag — eliminates per-element discovery round-trips for known arrays
 
 ### Added
 

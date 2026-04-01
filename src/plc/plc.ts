@@ -182,8 +182,9 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       };
     });
 
+    const isConnected = this.session.connectionId !== 0;
     const maxSize = this.session.connectionSize || UCMM_MAX_SIZE;
-    const batches = buildBatches(requests, maxSize);
+    const batches = buildBatches(requests, maxSize, isConnected);
     this.log.debug('Batch read', { tags: tags.length, batches: batches.length, maxSize });
 
     const results: TagValue[] = [];
@@ -267,8 +268,9 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       return { serviceData, estimatedResponseSize: 4 };
     });
 
+    const isConnected = this.session.connectionId !== 0;
     const maxSize = this.session.connectionSize || UCMM_MAX_SIZE;
-    const batches = buildBatches(requests, maxSize);
+    const batches = buildBatches(requests, maxSize, isConnected);
 
     for (const batch of batches) {
       const cipResponse = await this.sendCIP(batch.data);
