@@ -91,6 +91,7 @@ export class Scanner extends TypedEventEmitter<ScanEvents> {
     if (!this._scanning) return;
     this.metrics.tick();
 
+    const start = Date.now();
     const subs = [...this.subscriptions.values()];
     if (subs.length > 0) {
       try {
@@ -101,7 +102,8 @@ export class Scanner extends TypedEventEmitter<ScanEvents> {
     }
 
     if (this._scanning) {
-      this.timer = setTimeout(() => this.tick(), this.rate);
+      const elapsed = Date.now() - start;
+      this.timer = setTimeout(() => this.tick(), Math.max(0, this.rate - elapsed));
     }
   }
 
