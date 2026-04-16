@@ -1,7 +1,27 @@
-**/*.spec.js
-/coverage
-/manuals
-/scripts
+# Source & tests (dist/ is what ships)
+src/
+tests/
+scripts/
+manuals/
+coverage/
+ethernet-ip-v2-docs/
 
+# Config
+tsconfig.json
+jest.config.js
+eslint.config.mjs
+.prettierrc
+.DS_Store
+agent-instruction.md
+
+# Git/CI
+.git/
+.github/
+
+# Misc
+**/*.spec.js
 **/__snapshots__
-CONTRIBUTE.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+ISSUE_TEMPLATE.md
+PULL_REQUEST_TEMPLATE.md

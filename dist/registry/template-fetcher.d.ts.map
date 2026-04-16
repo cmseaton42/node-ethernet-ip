@@ -1,0 +1,1 @@
+{"version":3,"file":"template-fetcher.d.ts","sourceRoot":"","sources":["../../src/registry/template-fetcher.ts"],"names":[],"mappings":"AAAA;;;;;;;;GAQG;AAWH,OAAO,EAAE,QAAQ,EAAE,WAAW,EAAE,MAAM,yBAAyB,CAAC;AAKhE;;;;;;;GAOG;AACH,wBAAsB,aAAa,CACjC,OAAO,EAAE,CAAC,OAAO,EAAE,MAAM,KAAK,OAAO,CAAC,MAAM,CAAC,EAC7C,QAAQ,EAAE,WAAW,EACrB,UAAU,EAAE,MAAM,GACjB,OAAO,CAAC,QAAQ,CAAC,CAkDnB"}

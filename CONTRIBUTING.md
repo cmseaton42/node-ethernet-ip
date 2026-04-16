@@ -1,77 +1,102 @@
-# Contribute
+# Contributing
 
-This is the **CONTRIBUTE** section of our project. Great to have you here. Here are a few ways you can help make this project better!
+Great to have you here! Here are a few ways you can help make this project better.
 
-## Team Members
+## Team
 
-*New Team Members Welcome...*
+- **Canaan Seaton** — _Owner_ — [GitHub](https://github.com/cmseaton42) — [Website](http://www.canaanseaton.com/)
+- **Patrick McDonagh** — _Collaborator_ — [GitHub](https://github.com/patrickjmcd)
+- **Jeremy Henson** — _Collaborator_ — [GitHub](https://github.com/jhenson29)
 
-* **Canaan Seaton** - *Owner* - [GitHub Profile](https://github.com/cmseaton42) - [Personal Website](http://www.canaanseaton.com/)
-* **Patrick McDonagh** - *Collaborator* - [GitHub Profile](https://github.com/patrickjmcd)
+New contributors welcome!
 
-## Support
+## Getting Started
 
-How can I help?
+1. Fork and clone the repo
+2. Install dependencies: `npm install`
+3. Run the full check: `npm run check`
 
-- Simply use the module. The more people who use it, the better it will become.
-- Get Involved (see below for more details)
-- A freshly dropped star on the repo is always appreciated ;)
+### Development Commands
 
-## Learn & Listen
+```bash
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # With coverage report
+npm run lint          # ESLint
+npm run format        # Prettier (auto-fix)
+npm run format:check  # Prettier (check only)
+npm run build         # TypeScript compile
+npm run check         # All checks: lint + format + tsc + tests
+```
 
-This section includes ways to get started with your open source project. Include links to documentation and to different communication channels: 
+### Project Structure
 
-* How to Open Source - See this excellent [article](https://opensource.guide/how-to-contribute/)
-* To Learn about CIP and Ethernet/IP - See the [Manuals](https://github.com/cmseaton42/node-ethernet-ip/tree/master/manuals) folder
-* Ask - See the project [Gitter](https://gitter.im/node-ethernet-ip/Lobby) community
-* Blog Posts - Coming Soon....          
+```
+src/
+├── transport/       # Layer 1: ITransport, TCPTransport, MockTransport
+├── encapsulation/   # Layer 2: EIP header, CPF, commands
+├── cip/             # Layer 3: EPATH, data types, message router, batch builder
+├── pipeline/        # Layer 4: Serial request queue, timeout
+├── session/         # Layer 5: Connection lifecycle, Forward Open, reconnect
+├── registry/        # Tag type cache and discovery
+├── scanner/         # Tag subscriptions and scan loop
+├── plc/             # Layer 6: PLC class (user-facing API)
+├── discovery/       # Device discovery, controller props, wall clock
+├── errors/          # Typed error hierarchy
+└── util/            # TypedEventEmitter and helpers
 
-## Get Involved
+tests/               # Mirrors src/ structure
+```
 
-So you say you wanna help? Here's how! 🎉 👍
+### Code Style
 
-**Submitting Issues** 
+- **TypeScript strict mode** — no `any` unless absolutely necessary
+- **No magic numbers** — use named constants
+- **Comment buffer assemblies** — document byte layouts
+- **Small focused files** — prefer splitting over large files
+- **Absolute imports** — use `@/` prefix (maps to `src/`)
+- **Prettier** — runs automatically, config in `.prettierrc`
+- **ESLint** — flat config in `eslint.config.mjs`
 
-Contributing to the Code is great but feedback on the project is just as important.
+### Testing
 
-1. Research to make sure the issue isn't already being tracked
-2. Submit your issue via the project [issue tracker](https://github.com/cmseaton42/node-ethernet-ip/issues)
-    - Be Clear
-    - Be Thorough (too much information >>> not enough information)
-    - Include Pictures (Screenshots of Errors, gifs, etc)
-    - Include *Node Version* -> `node --version`
-    - Include *package version* -> `npm list`
+- Tests live in `tests/` mirroring the `src/` structure
+- Use `MockTransport` for all protocol-level tests — no real PLC needed
+- Aim for high coverage on pure functions (codecs, builders, parsers)
+- Use `jest.useFakeTimers()` for timeout and reconnect tests
 
-**Protip:** Use the project [Issue Template](https://github.com/cmseaton42/node-ethernet-ip/blob/master/ISSUE_TEMPLATE.md) as a starting point
+### Commit Messages
 
-**Feature Requests** 
+- Imperative mood, under 50 characters
+- Examples: `Add CIP EPATH segments and builder`, `Fix Forward Open fallback`
 
-Have you ever been working with a project and thought *Man, I wish it just did this out of the box*? 
+## How to Contribute
 
-1. Submit your feature request to the [issue tracker](https://github.com/cmseaton42/node-ethernet-ip/issues) **Be Sure to Mark your Issue as a Feature Request in the title (eg `[FEATURE REQUEST] Some Awesome Idea`)
-    - Be Clear
-    - Be Thorough (too much information >>> not enough information)
-    - Don't submit it and *forget* it, be prepared to answer some follow up questions
+### Reporting Issues
 
-**Protip:** Use the project [Issue Template](https://github.com/cmseaton42/node-ethernet-ip/blob/master/ISSUE_TEMPLATE.md) as a starting point
+1. Check if the issue is already tracked
+2. Use the [Issue Template](./ISSUE_TEMPLATE.md)
+3. Include: Node version, package version, controller type/firmware, steps to reproduce
 
-**Contributing Code**
+### Feature Requests
 
-1. Open an issue if one doesn't already partain to your contribution
-2. Discuss the changes you want to make in the issue tracker to see if someone is already working on it or if there is a reason it shouldn't be added
-1. Assumming the outcome of the above discussion good to go, fork the Repo 
-2. Clone your forked copy to your local machine
-3. Add the host repo as upstream -> `git remote add upstream https://github.com/cmseaton42/node-ethernet-ip.git`
-3. Get acclamated with the environment (ask questions if necessary)
-5. Make a new branch for your changes
-6. Start *hacking* away at some crispy new code
-7. Make sure to add tests 
-8. Submit you're PR to the [Primary](https://github.com/cmseaton42/node-ethernet-ip) repo
-    - **Protip:** Use the [Pull Request Template](https://github.com/cmseaton42/node-ethernet-ip/blob/master/PULL_REQUEST_TEMPLATE.md) as a starting point
-9. Wait for feedback
-10. Make changes if necessary and re-submit
-11. Boom, PR accepted 👍 💯 🎉
+1. Open an issue with `[FEATURE REQUEST]` in the title
+2. Describe the use case and expected behavior
 
+### Contributing Code
 
+1. Open or find a related issue
+2. Fork the repo and create a branch
+3. Write your code with tests
+4. Run `npm run check` — all checks must pass
+5. Submit a PR using the [Pull Request Template](./PULL_REQUEST_TEMPLATE.md)
 
+### Learning Resources
 
+- [CIP Specification Manuals](./manuals/) — EtherNet/IP and CIP protocol references
+- [Architecture Design Doc](./ethernet-ip-v2-docs/architecture.md) — v2 layered architecture
+- [API Design Doc](./ethernet-ip-v2-docs/api-design.md) — Public API surface
+
+## License
+
+MIT — see [LICENSE](./LICENSE)
