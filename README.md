@@ -8,15 +8,6 @@
 
 ---
 
-> ## ⚠️ v2.0 — Breaking Changes
->
-> **This is a full TypeScript rewrite of `ethernet-ip`.** The API has changed significantly from v1.
-> If you are upgrading from v1, see the [Migration Guide](#migration-from-v1) below.
->
-> For the v1 documentation, see the [`master` branch](https://github.com/cmseaton42/node-ethernet-ip/tree/master).
-
----
-
 # Node Ethernet/IP
 
 A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLCs.
@@ -38,10 +29,8 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 
 ## Install
 
-> ⚠️ v2 is currently in alpha. Install with the `alpha` tag:
-
 ```
-npm install ethernet-ip@alpha
+npm install ethernet-ip
 ```
 
 ## The API

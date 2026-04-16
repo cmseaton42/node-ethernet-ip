@@ -1,0 +1,1 @@
+{"version":3,"file":"serialized-promise-queue.d.ts","sourceRoot":"","sources":["../../src/util/serialized-promise-queue.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,qBAAa,sBAAsB;IACjC,OAAO,CAAC,IAAI,CAAoC;IAE1C,OAAO,CAAC,CAAC,EAAE,EAAE,EAAE,MAAM,OAAO,CAAC,CAAC,CAAC,GAAG,OAAO,CAAC,CAAC,CAAC;CAWnD"}

@@ -1,9 +1,15 @@
 {
   "name": "ethernet-ip",
-  "version": "2.0.0-alpha.3",
+  "version": "2.0.0",
   "description": "A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLCs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "tsc && tsc-alias",
     "test": "jest",

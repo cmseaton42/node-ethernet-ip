@@ -1,4 +1,4 @@
-# Source (compiled output in dist/ is what ships)
+# Source & tests (dist/ is what ships)
 src/
 tests/
 scripts/
@@ -11,7 +11,6 @@ tsconfig.json
 jest.config.js
 eslint.config.mjs
 .prettierrc
-.travis.yml
 .DS_Store
 agent-instruction.md
 

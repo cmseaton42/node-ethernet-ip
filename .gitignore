@@ -1,17 +1,17 @@
-
-# Ignore Node Modules
+# Dependencies
 /node_modules
 
-# Ignore Editor Settings
+# Editor
 /.vscode/*
 
-# Ignore Jest Coverage Reports
+# Coverage
 /coverage
 
-# Ignore Local Script Folder
+# Local scripts
 /scripts
 
-agent-instruction.md
-
+# OS
 **/.DS_Store
-/dist
+
+# Misc
+agent-instruction.md
