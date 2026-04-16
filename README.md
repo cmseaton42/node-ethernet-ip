@@ -25,7 +25,7 @@ A feature-complete EtherNet/IP client for Rockwell ControlLogix/CompactLogix PLC
 
 ## Prerequisites
 
-[Node.js](https://nodejs.org/en/) >= 16.0.0
+[Node.js](https://nodejs.org/en/) >= 18.0.0
 
 ## Install
 
