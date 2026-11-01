@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-11-01
+
+### Added
+
+- `plc.registry.serialize()` / `hydrate()` — save and reload the tag registry between sessions, with the `TagRegistrySerialized` type
+
+### Changed
+
+- Tag discovery and template fetches during discovery use the `timeout` connect option (or the 10s default); template fetches previously always used 10s
+- If the connection drops during discovery, the call now fails rather than continuing with unconnected messaging
+
+### Fixed
+
+- Tag discovery now uses connected messaging when a connection is open — long discoveries no longer let the Class 3 connection expire, which caused the next connected message to fail
+- npm script globs on Windows
+
 ## [2.0.0] — 2026-04-16
 
 Full TypeScript rewrite of `ethernet-ip`. See the [Migration Guide](README.md#migration-from-v1) for upgrading from v1.
