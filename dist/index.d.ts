@@ -8,7 +8,7 @@ export type { ScannerOptions } from './scanner/types';
 export type { ScanEvents } from './scanner/types';
 export type { Logger } from './util/logger';
 export { TagRegistry } from './registry';
-export type { TagRegistryEntry, Template, TemplateAttribute, TemplateMember } from './registry';
+export type { TagRegistryEntry, Template, TemplateAttribute, TemplateMember, TagRegistrySerialized, } from './registry';
 export type { DiscoveredTag } from './registry';
 export { buildListIdentityRequest, parseListIdentityResponse, buildGetControllerPropsRequest, parseControllerProps, buildReadWallClockRequest, parseWallClockResponse, buildWriteWallClockRequest, buildGenericCIPMessage, } from './discovery';
 export { CIPDataType, STRING_STRUCT_HANDLE } from './cip/data-types';

@@ -47,14 +47,10 @@ exports.discoverUserTags = discoverUserTags;
 const MessageRouter = __importStar(require("../cip/message-router"));
 const services_1 = require("../cip/services");
 const epath_1 = require("../cip/epath");
-const encapsulation_1 = require("../encapsulation/encapsulation");
-const header_1 = require("../encapsulation/header");
 /** CIP status code for partial transfer (more data available) */
 const STATUS_PARTIAL_TRANSFER = 0x06;
 /** Fixed overhead per tag entry: id(4) + nameLen(2) + type(2) + dimSizes(12) */
 const TAG_ENTRY_OVERHEAD = 20;
-/** Offset to CIP data within SendRRData response payload */
-const CIP_DATA_OFFSET = 16;
 /** Tag type bit-packing per CIP spec */
 const TAG_TYPE_STRUCT_FLAG = 0x8000;
 const TAG_TYPE_RESERVED_FLAG = 0x1000;
@@ -164,16 +160,13 @@ function extractProgramNames(tags) {
  * Discover all tags from the PLC.
  * Paginates automatically when status 0x06 is returned.
  */
-async function discoverAll(pipeline, sessionId, timeoutMs, program) {
+async function discoverAll(sendCIP, program) {
     const allTags = [];
     let instanceId = 0;
     let hasMore = true;
     while (hasMore) {
         const cipRequest = buildTagListRequest(instanceId, program);
-        const eipPacket = (0, encapsulation_1.sendRRData)(sessionId, cipRequest);
-        const response = await pipeline.send(eipPacket, timeoutMs);
-        const eipParsed = (0, header_1.parseHeader)(response);
-        const cipData = eipParsed.data.subarray(CIP_DATA_OFFSET);
+        const cipData = await sendCIP(cipRequest);
         const mrResponse = MessageRouter.parse(cipData);
         if (mrResponse.generalStatusCode !== 0 &&
             mrResponse.generalStatusCode !== STATUS_PARTIAL_TRANSFER) {
@@ -197,12 +190,12 @@ async function discoverAll(pipeline, sessionId, timeoutMs, program) {
  * 3. Discover tags within each program
  * 4. Filter to user-created tags only
  */
-async function discoverUserTags(pipeline, sessionId, timeoutMs) {
-    const controllerTags = await discoverAll(pipeline, sessionId, timeoutMs);
+async function discoverUserTags(sendCIP) {
+    const controllerTags = await discoverAll(sendCIP);
     const programs = extractProgramNames(controllerTags);
     const programTags = [];
     for (const prog of programs) {
-        const tags = await discoverAll(pipeline, sessionId, timeoutMs, prog);
+        const tags = await discoverAll(sendCIP, prog);
         programTags.push(...tags);
     }
     return [...controllerTags, ...programTags].filter(isUserTag);

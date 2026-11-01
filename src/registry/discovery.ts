@@ -5,12 +5,9 @@
  * Paginates with status 0x06 (partial transfer).
  */
 
-import { RequestPipeline } from '@/pipeline/request-pipeline';
 import * as MessageRouter from '@/cip/message-router';
 import { CIPService } from '@/cip/services';
 import { EPathBuilder, LogicalType } from '@/cip/epath';
-import { sendRRData } from '@/encapsulation/encapsulation';
-import { parseHeader } from '@/encapsulation/header';
 import { Template } from './tag-registry';
 
 /** CIP status code for partial transfer (more data available) */
@@ -18,9 +15,6 @@ const STATUS_PARTIAL_TRANSFER = 0x06;
 
 /** Fixed overhead per tag entry: id(4) + nameLen(2) + type(2) + dimSizes(12) */
 const TAG_ENTRY_OVERHEAD = 20;
-
-/** Offset to CIP data within SendRRData response payload */
-const CIP_DATA_OFFSET = 16;
 
 /** Tag type bit-packing per CIP spec */
 const TAG_TYPE_STRUCT_FLAG = 0x8000;
@@ -162,26 +156,23 @@ export function extractProgramNames(tags: DiscoveredTag[]): string[] {
 }
 
 /**
+ * Sends a CIP request and resolves with the Message Router response.
+ * The caller chooses the framing (connected or unconnected).
+ */
+export type SendCIP = (request: Buffer) => Promise<Buffer>;
+
+/**
  * Discover all tags from the PLC.
  * Paginates automatically when status 0x06 is returned.
  */
-export async function discoverAll(
-  pipeline: RequestPipeline,
-  sessionId: number,
-  timeoutMs: number,
-  program?: string,
-): Promise<DiscoveredTag[]> {
+export async function discoverAll(sendCIP: SendCIP, program?: string): Promise<DiscoveredTag[]> {
   const allTags: DiscoveredTag[] = [];
   let instanceId = 0;
   let hasMore = true;
 
   while (hasMore) {
     const cipRequest = buildTagListRequest(instanceId, program);
-    const eipPacket = sendRRData(sessionId, cipRequest);
-    const response = await pipeline.send(eipPacket, timeoutMs);
-    const eipParsed = parseHeader(response);
-
-    const cipData = eipParsed.data.subarray(CIP_DATA_OFFSET);
+    const cipData = await sendCIP(cipRequest);
     const mrResponse = MessageRouter.parse(cipData);
 
     if (
@@ -211,17 +202,13 @@ export async function discoverAll(
  * 3. Discover tags within each program
  * 4. Filter to user-created tags only
  */
-export async function discoverUserTags(
-  pipeline: RequestPipeline,
-  sessionId: number,
-  timeoutMs: number,
-): Promise<DiscoveredTag[]> {
-  const controllerTags = await discoverAll(pipeline, sessionId, timeoutMs);
+export async function discoverUserTags(sendCIP: SendCIP): Promise<DiscoveredTag[]> {
+  const controllerTags = await discoverAll(sendCIP);
   const programs = extractProgramNames(controllerTags);
 
   const programTags: DiscoveredTag[] = [];
   for (const prog of programs) {
-    const tags = await discoverAll(pipeline, sessionId, timeoutMs, prog);
+    const tags = await discoverAll(sendCIP, prog);
     programTags.push(...tags);
   }
 

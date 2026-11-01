@@ -7,4 +7,4 @@ export type {
   TagRegistrySerialized,
 } from './tag-registry';
 export { discoverAll, parseTagType } from './discovery';
-export type { DiscoveredTag } from './discovery';
+export type { DiscoveredTag, SendCIP } from './discovery';
