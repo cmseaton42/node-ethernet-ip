@@ -317,7 +317,8 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
   private async populateRegistry(timeoutMs: number): Promise<DiscoveredTag[]> {
     if (!this.session.pipeline) return [];
-    const tags = await discoverUserTags(this.session.pipeline, this.session.sessionId, timeoutMs);
+    const send = (req: Buffer) => this.sendCIP(req, timeoutMs);
+    const tags = await discoverUserTags(send);
     const structInstanceIds = new Set<number>();
     for (const tag of tags) {
       const fullName = tag.program ? `Program:${tag.program}.${tag.name}` : tag.name;
@@ -333,7 +334,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
     for (const id of structInstanceIds) {
       if (!this._registry.lookupTemplate(id)) {
-        await fetchTemplate((req) => this.sendCIP(req), this._registry, id);
+        await fetchTemplate(send, this._registry, id);
       }
     }
 
@@ -350,7 +351,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
 
   // ── Transport ─────────────────────────────────────────────
 
-  private async sendCIP(cipRequest: Buffer): Promise<Buffer> {
+  private async sendCIP(cipRequest: Buffer, timeoutMs?: number): Promise<Buffer> {
     if (!this.session.pipeline) throw new Error('Not connected');
 
     const isConnected = this.session.connectionId !== 0;
@@ -364,7 +365,7 @@ export class PLC extends TypedEventEmitter<PLCEvents> {
       : sendRRData(this.session.sessionId, cipRequest);
 
     this.log.debug('sendCIP', { reqSize: eipPacket.length, connected: isConnected });
-    const response = await this.session.pipeline.send(eipPacket);
+    const response = await this.session.pipeline.send(eipPacket, timeoutMs);
     this.log.debug('recvCIP', {
       respSize: response.length,
       respHdr: response.subarray(0, 8).toString('hex'),

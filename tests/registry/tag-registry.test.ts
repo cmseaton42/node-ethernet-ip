@@ -236,4 +236,35 @@ describe('bit-level addresses', () => {
     registry.define('myStruct.member', 0xc4, 4);
     expect(registry.lookup('myStruct.member')!.type).toBe(0xc4);
   });
+  it('serializes and hydrates data', () => {
+    registry.register('MyDINT', { type: 0xc4, size: 4, isStruct: false, arrayDims: 0 });
+    const template = {
+      name: 'MyUDT',
+      attributes: {
+        id: 0x100,
+        objectDefinitionSize: 50,
+        structureSize: 40,
+        memberCount: 3,
+        structureHandle: 0xabcd,
+      },
+      members: [],
+    };
+    registry.registerTemplate(0x100, template);
+
+    const newRegistry = new TagRegistry();
+    const serializedRegistry = registry.serialize();
+    const serializedRegistryString = JSON.stringify(serializedRegistry);
+    const parsedSerializedRegistryString = JSON.parse(serializedRegistryString);
+    newRegistry.hydrate(parsedSerializedRegistryString);
+
+    expect(newRegistry.has('MyDINT')).toBe(true);
+    expect(newRegistry.lookup('MyDINT')).toEqual({
+      type: 0xc4,
+      size: 4,
+      isStruct: false,
+      arrayDims: 0,
+    });
+    expect(newRegistry.lookupTemplate(0x100)).toEqual(template);
+    expect(newRegistry.lookupTemplateByHandle(0xabcd)).toEqual(template);
+  });
 });

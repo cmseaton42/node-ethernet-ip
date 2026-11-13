@@ -17,7 +17,13 @@ export type { Logger } from './util/logger';
 
 // Registry
 export { TagRegistry } from './registry';
-export type { TagRegistryEntry, Template, TemplateAttribute, TemplateMember } from './registry';
+export type {
+  TagRegistryEntry,
+  Template,
+  TemplateAttribute,
+  TemplateMember,
+  TagRegistrySerialized,
+} from './registry';
 export type { DiscoveredTag } from './registry';
 
 // Discovery

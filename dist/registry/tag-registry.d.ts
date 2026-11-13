@@ -39,10 +39,19 @@ export interface TagRegistryEntry {
     dimSizes?: number[];
     template?: Template;
 }
+export interface TagRegistrySerialized {
+    entries: [string, TagRegistryEntry][];
+    templates: [number, Template][];
+    handleToInstance: [number, number][];
+}
 export declare class TagRegistry {
     private entries;
     private templates;
     private handleToInstance;
+    /** Get a serialized version of the registry data */
+    serialize(): TagRegistrySerialized;
+    /** Hydrate registry data from previously serialized data */
+    hydrate(data: TagRegistrySerialized): void;
     /** Strip array indices: 'foo[1,2]' → 'foo', 'foo[0].bar' → 'foo.bar' */
     private arrayBase;
     /** Look up a tag's type info. Returns BOOL for bit-level addresses (e.g. 'status.0'). */

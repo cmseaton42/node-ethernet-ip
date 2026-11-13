@@ -4,7 +4,6 @@
  *
  * Paginates with status 0x06 (partial transfer).
  */
-import { RequestPipeline } from '../pipeline/request-pipeline';
 import { Template } from './tag-registry';
 export interface DiscoveredTag {
     id: number;
@@ -44,10 +43,15 @@ export declare function isUserTag(tag: DiscoveredTag): boolean;
  */
 export declare function extractProgramNames(tags: DiscoveredTag[]): string[];
 /**
+ * Sends a CIP request and resolves with the Message Router response.
+ * The caller chooses the framing (connected or unconnected).
+ */
+export type SendCIP = (request: Buffer) => Promise<Buffer>;
+/**
  * Discover all tags from the PLC.
  * Paginates automatically when status 0x06 is returned.
  */
-export declare function discoverAll(pipeline: RequestPipeline, sessionId: number, timeoutMs: number, program?: string): Promise<DiscoveredTag[]>;
+export declare function discoverAll(sendCIP: SendCIP, program?: string): Promise<DiscoveredTag[]>;
 /**
  * Discover all user tags, including program-scoped tags.
  * 1. Discover controller-scope tags
@@ -55,5 +59,5 @@ export declare function discoverAll(pipeline: RequestPipeline, sessionId: number
  * 3. Discover tags within each program
  * 4. Filter to user-created tags only
  */
-export declare function discoverUserTags(pipeline: RequestPipeline, sessionId: number, timeoutMs: number): Promise<DiscoveredTag[]>;
+export declare function discoverUserTags(sendCIP: SendCIP): Promise<DiscoveredTag[]>;
 //# sourceMappingURL=discovery.d.ts.map

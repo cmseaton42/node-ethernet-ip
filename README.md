@@ -187,6 +187,45 @@ await plc.connect('192.168.1.1', { discover: true });
 // plc.registry now has every tag's type and UDT templates
 ```
 
+#### Tag Registry Persistence
+
+For testing purposes, the tag registry can be serialized and reloaded between sessions. This can help speed testing with frequent restarts against a slow PLC connection.
+
+- The tag registry should be serialized after the discovery process
+- Saved tag registries are only valid for the PLC they were created from and should be discarded if there are any changes in the target PLC
+
+Saving a tag registry:
+
+```typescript
+import { PLC, TagRegistrySerialized } from 'ethernet-ip';
+
+const plc = new PLC();
+
+await plc.connect('192.168.1.1', { discover: true });
+
+const tagRegistryData: TagRegistrySerialized = plc.registry.serialize();
+
+// saveTagRegistry implementation by user
+saveTagRegistry(tagRegistryData);
+```
+
+Loading a tag registry:
+
+```typescript
+import { PLC, TagRegistrySerialized } from 'ethernet-ip';
+
+const plc = new PLC();
+
+// loadTagRegistry implementation by user - load a previously saved tag registry
+const tagRegistryData: TagRegistrySerialized | undefined = loadTagRegistry();
+
+if (tagRegistryData) {
+  plc.registry.hydrate(tagRegistryData);
+}
+
+await plc.connect('192.168.1.1');
+```
+
 ### UDT / Struct Support
 
 Struct tags are automatically decoded into JS objects when the template is available:

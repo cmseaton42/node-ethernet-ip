@@ -44,6 +44,12 @@ export interface TagRegistryEntry {
   template?: Template;
 }
 
+export interface TagRegistrySerialized {
+  entries: [string, TagRegistryEntry][];
+  templates: [number, Template][];
+  handleToInstance: [number, number][];
+}
+
 /** CIP type code for BOOL */
 const BOOL_TYPE = 0xc1;
 
@@ -51,6 +57,22 @@ export class TagRegistry {
   private entries = new Map<string, TagRegistryEntry>();
   private templates = new Map<number, Template>();
   private handleToInstance = new Map<number, number>();
+
+  /** Get a serialized version of the registry data */
+  serialize(): TagRegistrySerialized {
+    return {
+      entries: Array.from(this.entries.entries()),
+      templates: Array.from(this.templates.entries()),
+      handleToInstance: Array.from(this.handleToInstance.entries()),
+    };
+  }
+
+  /** Hydrate registry data from previously serialized data */
+  hydrate(data: TagRegistrySerialized): void {
+    this.entries = new Map(data.entries);
+    this.templates = new Map(data.templates);
+    this.handleToInstance = new Map(data.handleToInstance);
+  }
 
   /** Strip array indices: 'foo[1,2]' → 'foo', 'foo[0].bar' → 'foo.bar' */
   private arrayBase(key: string): string | undefined {

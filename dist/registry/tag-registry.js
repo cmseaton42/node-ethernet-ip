@@ -19,6 +19,20 @@ class TagRegistry {
         this.templates = new Map();
         this.handleToInstance = new Map();
     }
+    /** Get a serialized version of the registry data */
+    serialize() {
+        return {
+            entries: Array.from(this.entries.entries()),
+            templates: Array.from(this.templates.entries()),
+            handleToInstance: Array.from(this.handleToInstance.entries()),
+        };
+    }
+    /** Hydrate registry data from previously serialized data */
+    hydrate(data) {
+        this.entries = new Map(data.entries);
+        this.templates = new Map(data.templates);
+        this.handleToInstance = new Map(data.handleToInstance);
+    }
     /** Strip array indices: 'foo[1,2]' → 'foo', 'foo[0].bar' → 'foo.bar' */
     arrayBase(key) {
         const idx = key.indexOf('[');

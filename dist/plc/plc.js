@@ -289,7 +289,8 @@ class PLC extends typed_event_emitter_1.TypedEventEmitter {
     async populateRegistry(timeoutMs) {
         if (!this.session.pipeline)
             return [];
-        const tags = await (0, discovery_1.discoverUserTags)(this.session.pipeline, this.session.sessionId, timeoutMs);
+        const send = (req) => this.sendCIP(req, timeoutMs);
+        const tags = await (0, discovery_1.discoverUserTags)(send);
         const structInstanceIds = new Set();
         for (const tag of tags) {
             const fullName = tag.program ? `Program:${tag.program}.${tag.name}` : tag.name;
@@ -305,7 +306,7 @@ class PLC extends typed_event_emitter_1.TypedEventEmitter {
         }
         for (const id of structInstanceIds) {
             if (!this._registry.lookupTemplate(id)) {
-                await (0, template_fetcher_1.fetchTemplate)((req) => this.sendCIP(req), this._registry, id);
+                await (0, template_fetcher_1.fetchTemplate)(send, this._registry, id);
             }
         }
         for (const tag of tags) {
@@ -318,7 +319,7 @@ class PLC extends typed_event_emitter_1.TypedEventEmitter {
         return tags;
     }
     // ── Transport ─────────────────────────────────────────────
-    async sendCIP(cipRequest) {
+    async sendCIP(cipRequest, timeoutMs) {
         if (!this.session.pipeline)
             throw new Error('Not connected');
         const isConnected = this.session.connectionId !== 0;
@@ -326,7 +327,7 @@ class PLC extends typed_event_emitter_1.TypedEventEmitter {
             ? (0, encapsulation_1.sendUnitData)(this.session.sessionId, cipRequest, this.session.connectionId, this.session.nextSequence())
             : (0, encapsulation_1.sendRRData)(this.session.sessionId, cipRequest);
         this.log.debug('sendCIP', { reqSize: eipPacket.length, connected: isConnected });
-        const response = await this.session.pipeline.send(eipPacket);
+        const response = await this.session.pipeline.send(eipPacket, timeoutMs);
         this.log.debug('recvCIP', {
             respSize: response.length,
             respHdr: response.subarray(0, 8).toString('hex'),
